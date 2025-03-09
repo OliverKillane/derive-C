@@ -71,7 +71,7 @@ typedef struct {
 
 typedef struct {
     size_t capacity;
-    size_t size;
+    size_t items;
     // Split keys & values in an old hashmap I used, cannot remember why (many collisions better
     // decomposed), should probably use 1 buffer.
     KEY_ENTRY* keys;
@@ -79,7 +79,9 @@ typedef struct {
 } SELF;
 
 SELF NAME(SELF, new_with_capacity)(size_t capacity) {
+    ASSERT(capacity > 0);
     size_t overallocated_capacity = apply_overallocate_factor(capacity);
+    ASSERT(overallocated_capacity > 0);
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
@@ -89,7 +91,7 @@ SELF NAME(SELF, new_with_capacity)(size_t capacity) {
         PANIC;
     return (SELF){
         .capacity = overallocated_capacity,
-        .size = 0,
+        .items = 0,
         .keys = keys,
         .values = values,
     };
@@ -98,6 +100,7 @@ SELF NAME(SELF, new_with_capacity)(size_t capacity) {
 SELF NAME(SELF, new)() { return NAME(SELF, new_with_capacity)(INITIAL_CAPACITY); }
 
 void NAME(SELF, delete)(SELF* self) {
+    DEBUG_ASSERT(self);
     free(self->keys);
     free(self->values);
 }
@@ -105,6 +108,7 @@ void NAME(SELF, delete)(SELF* self) {
 MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value);
 
 void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+    DEBUG_ASSERT(self);
     size_t target_capacity = apply_overallocate_factor(expected_items);
     if (target_capacity > self->capacity) {
         SELF new_map = NAME(SELF, new_with_capacity)(expected_items);
@@ -121,8 +125,9 @@ void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 }
 
 MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value) {
-    if (apply_overallocate_factor(self->size) > self->capacity / 2) {
-        NAME(SELF, extend_capacity_for)(self, self->size * 2);
+    DEBUG_ASSERT(self);
+    if (apply_overallocate_factor(self->items) > self->capacity / 2) {
+        NAME(SELF, extend_capacity_for)(self, self->items * 2);
     }
 
     uint16_t distance_from_desired = 0;
@@ -165,13 +170,14 @@ MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value) {
             if (!placed_entry) {
                 placed_entry = &self->values[index];
             }
-            self->size++;
+            self->items++;
             return placed_entry;
         }
     }
 }
 
 MAYBE_NULL(V) NAME(SELF, write)(SELF* self, K key) {
+    DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = hash & (self->capacity - 1);
 
@@ -190,6 +196,7 @@ MAYBE_NULL(V) NAME(SELF, write)(SELF* self, K key) {
 }
 
 MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, K key) {
+    DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = hash & (self->capacity - 1);
 
@@ -208,6 +215,7 @@ MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, K key) {
 }
 
 MAYBE_NULL(V) NAME(SELF, remove)(SELF* self, K key) {
+    DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = hash & (self->capacity - 1);
 
@@ -226,7 +234,10 @@ MAYBE_NULL(V) NAME(SELF, remove)(SELF* self, K key) {
     }
 }
 
-size_t NAME(SELF, size)(SELF const* self) { return self->size; }
+size_t NAME(SELF, size)(SELF const* self) {
+    DEBUG_ASSERT(self);
+    return self->items;
+}
 
 #define KV_PAIR NAME(SELF, kv)
 
@@ -244,6 +255,7 @@ typedef struct {
 } ITER;
 
 KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
+    DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         KV_PAIR ret_val = {.key = &iter->map->keys[iter->index].key,
                            .value = &iter->map->values[iter->index]};
@@ -259,19 +271,26 @@ KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
     }
 }
 
-size_t NAME(ITER_CONST, position)(ITER const* iter) { return iter->pos; }
+size_t NAME(ITER_CONST, position)(ITER const* iter) {
+    DEBUG_ASSERT(iter);
+    return iter->pos;
+}
 
-bool NAME(ITER_CONST, empty)(ITER const* iter) { return iter->index >= iter->map->capacity; }
+bool NAME(ITER_CONST, empty)(ITER const* iter) {
+    DEBUG_ASSERT(iter);
+    return iter->index >= iter->map->capacity;
+}
 
 ITER NAME(SELF, get_iter)(SELF* self) {
+    DEBUG_ASSERT(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
         first_index++;
     }
     return (ITER){
+        .map = self,
         .index = first_index,
         .pos = 0,
-        .map = self,
     };
 }
 
@@ -291,6 +310,7 @@ typedef struct {
 } ITER_CONST;
 
 KV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
+    DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         KV_PAIR_CONST ret_val = {.key = &iter->map->keys[iter->index].key,
                                  .value = &iter->map->values[iter->index]};
@@ -306,19 +326,26 @@ KV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
     }
 }
 
-size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) { return iter->pos; }
+size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
+    DEBUG_ASSERT(iter);
+    return iter->pos;
+}
 
-bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) { return iter->index >= iter->map->capacity; }
+bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DEBUG_ASSERT(iter);
+    return iter->index >= iter->map->capacity;
+}
 
 ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+    DEBUG_ASSERT(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
         first_index++;
     }
     return (ITER_CONST){
+        .map = self,
         .index = first_index,
         .pos = 0,
-        .map = self,
     };
 }
 
