@@ -4,19 +4,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define DERIVE_EQ_FOR_STD_SIMPLE(t) \
-bool NAME(t, eq)(t const* self_1, t const* self_2) { \
-    return self_1 == self_2; \
-} \ 
-t NAME(t, clone)(t const* self) { \
-    return *self; \
-} \
-bool NAME(t, gt)(t const* self_1, t const* self_2) { \
-    return *self_1 > *self_2; \
-} \
-bool NAME(t, lt)(t const* self_1, t const* self_2) { \
-    return *self_1 < *self_2; \
-}
+#define DERIVE_EQ_FOR_STD_SIMPLE(t)                                                                \
+    bool NAME(t, eq)(t const* self_1, t const* self_2) { return self_1 == self_2; }                \
+    t NAME(t, clone)(t const* self) { return *self; }                                              \
+    bool NAME(t, gt)(t const* self_1, t const* self_2) { return *self_1 > *self_2; }               \
+    bool NAME(t, lt)(t const* self_1, t const* self_2) { return *self_1 < *self_2; }
 
 DERIVE_EQ_FOR_STD_SIMPLE(bool)
 DERIVE_EQ_FOR_STD_SIMPLE(char)

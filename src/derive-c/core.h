@@ -16,7 +16,7 @@
 #define EXPAND(...) __VA_ARGS__
 
 #define ASSERT(expr)                                                                               \
-    if (!(expr))                                                                                     \
+    if (!(expr))                                                                                   \
         PANIC;
 
 #endif

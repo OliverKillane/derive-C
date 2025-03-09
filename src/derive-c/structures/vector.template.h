@@ -131,7 +131,9 @@ MAYBE_NULL(T) NAME(ITER, next)(ITER* iter) {
     }
 }
 
-size_t NAME(ITER, position)(ITER* iter) { return iter->pos; }
+size_t NAME(ITER, position)(ITER const* iter) { return iter->pos; }
+
+bool NAME(ITER, empty)(ITER const* iter) { return iter->pos < iter->vec->size; }
 
 ITER NAME(SELF, get_iter)(SELF* self) {
     return (ITER){
@@ -157,7 +159,9 @@ MAYBE_NULL(T const) NAME(ITER_CONST, next)(ITER_CONST* iter) {
     }
 }
 
-size_t NAME(ITER_CONST, position)(ITER_CONST* iter) { return iter->pos; }
+size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) { return iter->pos; }
+
+bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) { return iter->pos < iter->vec->size; }
 
 ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){

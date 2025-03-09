@@ -10,7 +10,7 @@
 //
 // DERIVE_STRUCT(Foo)
 // ```
-#define DERIVE_STRUCT(ID) \
-    typedef struct { \
-        NAME(ID, REFLECT)(DERIVE_STRUCT_MEMBER) \
+#define DERIVE_STRUCT(ID)                                                                          \
+    typedef struct {                                                                               \
+        NAME(ID, REFLECT)(DERIVE_STRUCT_MEMBER)                                                    \
     } ID;

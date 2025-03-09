@@ -1,3 +1,4 @@
-build/
+build
 .cache
 .notifier
+infer-out

@@ -4,10 +4,17 @@ A small toolbox of generic C code.
 
 ## Develop
 ```bash
-cmake -S . -B build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 
+cmake -S . -B build -GNinja -DDEBUG=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 
 ninja -C build
 ninja -C build format
 ctest --test-dir build/test
+```
+
+For using `infer`
+```bash
+cmake -S . -B build -DEXTERNALS=Off
+cd build
+
 ```
 
 ## Use
@@ -30,3 +37,10 @@ FetchContent_MakeAvailable(derive-c)
 
 ### Derive Macros
 Using a similar pattern to [xmacros](https://en.wikipedia.org/wiki/X_macro) we can derive equality, and structs (debug is more complex so not done yet).
+
+
+## TODO
+ - Add more tests
+ - Add regression benchmarks
+ - CBMC verification for basic insert/amend/delete flow on hashmap.
+ - infer on examples?

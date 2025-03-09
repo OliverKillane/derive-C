@@ -72,7 +72,8 @@ typedef struct {
 typedef struct {
     size_t capacity;
     size_t size;
-    // Split keys & values in an old hashmap I used, cannot remember why (many collisions better decomposed), should probably use 1 buffer.
+    // Split keys & values in an old hashmap I used, cannot remember why (many collisions better
+    // decomposed), should probably use 1 buffer.
     KEY_ENTRY* keys;
     V* values;
 } SELF;
@@ -227,9 +228,105 @@ MAYBE_NULL(V) NAME(SELF, remove)(SELF* self, K key) {
 
 size_t NAME(SELF, size)(SELF const* self) { return self->size; }
 
+#define KV_PAIR NAME(SELF, kv)
+
+typedef struct {
+    K const* key;
+    V* value;
+} KV_PAIR;
+
+#define ITER NAME(SELF, iter)
+
+typedef struct {
+    SELF* map;
+    size_t index;
+    size_t pos;
+} ITER;
+
+KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
+    if (iter->index < iter->map->capacity) {
+        KV_PAIR ret_val = {.key = &iter->map->keys[iter->index].key,
+                           .value = &iter->map->values[iter->index]};
+        iter->pos++;
+        iter->index++;
+        while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
+            iter->index++;
+        }
+
+        return ret_val;
+    } else {
+        return (KV_PAIR){.key = NULL, .value = NULL};
+    }
+}
+
+size_t NAME(ITER_CONST, position)(ITER const* iter) { return iter->pos; }
+
+bool NAME(ITER_CONST, empty)(ITER const* iter) { return iter->index >= iter->map->capacity; }
+
+ITER NAME(SELF, get_iter)(SELF* self) {
+    size_t first_index = 0;
+    while (first_index < self->capacity && !self->keys[first_index].present) {
+        first_index++;
+    }
+    return (ITER){
+        .index = first_index,
+        .pos = 0,
+        .map = self,
+    };
+}
+
+#define KV_PAIR_CONST NAME(SELF, kv_const)
+
+typedef struct {
+    K const* key;
+    V const* value;
+} KV_PAIR_CONST;
+
+#define ITER_CONST NAME(SELF, iter_const)
+
+typedef struct {
+    SELF const* map;
+    size_t index;
+    size_t pos;
+} ITER_CONST;
+
+KV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
+    if (iter->index < iter->map->capacity) {
+        KV_PAIR_CONST ret_val = {.key = &iter->map->keys[iter->index].key,
+                                 .value = &iter->map->values[iter->index]};
+        iter->pos++;
+        iter->index++;
+        while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
+            iter->index++;
+        }
+
+        return ret_val;
+    } else {
+        return (KV_PAIR_CONST){.key = NULL, .value = NULL};
+    }
+}
+
+size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) { return iter->pos; }
+
+bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) { return iter->index >= iter->map->capacity; }
+
+ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+    size_t first_index = 0;
+    while (first_index < self->capacity && !self->keys[first_index].present) {
+        first_index++;
+    }
+    return (ITER_CONST){
+        .index = first_index,
+        .pos = 0,
+        .map = self,
+    };
+}
+
 #undef K
 #undef V
 #undef HASH
 #undef EQ
 #undef SELF
 #undef KEY_ENTRY
+#undef ITER
+#undef ITER_CONST

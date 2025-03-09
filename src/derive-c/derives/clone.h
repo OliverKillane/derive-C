@@ -10,9 +10,5 @@
 //
 // DERIVE_STRUCT(Foo)
 // ```
-#define DERIVE_CLONE(ID) \
-ID NAME(ID, clone)(ID const* self) { \
-    return (ID){ \ 
-        NAME(ID, REFLECT)(DERIVE_CLONE_MEMBER) \
-    }; \
-}
+#define DERIVE_CLONE(ID)                                                                           \
+    ID NAME(ID, clone)(ID const* self) { return (ID){NAME(ID, REFLECT)(DERIVE_CLONE_MEMBER)}; }
