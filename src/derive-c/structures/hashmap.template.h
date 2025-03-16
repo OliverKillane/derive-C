@@ -48,13 +48,6 @@ inline bool placeholder_eq(placeholder_key const* key_1, placeholder_key const* 
 
 #ifndef HASHMAP_INTERNAL
 #define HASHMAP_INTERNAL
-inline size_t next_power_of_two(size_t n) {
-    size_t s = 1;
-    while (s < n) {
-        s <<= 1;
-    }
-    return s;
-}
 
 size_t apply_overallocate_factor(size_t capacity) { return capacity * 3 / 2; }
 
