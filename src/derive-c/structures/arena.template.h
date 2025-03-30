@@ -1,8 +1,8 @@
 #include <derive-c/core.h>
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #ifndef PANIC
@@ -11,7 +11,8 @@
 #endif
 
 #ifndef I
-#error "I (index type) must be defined for an arena template, chose a value like uint8_t, uint16_t, uint32_t"
+#error                                                                                             \
+    "I (index type) must be defined for an arena template, chose a value like uint8_t, uint16_t, uint32_t"
 #define I uint64_t
 #endif
 
@@ -33,18 +34,18 @@ typedef struct {
 
 #define SLOT NAME(SELF, SLOT)
 
-#define CHECK_ACCESS_INDEX(self, index) \
-    DEBUG_ASSERT(self); \
-    ASSERT(index < self->first_uninit_entry); \
-    ASSERT(index > ZERO_INDEX); \
+#define CHECK_ACCESS_INDEX(self, index)                                                            \
+    DEBUG_ASSERT(self);                                                                            \
+    ASSERT(index < self->first_uninit_entry);                                                      \
+    ASSERT(index > EMPTY_INDEX);
 
 // JUSTIFY: Indexes start from 1
-//           - In the free list we need to represent an `Option<Index>`, rather 
-//             than storing a boolean (present) as well as the value, we just 
+//           - In the free list we need to represent an `Option<Index>`, rather
+//             than storing a boolean (present) as well as the value, we just
 //             ensure indexes are never 0.
 // JUSTIFY: Macro rather than static
 //           - Avoids the need to cast to the index type
-#define ZERO_INDEX 0 
+#define EMPTY_INDEX 0
 #define INDEX_START 1
 #define RESIZE_FACTOR 2
 
@@ -55,8 +56,8 @@ typedef struct {
     };
 
     // JUSTIFY: Present flag last
-    //           - Reduces size, C ABI orders fields, placing it before a larger 
-    //             (aligned) value would add (alignment - 1 byte) of unecessary 
+    //           - Reduces size, C ABI orders fields, placing it before a larger
+    //             (aligned) value would add (alignment - 1 byte) of unecessary
     //             padding
     bool present;
 } SLOT;
@@ -67,12 +68,12 @@ typedef struct {
     I free_list;
 
     // JUSTIFY: Separately recording the first_uninit_entry
-    //           - Allows us to not use calloc for the buffer (for < first_uninit_entry 
-    //             we can check represent, for >= first_uninit_entry we know none are 
+    //           - Allows us to not use calloc for the buffer (for < first_uninit_entry
+    //             we can check represent, for >= first_uninit_entry we know none are
     //             present so having uninitialised entries is fine)
     I first_uninit_entry;
 
-    // INVARIANT: If free_list == ZERO_INDEX, then all values from [0, count) 
+    // INVARIANT: If free_list == EMPTY_INDEX, then all values from [0, count)
     //            are present
     I count;
 } SELF;
@@ -80,19 +81,20 @@ typedef struct {
 SELF NAME(SELF, new_with_capacity)(I capacity) {
     DEBUG_ASSERT(capacity > 0);
     SLOT* slots = (SLOT*)calloc(capacity, sizeof(SLOT));
-    if (!slots) PANIC;
+    if (!slots)
+        PANIC;
     return (SELF){
         .slots = slots,
         .capacity = capacity,
-        .free_list = ZERO_INDEX,
-        .first_uninit_entry = ZERO_INDEX,
+        .free_list = EMPTY_INDEX,
+        .first_uninit_entry = EMPTY_INDEX,
         .count = 0,
     };
 }
 
 I NAME(SELF, insert)(SELF* self, V value) {
     DEBUG_ASSERT(self);
-    if (self->free_list != ZERO_INDEX) {
+    if (self->free_list != EMPTY_INDEX) {
         I reused_index = self->free_list;
         SLOT* slot = &self->slots[reused_index - INDEX_START];
         DEBUG_ASSERT(!SLOT->present);
@@ -105,7 +107,8 @@ I NAME(SELF, insert)(SELF* self, V value) {
     if (self->first_uninit_entry == self->capacity) {
         self->capacity *= RESIZE_FACTOR;
         SLOT* new_alloc = realloc(self->slots, self->capacity);
-        if (!new_alloc) PANIC;
+        if (!new_alloc)
+            PANIC;
         self->slots = new_alloc;
     }
 
@@ -186,16 +189,12 @@ typedef struct {
 IV_PAIR NAME(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->next_index >= iter->arena->first_uninit_entry) {
-        return (IV_PAIR){
-            .index = ZERO_INDEX,
-            .value = NULL
-        };
+        return (IV_PAIR){.index = EMPTY_INDEX, .value = NULL};
     } else {
-        IV_PAIR out = (IV_PAIR){
-            .index = iter->next_index,
-            .value = &iter->arena->slots[iter->next_index].value
-        };
-        while (iter->next_index < iter->arena->first_uninit_entry && !iter->arena->slots[iter->next_index - INDEX_START].present) {
+        IV_PAIR out = (IV_PAIR){.index = iter->next_index,
+                                .value = &iter->arena->slots[iter->next_index].value};
+        while (iter->next_index < iter->arena->first_uninit_entry &&
+               !iter->arena->slots[iter->next_index - INDEX_START].present) {
             iter->next_index++;
         }
         iter->pos++;
@@ -210,20 +209,79 @@ size_t NAME(ITER, position)(ITER const* iter) {
 
 bool NAME(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
-    // JUSTIFY: If no entries are left, then the previous '.._next' call moved 
-    //          the index to the first uninit entry. 
-    return iter->next_index < iter->arena->first_uninit_entry;
+    // JUSTIFY: If no entries are left, then the previous '.._next' call moved
+    //          the index to the first uninit entry.
+    return iter->next_index >= iter->arena->first_uninit_entry;
 }
 
 ITER NAME(SELF, get_iter)(SELF* self) {
     DEBUG_ASSERT(self);
-    
-    I index = ZERO_INDEX;
-    while (index < self->first_uninit_entry && !self->slots[index].present) {
+
+    I index = INDEX_START;
+    while (index < self->first_uninit_entry && !self->slots[index - INDEX_START].present) {
         index++;
     }
 
-    return (IV_PAIR){
-        .index = index
+    return (ITER){
+        .arena = self,
+        .next_index = index,
+        .pos = 0,
+    };
+}
+
+#define IV_PAIR_CONST NAME(SELF, iv_const)
+typedef struct {
+    I index;
+    V* value;
+} IV_PAIR_CONST;
+
+#define ITER_CONST NAME(SELF, iter_const)
+
+typedef struct {
+    SELF const* arena;
+    I next_index;
+    size_t pos;
+} ITER_CONST;
+
+IV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
+    DEBUG_ASSERT(iter);
+    if (iter->next_index >= iter->arena->first_uninit_entry) {
+        return (IV_PAIR_CONST){.index = EMPTY_INDEX, .value = NULL};
+    } else {
+        IV_PAIR_CONST out = (IV_PAIR_CONST){.index = iter->next_index,
+                                            .value = &iter->arena->slots[iter->next_index].value};
+        while (iter->next_index < iter->arena->first_uninit_entry &&
+               !iter->arena->slots[iter->next_index - INDEX_START].present) {
+            iter->next_index++;
+        }
+        iter->pos++;
+        return out;
     }
+}
+
+size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
+    DEBUG_ASSERT(iter);
+    return iter->pos;
+}
+
+bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DEBUG_ASSERT(iter);
+    // JUSTIFY: If no entries are left, then the previous '.._next' call moved
+    //          the index to the first uninit entry.
+    return iter->next_index >= iter->arena->first_uninit_entry;
+}
+
+ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+    DEBUG_ASSERT(self);
+
+    I index = INDEX_START;
+    while (index < self->first_uninit_entry && !self->slots[index - INDEX_START].present) {
+        index++;
+    }
+
+    return (ITER_CONST){
+        .arena = self,
+        .next_index = index,
+        .pos = 0,
+    };
 }

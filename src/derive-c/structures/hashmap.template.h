@@ -48,10 +48,35 @@ inline bool placeholder_eq(placeholder_key const* key_1, placeholder_key const* 
 
 #ifndef HASHMAP_INTERNAL
 #define HASHMAP_INTERNAL
+inline size_t next_power_of_2(size_t x) {
+    if (x == 0)
+        return 1;
+    x--;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+#if SIZE_MAX > 0xFFFFFFFF
+    x |= x >> 32; // For 64-bit platforms
+#endif
+    return x + 1;
+}
 
-size_t apply_overallocate_factor(size_t capacity) { return capacity * 3 / 2; }
+inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
 
-static size_t const PROBE_DISTANCE = 4;
+inline size_t apply_capacity_policy(size_t capacity) {
+    // TODO(oliverkillane): play with overallocation policy
+    return next_power_of_2(capacity + capacity / 2);
+}
+
+inline size_t modulus_capacity(size_t index, size_t capacity) {
+    DEBUG_ASSERT(is_power_of_2(capacity))
+    // NOTE: If we know capacity is a power of 2, we can reduce the cost of 'index + 1 % capacity'
+    return index & (capacity - 1);
+}
+
+static size_t const PROBE_DISTANCE = 1;
 static size_t const INITIAL_CAPACITY = 32;
 #endif
 
@@ -63,34 +88,59 @@ typedef struct {
 } KEY_ENTRY;
 
 typedef struct {
-    size_t capacity;
+    size_t capacity; // INV: A power of 2
     size_t items;
     // Split keys & values in an old hashmap I used, cannot remember why (many collisions better
     // decomposed), should probably use 1 buffer.
     KEY_ENTRY* keys;
     V* values;
+    gdb_marker derive_c_hashmap;
 } SELF;
 
-SELF NAME(SELF, new_with_capacity)(size_t capacity) {
+SELF NAME(SELF, new_with_capacity_for)(size_t capacity) {
     ASSERT(capacity > 0);
-    size_t overallocated_capacity = apply_overallocate_factor(capacity);
-    ASSERT(overallocated_capacity > 0);
+    size_t real_capacity = apply_capacity_policy(capacity);
+    ASSERT(real_capacity > 0);
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
-    KEY_ENTRY* keys = (KEY_ENTRY*)calloc(sizeof(KEY_ENTRY), overallocated_capacity);
-    V* values = (V*)malloc(sizeof(V) * overallocated_capacity);
+    KEY_ENTRY* keys = (KEY_ENTRY*)calloc(sizeof(KEY_ENTRY), real_capacity);
+    V* values = (V*)malloc(sizeof(V) * real_capacity);
     if (!keys || !values)
         PANIC;
     return (SELF){
-        .capacity = overallocated_capacity,
+        .capacity = real_capacity,
         .items = 0,
         .keys = keys,
         .values = values,
     };
 }
 
-SELF NAME(SELF, new)() { return NAME(SELF, new_with_capacity)(INITIAL_CAPACITY); }
+SELF NAME(SELF, new)() { return NAME(SELF, new_with_capacity_for)(INITIAL_CAPACITY); }
+
+SELF NAME(SELF, clone)(SELF const* self) {
+    DEBUG_ASSERT(self);
+
+    // JUSTIFY: Naive copy
+    //           - We could resize (potentially a smaller map) and rehash
+    //           - Not confident it would be any better than just a copy.
+    // JUSTIFY: Individually copy keys
+    //           - Many entries are zeroed, no need to copy uninit data
+
+    KEY_ENTRY* keys = (KEY_ENTRY*)calloc(sizeof(KEY_ENTRY), self->capacity);
+    V* values = (V*)malloc(sizeof(V) * self->capacity);
+    if (!keys || !values)
+        PANIC;
+
+    for (size_t i = 0; i < self->capacity; i++) {
+        if (self->keys[i].present) {
+            keys[i] = self->keys[i];
+            values[i] = self->values[i];
+        }
+    }
+
+    return (SELF){.capacity = self->capacity, .items = self->items, .keys = keys, .values = values};
+}
 
 void NAME(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
@@ -100,11 +150,11 @@ void NAME(SELF, delete)(SELF* self) {
 
 MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value);
 
-void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+SELF NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     DEBUG_ASSERT(self);
-    size_t target_capacity = apply_overallocate_factor(expected_items);
+    size_t target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
-        SELF new_map = NAME(SELF, new_with_capacity)(expected_items);
+        SELF new_map = NAME(SELF, new_with_capacity_for)(expected_items);
         for (size_t index = 0; index < self->capacity; index++) {
             KEY_ENTRY* entry = &self->keys[index];
             if (entry->present) {
@@ -113,22 +163,24 @@ void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
             }
         }
         NAME(SELF, delete)(self);
-        *self = new_map;
+        return new_map;
     }
+    return *self;
 }
 
 MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value) {
     DEBUG_ASSERT(self);
-    if (apply_overallocate_factor(self->items) > self->capacity / 2) {
-        NAME(SELF, extend_capacity_for)(self, self->items * 2);
+    if (apply_capacity_policy(self->items) > self->capacity / 2) {
+        *self = NAME(SELF, extend_capacity_for)(self, self->items * 2);
     }
 
     uint16_t distance_from_desired = 0;
     size_t hash = HASH(&key);
-    size_t index = hash & (self->capacity - 1);
+    size_t index = modulus_capacity(hash, self->capacity);
     V* placed_entry = NULL;
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
+        DEBUG_ASSERT(distance_from_desired < self->capacity);
 
         if (entry->present) {
             if (EQ(&entry->key, &key)) {
@@ -154,7 +206,7 @@ MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value) {
             }
 
             distance_from_desired++;
-            index = (index + PROBE_DISTANCE) & (self->capacity - 1);
+            index = modulus_capacity(index + 1, self->capacity);
         } else {
             entry->present = true;
             entry->distance_from_desired = distance_from_desired;
@@ -172,7 +224,7 @@ MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value) {
 MAYBE_NULL(V) NAME(SELF, write)(SELF* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = hash & (self->capacity - 1);
+    size_t index = modulus_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -180,7 +232,7 @@ MAYBE_NULL(V) NAME(SELF, write)(SELF* self, K key) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
             } else {
-                index = (index + PROBE_DISTANCE) & (self->capacity - 1);
+                index = modulus_capacity(index + 1, self->capacity);
             }
         } else {
             return NULL;
@@ -191,7 +243,7 @@ MAYBE_NULL(V) NAME(SELF, write)(SELF* self, K key) {
 MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = hash & (self->capacity - 1);
+    size_t index = modulus_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -199,7 +251,7 @@ MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, K key) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
             } else {
-                index = (index + PROBE_DISTANCE) & (self->capacity - 1);
+                index = modulus_capacity(index + 1, self->capacity);
             }
         } else {
             return NULL;
@@ -210,16 +262,17 @@ MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, K key) {
 MAYBE_NULL(V) NAME(SELF, remove)(SELF* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = hash & (self->capacity - 1);
+    size_t index = modulus_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
         if (entry->present) {
             if (EQ(&entry->key, &key)) {
                 entry->present = false;
+                self->items--;
                 return &self->values[index];
             } else {
-                index = (index + PROBE_DISTANCE) & (self->capacity - 1);
+                index = modulus_capacity(index + 1, self->capacity);
             }
         } else {
             return NULL;

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef PANIC
 #error "PANIC must be defined (used for unrecoverable failures)"
@@ -30,6 +31,7 @@ typedef struct {
     size_t size;
     size_t capacity;
     T* data;
+    gdb_marker derive_c_vector;
 } SELF;
 
 SELF NAME(SELF, new)() {
@@ -70,6 +72,18 @@ SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
     }
 }
 
+SELF NAME(SELF, clone)(SELF const* self) {
+    DEBUG_ASSERT(self);
+    T* data = (T*)malloc(self->capacity * sizeof(T));
+    ASSERT(data);
+    memcpy(data, self->data, self->size * sizeof(T));
+    return (SELF){
+        .size = self->size,
+        .capacity = self->capacity,
+        .data = data,
+    };
+}
+
 MAYBE_NULL(T const) NAME(SELF, read)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
     return LIKELY(index < self->size) ? &self->data[index] : NULL;
@@ -105,15 +119,27 @@ NEVER_NULL(T) NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
 NEVER_NULL(T) NAME(SELF, push)(SELF* self, T value) {
     DEBUG_ASSERT(self);
     if (self->size == self->capacity) {
-        T* new_data = (T*)realloc(self->data, self->capacity * 2 * sizeof(T));
+        T* new_data;
+        size_t new_capacity;
+        if (self->data == NULL) {
+            // TODO(oliverkillane): Larger initial value?
+            DEBUG_ASSERT(self->capacity == 0);
+            new_capacity = 1;
+            new_data = (T*)malloc(sizeof(T));
+            ASSERT(new_data);
+        } else {
+            new_capacity = self->capacity * 2;
+            new_data = (T*)realloc(self->data, new_capacity * sizeof(T));
+        }
         if (new_data) {
-            self->capacity *= 2;
+            self->capacity = new_capacity;
             self->data = new_data;
         } else {
             PANIC;
         }
     }
     T* entry = &self->data[self->size];
+    *entry = value;
     self->size++;
     return entry;
 }
@@ -200,7 +226,7 @@ size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
 
 bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
-    return iter->pos < iter->vec->size;
+    return iter->pos >= iter->vec->size;
 }
 
 ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {

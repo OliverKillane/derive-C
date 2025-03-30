@@ -19,6 +19,9 @@
     if (!(expr))                                                                                   \
         PANIC;
 
+typedef struct {
+} gdb_marker;
+
 #ifdef NDEBUG
 #define DEBUG_ASSERT(expr) ASSERT(expr)
 #else
