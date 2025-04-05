@@ -78,7 +78,7 @@ typedef struct {
     I count;
 } SELF;
 
-SELF NAME(SELF, new_with_capacity)(I capacity) {
+static SELF NAME(SELF, new_with_capacity)(I capacity) {
     DEBUG_ASSERT(capacity > 0);
     SLOT* slots = (SLOT*)calloc(capacity, sizeof(SLOT));
     if (!slots)
@@ -92,7 +92,7 @@ SELF NAME(SELF, new_with_capacity)(I capacity) {
     };
 }
 
-I NAME(SELF, insert)(SELF* self, V value) {
+static I NAME(SELF, insert)(SELF* self, V value) {
     DEBUG_ASSERT(self);
     if (self->free_list != EMPTY_INDEX) {
         I reused_index = self->free_list;
@@ -121,7 +121,7 @@ I NAME(SELF, insert)(SELF* self, V value) {
     return new_index;
 }
 
-MAYBE_NULL(V) NAME(SELF, write)(SELF* self, I index) {
+static V* NAME(SELF, write)(SELF* self, I index) {
     CHECK_ACCESS_INDEX(self, index);
     SLOT* slot = &self->slots[index - INDEX_START];
     if (!slot->present) {
@@ -130,7 +130,7 @@ MAYBE_NULL(V) NAME(SELF, write)(SELF* self, I index) {
     return &slot->value;
 }
 
-NEVER_NULL(V) NAME(SELF, write_unchecked)(SELF* self, I index) {
+static V* NAME(SELF, write_unchecked)(SELF* self, I index) {
     DEBUG_ASSERT(self);
 #ifdef NDEBUG
     V* value = NAME(SELF, write)(self, index);
@@ -140,7 +140,7 @@ NEVER_NULL(V) NAME(SELF, write_unchecked)(SELF* self, I index) {
     return &self->slots[index - INDEX_START].value;
 }
 
-MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, I index) {
+static V const* NAME(SELF, read)(SELF const* self, I index) {
     CHECK_ACCESS_INDEX(self, index);
     SLOT* slot = &self->slots[index - INDEX_START];
     if (!slot->present) {
@@ -159,7 +159,7 @@ NEVER_NULL(V const) NAME(SELF, read_unchecked)(SELF const* self, I index) {
     return &self->slots[index - INDEX_START].value;
 }
 
-bool NAME(SELF, remove)(SELF* self, I index) {
+static bool NAME(SELF, remove)(SELF* self, I index) {
     CHECK_ACCESS_INDEX(self, index);
     SLOT* entry = &self->slots[index - INDEX_START];
     if (entry->present) {
@@ -186,7 +186,7 @@ typedef struct {
     size_t pos;
 } ITER;
 
-IV_PAIR NAME(ITER, next)(ITER* iter) {
+static IV_PAIR NAME(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->next_index >= iter->arena->first_uninit_entry) {
         return (IV_PAIR){.index = EMPTY_INDEX, .value = NULL};
@@ -202,19 +202,19 @@ IV_PAIR NAME(ITER, next)(ITER* iter) {
     }
 }
 
-size_t NAME(ITER, position)(ITER const* iter) {
+static size_t NAME(ITER, position)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
 
-bool NAME(ITER, empty)(ITER const* iter) {
+static bool NAME(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     // JUSTIFY: If no entries are left, then the previous '.._next' call moved
     //          the index to the first uninit entry.
     return iter->next_index >= iter->arena->first_uninit_entry;
 }
 
-ITER NAME(SELF, get_iter)(SELF* self) {
+static ITER NAME(SELF, get_iter)(SELF* self) {
     DEBUG_ASSERT(self);
 
     I index = INDEX_START;
@@ -243,7 +243,7 @@ typedef struct {
     size_t pos;
 } ITER_CONST;
 
-IV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
+static IV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->next_index >= iter->arena->first_uninit_entry) {
         return (IV_PAIR_CONST){.index = EMPTY_INDEX, .value = NULL};
@@ -259,19 +259,19 @@ IV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
     }
 }
 
-size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
+static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
 
-bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     // JUSTIFY: If no entries are left, then the previous '.._next' call moved
     //          the index to the first uninit entry.
     return iter->next_index >= iter->arena->first_uninit_entry;
 }
 
-ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     DEBUG_ASSERT(self);
 
     I index = INDEX_START;

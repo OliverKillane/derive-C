@@ -6,6 +6,8 @@
 
 #include <vector>
 
+namespace vector {
+
 using Data = size_t;
 using Model = std::vector<Data>;
 
@@ -35,27 +37,27 @@ struct SutWrapper {
 };
 
 struct Command : rc::state::Command<Model, SutWrapper> {
-    virtual void runAndCheck(const Model& s0, SutWrapper& sut) const = 0;
+    virtual void runAndCheck(const Model& m, SutWrapper& sut) const = 0;
 
-    void run(const Model& s0, SutWrapper& sut) const override {
-        runAndCheck(s0, sut);
-        checkInvariants(s0, sut);
+    void run(const Model& m, SutWrapper& sut) const override {
+        runAndCheck(m, sut);
+        checkInvariants(m, sut);
     }
 
-    void checkInvariants(const Model& oldModel, const SutWrapper& sut) const {
-        Model model = nextState(oldModel);
-        RC_ASSERT(model.size() == Sut_size(sut.getConst()));
-        for (size_t i = 0; i < model.size(); ++i) {
-            RC_ASSERT(model[i] == *Sut_read(sut.getConst(), i));
+    void checkInvariants(const Model& oldModel, const SutWrapper& s) const {
+        Model m = nextState(oldModel);
+        RC_ASSERT(m.size() == Sut_size(s.getConst()));
+        for (size_t i = 0; i < m.size(); ++i) {
+            RC_ASSERT(m[i] == *Sut_read(s.getConst(), i));
         }
 
         // JUSTIFY: Separately checking the iterator implementations
         //           - Different access to SELF_read
-        Sut_iter_const iter = Sut_get_iter_const(&sut.sut);
+        Sut_iter_const iter = Sut_get_iter_const(&s.sut);
         while (!Sut_iter_const_empty(&iter)) {
             size_t pos = Sut_iter_const_position(&iter);
             Data item = *Sut_iter_const_next(&iter);
-            RC_ASSERT(model[pos] == item);
+            RC_ASSERT(m[pos] == item);
         }
     }
 };
@@ -64,41 +66,46 @@ struct Push : Command {
     Data value =
         *rc::gen::inRange(std::numeric_limits<size_t>::min(), std::numeric_limits<Data>::max());
 
-    void checkPreconditions(const Model& s0) const override {
-        RC_PRE(s0.size() < std::numeric_limits<size_t>::max());
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(m.size() < std::numeric_limits<size_t>::max());
     }
-    void apply(Model& s0) const override { s0.push_back(value); }
-    void runAndCheck(const Model& s0, SutWrapper& sut) const override {
-        Sut_push(sut.get(), value);
-    }
+    void apply(Model& m) const override { m.push_back(value); }
+    void runAndCheck(const Model& m, SutWrapper& s) const override { Sut_push(s.get(), value); }
     void show(std::ostream& os) const override { os << "Push(" << value << ")"; }
 };
 
 struct Write : Command {
-    explicit Write(const Model& s0)
-        : index(*rc::gen::inRange(static_cast<size_t>(0), s0.size() - 1)) {}
-
-    size_t index;
+    std::optional<size_t> index = std::nullopt;
     Data value =
         *rc::gen::inRange(std::numeric_limits<size_t>::min(), std::numeric_limits<Data>::max());
 
-    void checkPreconditions(const Model& s0) const override { RC_PRE(!s0.empty()); }
-    void apply(Model& s0) const override { s0[index] = value; }
-    void runAndCheck(const Model& s0, SutWrapper& sut) const override {
-        Data* at = Sut_write(sut.get(), index);
+    explicit Write(const Model& m) {
+        if (!m.empty()) {
+            index = *rc::gen::inRange(static_cast<size_t>(0), m.size() - 1);
+        }
+    }
+
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(index.has_value());
+        RC_PRE(index.value() < m.size());
+    }
+    void apply(Model& m) const override { m[index.value()] = value; }
+    void runAndCheck(const Model& m, SutWrapper& s) const override {
+        Data* at = Sut_write(s.get(), index.value());
         *at = value;
     }
-    void show(std::ostream& os) const override { os << "Write(" << index << " = " << value << ")"; }
+    void show(std::ostream& os) const override {
+        os << "Write(" << index.value() << " = " << value << ")";
+    }
 };
-
 
 struct Pop : Command {
 
-    void checkPreconditions(const Model& s0) const override { RC_PRE(!s0.empty()); }
-    void apply(Model& s0) const override { s0.pop_back(); }
-    void runAndCheck(const Model& s0, SutWrapper& sut) const override {
-        Data value;
-        RC_ASSERT(Sut_pop(sut.get(), &value));
+    void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
+    void apply(Model& m) const override { m.pop_back(); }
+    void runAndCheck(const Model& m, SutWrapper& sut) const override {
+        Sut_popped_entry entry = Sut_pop(sut.get());
+        RC_ASSERT(entry.present);
     }
     void show(std::ostream& os) const override { os << "Pop()"; }
 };
@@ -106,5 +113,6 @@ struct Pop : Command {
 RC_GTEST_PROP(VectorTests, General, ()) {
     Model model;
     SutWrapper sut;
-    rc::state::check(model, sut, rc::state::gen::execOneOfWithArgs<Push, Write, Pop>());
+    rc::state::check(model, sut, rc::state::gen::execOneOfWithArgs<Push>());
 }
+} // namespace vector

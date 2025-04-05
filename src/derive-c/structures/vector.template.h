@@ -34,15 +34,16 @@ typedef struct {
     gdb_marker derive_c_vector;
 } SELF;
 
-SELF NAME(SELF, new)() {
-    return (SELF){
+static SELF NAME(SELF, new)() {
+    SELF temp = (SELF){
         .size = 0,
         .capacity = 0,
         .data = NULL,
     };
+    return temp;
 }
 
-SELF NAME(SELF, new_with_capacity)(size_t capacity) {
+static SELF NAME(SELF, new_with_capacity)(size_t capacity) {
     DEBUG_ASSERT(capacity > 0);
     T* data = (T*)malloc(capacity * sizeof(T));
     if (LIKELY(data)) {
@@ -56,7 +57,7 @@ SELF NAME(SELF, new_with_capacity)(size_t capacity) {
     }
 }
 
-SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
+static SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
     T* data = (T*)malloc(size * sizeof(T));
     for (size_t i = 0; i < size; i++) {
         data[i] = default_value;
@@ -72,7 +73,7 @@ SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
     }
 }
 
-SELF NAME(SELF, clone)(SELF const* self) {
+static SELF NAME(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
     T* data = (T*)malloc(self->capacity * sizeof(T));
     ASSERT(data);
@@ -84,17 +85,17 @@ SELF NAME(SELF, clone)(SELF const* self) {
     };
 }
 
-MAYBE_NULL(T const) NAME(SELF, read)(SELF const* self, size_t index) {
+static T const* NAME(SELF, read)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
     return LIKELY(index < self->size) ? &self->data[index] : NULL;
 }
 
-MAYBE_NULL(T) NAME(SELF, write)(SELF* self, size_t index) {
+static T* NAME(SELF, write)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
     return LIKELY(index < self->size) ? &self->data[index] : NULL;
 }
 
-NEVER_NULL(T const) NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index) {
+static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
 #ifdef NDEBUG
     T* value = NAME(SELF, read)(self, index);
@@ -105,7 +106,7 @@ NEVER_NULL(T const) NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t i
 #endif
 }
 
-NEVER_NULL(T) NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
+static T* NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
 #ifdef NDEBUG
     T* value = NAME(SELF, write)(self, index);
@@ -116,18 +117,24 @@ NEVER_NULL(T) NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
 #endif
 }
 
-NEVER_NULL(T) NAME(SELF, push)(SELF* self, T value) {
+static T* NAME(SELF, push)(SELF* self, T value) {
     DEBUG_ASSERT(self);
     if (self->size == self->capacity) {
         T* new_data;
         size_t new_capacity;
         if (self->data == NULL) {
-            // TODO(oliverkillane): Larger initial value?
             DEBUG_ASSERT(self->capacity == 0);
-            new_capacity = 1;
-            new_data = (T*)malloc(sizeof(T));
+            // JUSTIFY: Allocating capacity of 4
+            //           - Avoid repeat reallocations on growing a vector from
+            //             size sero (from new)
+            //           Otherwise an arbitrary choice (given we do not know the size of T)
+            new_capacity = 8;
+            new_data = (T*)malloc(new_capacity * sizeof(T));
             ASSERT(new_data);
         } else {
+            // JUSTIFY: Growth factor of 2
+            //           - Simple arithmetic (for debugging)
+            //           - Same as used by GCC's std::vector implementation
             new_capacity = self->capacity * 2;
             new_data = (T*)realloc(self->data, new_capacity * sizeof(T));
         }
@@ -144,23 +151,33 @@ NEVER_NULL(T) NAME(SELF, push)(SELF* self, T value) {
     return entry;
 }
 
-bool NAME(SELF, pop)(SELF* self, OUT(T*) result) {
+#define POPPED_ENTRY NAME(SELF, popped_entry)
+
+typedef struct {
+    union {
+        T value;
+    };
+    bool present;
+} POPPED_ENTRY;
+
+static POPPED_ENTRY NAME(SELF, pop)(SELF* self) {
     DEBUG_ASSERT(self);
     if (LIKELY(self->size > 0)) {
         self->size--;
-        *result = self->data[self->size];
-        return true;
+        return (POPPED_ENTRY){.value = self->data[self->size], .present = true};
     } else {
-        return false;
+        return (POPPED_ENTRY){.present = false};
     }
 }
 
-size_t NAME(SELF, size)(SELF const* self) {
+#undef POPPED_ENTRY
+
+static size_t NAME(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);
     return self->size;
 }
 
-void NAME(SELF, delete)(SELF* self) {
+static void NAME(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     free(self->data);
 }
@@ -172,7 +189,7 @@ typedef struct {
     size_t pos;
 } ITER;
 
-MAYBE_NULL(T) NAME(ITER, next)(ITER* iter) {
+static T* NAME(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->pos < iter->vec->size) {
         T* item = &iter->vec->data[iter->pos];
@@ -183,17 +200,17 @@ MAYBE_NULL(T) NAME(ITER, next)(ITER* iter) {
     }
 }
 
-size_t NAME(ITER, position)(ITER const* iter) {
+static size_t NAME(ITER, position)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
 
-bool NAME(ITER, empty)(ITER const* iter) {
+static bool NAME(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos < iter->vec->size;
 }
 
-ITER NAME(SELF, get_iter)(SELF* self) {
+static ITER NAME(SELF, get_iter)(SELF* self) {
     DEBUG_ASSERT(self);
     return (ITER){
         .vec = self,
@@ -208,7 +225,7 @@ typedef struct {
     size_t pos;
 } ITER_CONST;
 
-MAYBE_NULL(T const) NAME(ITER_CONST, next)(ITER_CONST* iter) {
+static T const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->pos < iter->vec->size) {
         T const* item = &iter->vec->data[iter->pos];
@@ -219,17 +236,17 @@ MAYBE_NULL(T const) NAME(ITER_CONST, next)(ITER_CONST* iter) {
     }
 }
 
-size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
+static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
 
-bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos >= iter->vec->size;
 }
 
-ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     DEBUG_ASSERT(self);
     return (ITER_CONST){
         .vec = self,

@@ -48,7 +48,7 @@ inline bool placeholder_eq(placeholder_key const* key_1, placeholder_key const* 
 
 #ifndef HASHMAP_INTERNAL
 #define HASHMAP_INTERNAL
-inline size_t next_power_of_2(size_t x) {
+static inline size_t next_power_of_2(size_t x) {
     if (x == 0)
         return 1;
     x--;
@@ -63,14 +63,14 @@ inline size_t next_power_of_2(size_t x) {
     return x + 1;
 }
 
-inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
+static inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
 
-inline size_t apply_capacity_policy(size_t capacity) {
+static inline size_t apply_capacity_policy(size_t capacity) {
     // TODO(oliverkillane): play with overallocation policy
     return next_power_of_2(capacity + capacity / 2);
 }
 
-inline size_t modulus_capacity(size_t index, size_t capacity) {
+static inline size_t modulus_capacity(size_t index, size_t capacity) {
     DEBUG_ASSERT(is_power_of_2(capacity))
     // NOTE: If we know capacity is a power of 2, we can reduce the cost of 'index + 1 % capacity'
     return index & (capacity - 1);
@@ -97,7 +97,7 @@ typedef struct {
     gdb_marker derive_c_hashmap;
 } SELF;
 
-SELF NAME(SELF, new_with_capacity_for)(size_t capacity) {
+static SELF NAME(SELF, new_with_capacity_for)(size_t capacity) {
     ASSERT(capacity > 0);
     size_t real_capacity = apply_capacity_policy(capacity);
     ASSERT(real_capacity > 0);
@@ -116,9 +116,9 @@ SELF NAME(SELF, new_with_capacity_for)(size_t capacity) {
     };
 }
 
-SELF NAME(SELF, new)() { return NAME(SELF, new_with_capacity_for)(INITIAL_CAPACITY); }
+static SELF NAME(SELF, new)() { return NAME(SELF, new_with_capacity_for)(INITIAL_CAPACITY); }
 
-SELF NAME(SELF, clone)(SELF const* self) {
+static SELF NAME(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
 
     // JUSTIFY: Naive copy
@@ -142,15 +142,15 @@ SELF NAME(SELF, clone)(SELF const* self) {
     return (SELF){.capacity = self->capacity, .items = self->items, .keys = keys, .values = values};
 }
 
-void NAME(SELF, delete)(SELF* self) {
+static void NAME(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     free(self->keys);
     free(self->values);
 }
 
-MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value);
+static V* NAME(SELF, insert)(SELF* self, K key, V value);
 
-SELF NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+static SELF NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     DEBUG_ASSERT(self);
     size_t target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
@@ -168,7 +168,7 @@ SELF NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     return *self;
 }
 
-MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value) {
+static V* NAME(SELF, insert)(SELF* self, K key, V value) {
     DEBUG_ASSERT(self);
     if (apply_capacity_policy(self->items) > self->capacity / 2) {
         *self = NAME(SELF, extend_capacity_for)(self, self->items * 2);
@@ -221,7 +221,7 @@ MAYBE_NULL(V) NAME(SELF, insert)(SELF* self, K key, V value) {
     }
 }
 
-MAYBE_NULL(V) NAME(SELF, write)(SELF* self, K key) {
+static V* NAME(SELF, write)(SELF* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = modulus_capacity(hash, self->capacity);
@@ -240,7 +240,7 @@ MAYBE_NULL(V) NAME(SELF, write)(SELF* self, K key) {
     }
 }
 
-MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, K key) {
+static V const* NAME(SELF, read)(SELF const* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = modulus_capacity(hash, self->capacity);
@@ -259,7 +259,16 @@ MAYBE_NULL(V const) NAME(SELF, read)(SELF const* self, K key) {
     }
 }
 
-MAYBE_NULL(V) NAME(SELF, remove)(SELF* self, K key) {
+#define REMOVED_ENTRY NAME(SELF, removed_entry)
+
+typedef struct {
+    union {
+        V value;
+    };
+    bool present;
+} REMOVED_ENTRY;
+
+static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = modulus_capacity(hash, self->capacity);
@@ -268,19 +277,58 @@ MAYBE_NULL(V) NAME(SELF, remove)(SELF* self, K key) {
         KEY_ENTRY* entry = &self->keys[index];
         if (entry->present) {
             if (EQ(&entry->key, &key)) {
-                entry->present = false;
                 self->items--;
-                return &self->values[index];
+
+                REMOVED_ENTRY ret_val = {
+                    .value = self->values[index],
+                    .present = true,
+                };
+
+                // NOTE: For robin hood hashing, we need probe chains to be unbroken
+                //        - Need to find the entries that might use this chain (
+                //          distance_to_desired > 0 until the next not-present or
+                //          distance_to_desired=0 slot)
+                //        hence we shift entries the left (being careful with modulus index)
+
+                size_t free_index = index;
+                KEY_ENTRY* free_entry = entry;
+
+                size_t check_index = modulus_capacity(free_index + 1, self->capacity);
+                KEY_ENTRY* check_entry = &self->keys[check_index];
+
+                while (check_entry->present && check_entry->distance_from_desired > 0) {
+                    free_entry->key = check_entry->key;
+                    free_entry->distance_from_desired = check_entry->distance_from_desired - 1;
+                    self->values[free_index] = self->values[check_index];
+
+                    free_index = check_index;
+                    free_entry = check_entry;
+
+                    check_index = modulus_capacity(free_index + 1, self->capacity);
+                    check_entry = &self->keys[check_index];
+                }
+
+                // JUSTIFY: Only setting free entry to false
+                //           - We remove, then shift down an index
+                //           - The removed entry already has the flag set
+                //           - the free entry was the last one removed/moved down an index, so it
+                //             should be false.
+
+                free_entry->present = false;
+
+                return ret_val;
             } else {
                 index = modulus_capacity(index + 1, self->capacity);
             }
         } else {
-            return NULL;
+            return (REMOVED_ENTRY){.present = false};
         }
     }
 }
 
-size_t NAME(SELF, size)(SELF const* self) {
+#undef REMOVED_ENTRY
+
+static size_t NAME(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);
     return self->items;
 }
@@ -300,7 +348,7 @@ typedef struct {
     size_t pos;
 } ITER;
 
-KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
+static KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         KV_PAIR ret_val = {.key = &iter->map->keys[iter->index].key,
@@ -317,17 +365,17 @@ KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
     }
 }
 
-size_t NAME(ITER_CONST, position)(ITER const* iter) {
+static size_t NAME(ITER_CONST, position)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
 
-bool NAME(ITER_CONST, empty)(ITER const* iter) {
+static bool NAME(ITER_CONST, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->index >= iter->map->capacity;
 }
 
-ITER NAME(SELF, get_iter)(SELF* self) {
+static ITER NAME(SELF, get_iter)(SELF* self) {
     DEBUG_ASSERT(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
@@ -355,7 +403,7 @@ typedef struct {
     size_t pos;
 } ITER_CONST;
 
-KV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
+static KV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         KV_PAIR_CONST ret_val = {.key = &iter->map->keys[iter->index].key,
@@ -372,17 +420,17 @@ KV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
     }
 }
 
-size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
+static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
 
-bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->index >= iter->map->capacity;
 }
 
-ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     DEBUG_ASSERT(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {

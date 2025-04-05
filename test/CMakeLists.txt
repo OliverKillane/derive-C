@@ -16,13 +16,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(rapidcheck)
 
 include(GoogleTest)
-enable_testing()
 
 file(GLOB TEST_SOURCES *.cpp)
+add_executable(derivec_tests ${TEST_SOURCES})
+target_link_libraries(derivec_tests
+    PRIVATE
+        derivec
+        gtest
+        gtest_main
+        rapidcheck
+        rapidcheck_gtest
+)
 
-foreach(TEST_FILE ${TEST_SOURCES})
-    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
-    add_executable(${TEST_NAME} ${TEST_FILE})
-    target_link_libraries(${TEST_NAME} PRIVATE derivec gtest gtest_main rapidcheck rapidcheck_gtest)
-    gtest_discover_tests(${TEST_NAME})
-endforeach()
+gtest_discover_tests(derivec_tests
+    DISCOVERY_TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
