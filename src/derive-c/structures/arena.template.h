@@ -1,3 +1,8 @@
+// ## Arena
+// A simple vector based arena, supporting small integer indicies.
+//  - No checks for ABA problem
+//  - Reuses slots that are removed
+
 #include <derive-c/core.h>
 
 #include <stdbool.h>

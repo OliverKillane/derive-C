@@ -1,3 +1,6 @@
+// ## Vector
+// A simple vector, growing by *2 on reallocation.
+
 #include <derive-c/core.h>
 
 #include <stdbool.h>

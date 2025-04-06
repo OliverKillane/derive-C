@@ -1,3 +1,6 @@
+// ## Option
+// A very simple `Option<T>` template.
+ 
 #include <derive-c/core.h>
 
 #include <stdbool.h>

@@ -1,3 +1,6 @@
+// ## HashMap
+// A simple hashtable using robin-hood hashing, and keeping keys and values in separate arrays. 
+
 #include <derive-c/core.h>
 
 #include <stdbool.h>

@@ -18,7 +18,7 @@ export CXX=clang++
 cmake -S . -B build -GNinja -DDEBUG=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 
 ninja -C build
 ninja -C build format
-ctest --test-dir build/test
+ctest --test-dir build
 ```
 
 For using `infer`, infer must be installed separately (it is not yet packaged with nix - [see here](https://github.com/NixOS/nixpkgs/issues/148048))
@@ -27,7 +27,7 @@ For using `infer`, infer must be installed separately (it is not yet packaged wi
 cmake -S . -B build -DEXTERNALS=Off -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 infer run --compilation-database build/compile_commands.json
 ```
- - [ ] Need to work out a current error with hashmap items (looks like noise, but not 100% certain).
+ - Currently detects some issues in dependencies (rapidcheck)
 
 ## Use
 In a `CMakeLists.txt`
@@ -44,13 +44,15 @@ FetchContent_MakeAvailable(derive-c)
 
 ## Features
 ### Structures
-- [x] vector
-- [x] hashmap (untested)
+Generic data structures, built with includes & template files.
+
+### gdb 
+Prety printers for data structures.
+ - [ ] [TODO] Add arena & option printers
 
 ### Derive Macros
 Using a similar pattern to [xmacros](https://en.wikipedia.org/wiki/X_macro) we can derive equality, and structs (debug is more complex so not done yet).
 
 ## TODO
- - Add more tests
  - Add regression benchmarks
  - CBMC verification for basic insert/amend/delete flow on hashmap.
