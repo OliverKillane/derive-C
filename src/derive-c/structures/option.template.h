@@ -1,6 +1,7 @@
 #include <derive-c/core.h>
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifndef PANIC
 #error "PANIC must be defined (used for unrecoverable failures)"

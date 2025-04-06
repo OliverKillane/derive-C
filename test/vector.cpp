@@ -1,9 +1,10 @@
 #include <gtest/gtest.h>
-#include <limits>
+
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>
 
+#include <limits>
 #include <vector>
 
 namespace vector {

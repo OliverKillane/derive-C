@@ -1,4 +1,4 @@
-file(GLOB EXAMPLES *.c)
+file(GLOB EXAMPLES CONFIGURE_DEPENDS *.c)
 
 foreach(EXAMPLE_FILE ${EXAMPLES})
     get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE} NAME_WE)

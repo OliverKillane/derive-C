@@ -17,7 +17,7 @@ FetchContent_MakeAvailable(rapidcheck)
 
 include(GoogleTest)
 
-file(GLOB TEST_SOURCES *.cpp)
+file(GLOB TEST_SOURCES CONFIGURE_DEPENDS *.cpp *.hpp)
 add_executable(derivec_tests ${TEST_SOURCES})
 target_link_libraries(derivec_tests
     PRIVATE

@@ -48,20 +48,6 @@ inline bool placeholder_eq(placeholder_key const* key_1, placeholder_key const* 
 
 #ifndef HASHMAP_INTERNAL
 #define HASHMAP_INTERNAL
-static inline size_t next_power_of_2(size_t x) {
-    if (x == 0)
-        return 1;
-    x--;
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-#if SIZE_MAX > 0xFFFFFFFF
-    x |= x >> 32; // For 64-bit platforms
-#endif
-    return x + 1;
-}
 
 static inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
 
@@ -388,6 +374,9 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
     };
 }
 
+#undef ITER
+#undef KV_PAIR
+
 #define KV_PAIR_CONST NAME(SELF, kv_const)
 
 typedef struct {
@@ -443,11 +432,12 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
+#undef ITER_CONST
+#undef KV_PAIR_CONST
+
 #undef K
 #undef V
 #undef HASH
 #undef EQ
 #undef SELF
 #undef KEY_ENTRY
-#undef ITER
-#undef ITER_CONST
