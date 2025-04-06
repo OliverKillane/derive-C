@@ -7,14 +7,28 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+set(RC_ENABLE_GTEST ON CACHE BOOL "Rapidcheck GTest Support" FORCE)
+FetchContent_Declare(
+    rapidcheck
+    GIT_REPOSITORY https://github.com/emil-e/rapidcheck.git
+    GIT_TAG ff6af6fc683159deb51c543b065eba14dfcf329b # Latest as of 3/30/2025
+)
+FetchContent_MakeAvailable(rapidcheck)
+
 include(GoogleTest)
-enable_testing()
 
-file(GLOB TEST_SOURCES *.cpp)
+file(GLOB TEST_SOURCES CONFIGURE_DEPENDS *.cpp *.hpp)
+add_executable(derivec_tests ${TEST_SOURCES})
+target_link_libraries(derivec_tests
+    PRIVATE
+        derivec
+        gtest
+        gtest_main
+        rapidcheck
+        rapidcheck_gtest
+)
 
-foreach(TEST_FILE ${TEST_SOURCES})
-    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
-    add_executable(${TEST_NAME} ${TEST_FILE})
-    target_link_libraries(${TEST_NAME} PRIVATE derivec gtest gtest_main)
-    gtest_discover_tests(${TEST_NAME})
-endforeach()
+gtest_discover_tests(derivec_tests
+    DISCOVERY_TIMEOUT 30
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)

@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.30)
 project(derivec_project C CXX)
 
+# NOTE: Want latest cpp for easy testing, but C99 for use in C99 codebases
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_C_STANDARD 99)
+
 option(DEBUG "Enable basic debug build" OFF)
 option(EXTERNALS "Include targets using externals" ON)
 
 if (DEBUG)
-    # note: not compatible with msan and tsan, but can be easily set by passing CMAKe_C/CXX_FLAGS
+    # NOTE: not compatible with msan and tsan, but can be easily set by passing CMAKe_C/CXX_FLAGS
     message(STATUS "Sanitizers enabled: ASAN & UBSAN")
     set(SANITIZER_FLAGS "-fsanitize=address,undefined")
 
@@ -18,6 +22,7 @@ if (DEBUG)
     add_link_options(${SANITIZER_FLAGS})
 endif()
 
+enable_testing()
 
 add_subdirectory(src)
 add_subdirectory(examples)

@@ -1,3 +1,6 @@
+#pragma once
+#include <stdlib.h>
+
 #ifndef CORE
 #define CORE
 
@@ -19,9 +22,27 @@
     if (!(expr))                                                                                   \
         PANIC;
 
+typedef struct {
+} gdb_marker;
+
 #ifdef NDEBUG
 #define DEBUG_ASSERT(expr) ASSERT(expr)
 #else
 #define DEBUG_ASSERT(expr)
 #endif
 #endif
+
+static inline size_t next_power_of_2(size_t x) {
+    if (x == 0)
+        return 1;
+    x--;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+#if SIZE_MAX > 0xFFFFFFFF
+    x |= x >> 32; // For 64-bit platforms
+#endif
+    return x + 1;
+}

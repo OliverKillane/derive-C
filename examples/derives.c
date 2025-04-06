@@ -19,7 +19,6 @@ DERIVE_ORD(Foo)
 
 int main() {
     Foo f = {.bing = 23, .baz = 'c', .zing = 3.14};
-
     Foo g = {.bing = 23, .baz = 'c', .zing = 3.14};
 
     ASSERT(Foo_eq(&f, &g));
