@@ -334,7 +334,7 @@ typedef struct {
     size_t pos;
 } ITER;
 
-static KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
+static KV_PAIR NAME(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         KV_PAIR ret_val = {.key = &iter->map->keys[iter->index].key,
@@ -351,12 +351,12 @@ static KV_PAIR NAME(ITER_CONST, next)(ITER* iter) {
     }
 }
 
-static size_t NAME(ITER_CONST, position)(ITER const* iter) {
+static size_t NAME(ITER, position)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
 
-static bool NAME(ITER_CONST, empty)(ITER const* iter) {
+static bool NAME(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->index >= iter->map->capacity;
 }

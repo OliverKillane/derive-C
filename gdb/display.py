@@ -12,8 +12,6 @@ class VectorPrinter:
         self.size = self.val['size']
 
     def to_string(self):
-        
-        
         return f"Vector {{ capacity = {self.val['capacity']}, size = {self.val['size']} }}"
 
     def display_hint(self):
