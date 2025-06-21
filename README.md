@@ -56,3 +56,4 @@ Using a similar pattern to [xmacros](https://en.wikipedia.org/wiki/X_macro) we c
 ## TODO
  - Add regression benchmarks
  - CBMC verification for basic insert/amend/delete flow on hashmap.
+ - Use asan intrinsics to mark deleted entries as poisoned in hashmap, arena

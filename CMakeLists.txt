@@ -30,6 +30,7 @@ add_subdirectory(examples)
 if (EXTERNALS)
     add_subdirectory(test)
     add_subdirectory(bench)
+    add_subdirectory(docs)
 endif()
 
 # TODO: Also format CMakeLists.txt files

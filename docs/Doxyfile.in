@@ -1,0 +1,40 @@
+# Project info
+PROJECT_NAME           = "My Project"
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# Source input
+INPUT                  = @DOXYGEN_INPUT_FILES@
+FILE_PATTERNS          = *.c *.h *.cpp *.hpp *.md
+RECURSIVE              = YES
+
+# Documentation features
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_LOCAL_CLASSES  = YES
+
+# Show code
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = YES
+STRIP_CODE_COMMENTS    = YES
+INTERNAL_DOCS          = NO
+
+# Markdown
+MARKDOWN_SUPPORT       = YES
+USE_MDFILE_AS_MAINPAGE = @CMAKE_SOURCE_DIR@/README.md
+
+# Diagrams (optional)
+HAVE_DOT               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_NUM_THREADS        = 2
+
+# Theme tweaks
+GENERATE_TREEVIEW      = NO
+DISABLE_INDEX          = NO
+
+HTML_EXTRA_STYLESHEET  = @DOXYGEN_AWESOME_CSS@
+HTML_EXTRA_FILES       = @DOXYGEN_AWESOME_JS@
+HTML_EXTRA_STYLESHEET += @DOXYGEN_AWESOME_COPY_CSS@
