@@ -1,7 +1,7 @@
-// ## Arena
-// A simple vector based arena, supporting small integer indicies.
-//  - No checks for ABA problem
-//  - Reuses slots that are removed
+/**
+ * @file
+ * @brief A vector-backed arena, with support for small indices. 
+ */
 
 #include <derive-c/core.h>
 
@@ -92,6 +92,7 @@ typedef struct {
     bool present;
 } SLOT;
 
+/// @brief A vector-backed arena, with support for small indices.
 typedef struct {
     SLOT* slots;
     size_t capacity;

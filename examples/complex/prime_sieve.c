@@ -56,26 +56,8 @@ void compute(sieve_vec* sieve) {
     }
 }
 
-size_t cli(int argc, char* argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <unsigned integer>\n", argv[0]);
-    } else if (argc > 2) {
-        fprintf(stderr, "Error: Too many arguments\n");
-    } else {
-        char* endptr;
-        errno = 0;
-        size_t value = strtoul(argv[1], &endptr, 10);
-        if (errno || *endptr != '\0') {
-            fprintf(stderr, "Error: Invalid unsigned integer input '%s'\n", argv[1]);
-        } else {
-            return value;
-        }
-    }
-    exit(1);
-}
-
-int main(int argc, char* argv[]) {
-    size_t up_to = cli(argc, argv);
+int main() {
+    size_t up_to = 23;
     printf("Listing primes up to: %zu\n", up_to);
 
     sieve_vec values = sieve_vec_new_with_defaults(up_to, false);
