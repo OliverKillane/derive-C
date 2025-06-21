@@ -14,12 +14,12 @@
 void ints_example() {
     vec_ints ints = vec_ints_new_with_capacity(10);
     const int32_t upto = 100;
-    
+
     for (int32_t i = 0; i < upto; i++) {
         vec_ints_push(&ints, i);
     }
     assert(vec_ints_size(&ints) == upto);
-    
+
     for (int32_t i = 0; i < upto; i++) {
         int* value = vec_ints_write(&ints, i);
         *value += 1; // Increment each value by 1
@@ -49,9 +49,7 @@ struct complex {
     size_t score;
 };
 
-void complex_delete(struct complex* self) {
-    free(self->description);
-}
+void complex_delete(struct complex* self) { free(self->description); }
 
 #define T struct complex
 #define T_DELETE complex_delete
@@ -62,13 +60,10 @@ void complex_example() {
     vec_complex vec = vec_complex_new_with_capacity(5);
     size_t entries = 5;
     for (size_t i = 0; i < entries; i++) {
-        struct complex item = {
-            .description = strdup("Complex item"),
-            .score = i * 10
-        };
+        struct complex item = {.description = strdup("Complex item"), .score = i * 10};
         vec_complex_push(&vec, item);
     }
-    
+
     assert(vec_complex_size(&vec) == entries);
 
     struct complex* first_item = vec_complex_write(&vec, 0);
@@ -79,7 +74,7 @@ void complex_example() {
     vec_complex_popped_entry popped = vec_complex_pop(&vec);
     assert(popped.present);
     assert(popped.value.score == 40); // Last item's score should be 40
-    
+
     vec_complex_delete(&vec);
 
     complex_delete(&popped.value);
@@ -113,7 +108,7 @@ void iterate_example() {
     {
         // Iterate over the vector and print the items
         char_vec_iter_const iter = char_vec_get_iter_const(&vec);
-        char const * item = NULL;
+        char const* item = NULL;
         while (item = char_vec_iter_const_next(&iter), item != NULL) {
             printf("%c", *item);
         }
@@ -122,9 +117,7 @@ void iterate_example() {
 
     {
         char_vec_iter_const iter = char_vec_get_iter_const(&vec);
-        ITER_LOOP(char_vec_iter_const, iter, char const *, foo) {
-            printf("%c", *foo);
-        }
+        ITER_LOOP(char_vec_iter_const, iter, char const*, foo) { printf("%c", *foo); }
         printf("\n");
     }
 

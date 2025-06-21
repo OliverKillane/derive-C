@@ -98,7 +98,7 @@ static T const* NAME(SELF, read)(SELF const* self, size_t index) {
 
 static T* NAME(SELF, try_write)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
-    if (LIKELY(index < self->size))  {
+    if (LIKELY(index < self->size)) {
         return &self->data[index];
     } else {
         return NULL;
@@ -115,7 +115,7 @@ static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index
 }
 
 static T* NAME(SELF, write)(SELF* self, size_t index) {
-    T * value = NAME(SELF, try_write)(self, index);
+    T* value = NAME(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
 }

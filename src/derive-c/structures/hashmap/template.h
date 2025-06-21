@@ -5,10 +5,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <derive-c/structures/hashmap/utils.h>
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
+#include <derive-c/structures/hashmap/utils.h>
 
 /// @defgroup template parameters
 /// @{
@@ -41,7 +41,8 @@ static size_t derive_c_placeholder_hash(derive_c_placeholder_key const* key);
 
 #ifndef EQ
 #error "The equality function for K must be defined"
-static bool derive_c_placeholder_eq(derive_c_placeholder_key const* key_1, derive_c_placeholder_key const* key_2);
+static bool derive_c_placeholder_eq(derive_c_placeholder_key const* key_1,
+                                    derive_c_placeholder_key const* key_2);
 #define EQ derive_c_placeholder_eq
 #endif
 
@@ -54,7 +55,6 @@ static bool derive_c_placeholder_eq(derive_c_placeholder_key const* key_1, deriv
 #endif
 
 /// @}
-
 
 #define KEY_ENTRY NAME(SELF, key_entry)
 typedef struct {

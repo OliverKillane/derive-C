@@ -1,4 +1,4 @@
-/// @brief A simple optional type, using the (already) optional pointer type 
+/// @brief A simple optional type, using the (already) optional pointer type
 // for access
 
 #include <stdbool.h>
@@ -7,7 +7,6 @@
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
-
 
 /// @defgroup template parameters
 /// @{
@@ -51,13 +50,13 @@ static T* NAME(SELF, get)(SELF* self) {
 
 static T const* NAME(SELF, get_present_unsafe_unchecked)(SELF* self) {
     DEBUG_ASSERT(self);
-    #ifdef NDEBUG
-        T* value = NAME(SELF, get)(self);
-        ASSERT(value);
-        return value;
-    #else
-        return &self->value;
-    #endif
+#ifdef NDEBUG
+    T* value = NAME(SELF, get)(self);
+    ASSERT(value);
+    return value;
+#else
+    return &self->value;
+#endif
 }
 
 static T const* NAME(SELF, get_const)(SELF const* self) {
@@ -71,13 +70,13 @@ static T const* NAME(SELF, get_const)(SELF const* self) {
 
 static T const* NAME(SELF, get_const_present_unsafe_unchecked)(SELF const* self) {
     DEBUG_ASSERT(self);
-    #ifdef NDEBUG
-        T const* value = NAME(SELF, get_const)(self);
-        ASSERT(value);
-        return value;
-    #else
-        return &self->value;
-    #endif
+#ifdef NDEBUG
+    T const* value = NAME(SELF, get_const)(self);
+    ASSERT(value);
+    return value;
+#else
+    return &self->value;
+#endif
 }
 
 static bool NAME(SELF, is_present)(SELF const* self) {
@@ -103,7 +102,7 @@ static bool NAME(SELF, replace)(SELF* self, T value) {
     }
     self->value = value;
     self->present = true;
-    return was_present;    
+    return was_present;
 }
 
 #undef SELF

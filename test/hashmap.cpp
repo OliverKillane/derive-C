@@ -15,12 +15,12 @@ using Model = std::unordered_map<Key, Value>;
 
 extern "C" {
 bool key_equality(Key const* key_1, Key const* key_2) { return *key_1 == *key_2; }
-Key key_hash(Key const* key) { 
+Key key_hash(Key const* key) {
     // Bad hash exposes more collisions in the map
     if (*key % 2 == 0) {
         return 1000 + (*key % 1000);
     } else {
-        return 0; 
+        return 0;
     }
 }
 

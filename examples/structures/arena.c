@@ -1,6 +1,6 @@
-#include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <derive-c/macros/iterators.h>
 
@@ -38,9 +38,8 @@ void int_example() {
 
 /// @}
 
-
 /// @defgroup foo arena
-/// @brief An arena containing data with a delete method, showing removal from the arena 
+/// @brief An arena containing data with a delete method, showing removal from the arena
 //  (without destroying/move), and the arena freeing remaining data on it's delete.
 /// @{
 struct foo {
@@ -49,9 +48,7 @@ struct foo {
     int* owned_data;
 };
 
-void my_foo_delete(struct foo* self) {
-    free(self->owned_data);
-}
+void my_foo_delete(struct foo* self) { free(self->owned_data); }
 
 #define INDEX_BITS 8
 #define V struct foo
@@ -62,22 +59,10 @@ void my_foo_delete(struct foo* self) {
 void foo_example() {
     foo_arena arena = foo_arena_new_with_capacity_for(12);
     foo_arena_index index_a = foo_arena_insert(
-        &arena, 
-        (struct foo){
-                .x = 42, 
-                .y = "A", 
-                .owned_data = (int*)malloc(sizeof(int))
-            }
-        );
+        &arena, (struct foo){.x = 42, .y = "A", .owned_data = (int*)malloc(sizeof(int))});
     foo_arena_index index_b = foo_arena_insert(
-        &arena, 
-        (struct foo){
-                .x = 41, 
-                .y = "B", 
-                .owned_data = (int*)malloc(sizeof(int))
-            }
-        );
-    
+        &arena, (struct foo){.x = 41, .y = "B", .owned_data = (int*)malloc(sizeof(int))});
+
     assert(foo_arena_size(&arena) == 2);
     assert(foo_arena_full(&arena) == false);
     assert(foo_arena_read(&arena, index_a)->x == 42);

@@ -1,15 +1,14 @@
+#include <assert.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
-#include <derive-c/macros/iterators.h>
 #include <derive-c/derives/std.h>
+#include <derive-c/macros/iterators.h>
 #include <derive-c/structures/hashmap/hashers.h>
-
 
 /// @defgroup a map of integers to constant strings
 /// @brief Using a simple hash, storing values that do not need to be destroyed.
@@ -52,7 +51,6 @@ void id_to_name_example() {
 
 /// @}
 
-
 /// @defgroup a map of strings to a struct that requires destruction
 /// @brief Properly manages ownership, freeing, and hashing the keys.
 /// @{
@@ -62,27 +60,23 @@ struct report_id {
     uint32_t section;
 };
 
-
 bool report_id_equality(struct report_id const* report_1, struct report_id const* report_2) {
     return strcmp(report_1->name, report_2->name) == 0 && report_1->section == report_2->section;
 }
 
 size_t report_id_hash(struct report_id const* report_id) {
-    return hash_combine(hash_murmurhash_string(report_id->name), hash_id_uint32_t(&report_id->section));
+    return hash_combine(hash_murmurhash_string(report_id->name),
+                        hash_id_uint32_t(&report_id->section));
 }
 
-void report_id_delete(struct report_id* self) {
-    free(self->name);
-}
+void report_id_delete(struct report_id* self) { free(self->name); }
 
 struct report {
     char* description;
     int value;
 };
 
-void report_delete(struct report* self) {
-    free(self->description);
-}
+void report_delete(struct report* self) { free(self->description); }
 
 #define K struct report_id
 #define V struct report
@@ -100,14 +94,17 @@ void report_map_example() {
     struct report_id id1 = {.name = strdup("Report A"), .section = 1};
     struct report_id id2 = {.name = strdup("Report B"), .section = 2};
 
-    report_map_insert(&map, id1, (struct report){.description = strdup("Description A"), .value = 100});
-    report_map_insert(&map, id2, (struct report){.description = strdup("Description B"), .value = 200});
+    report_map_insert(&map, id1,
+                      (struct report){.description = strdup("Description A"), .value = 100});
+    report_map_insert(&map, id2,
+                      (struct report){.description = strdup("Description B"), .value = 200});
 
     assert(strcmp(report_map_read(&map, id1)->description, "Description A") == 0);
 
     report_map_iter_const iter = report_map_get_iter_const(&map);
     ITER_ENUMERATE_LOOP(report_map_iter_const, iter, report_map_kv_const, entry, size_t, pos) {
-        printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry.key->name, entry.key->section, entry.value->value);
+        printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry.key->name,
+               entry.key->section, entry.value->value);
     }
 
     report_map_removed_entry entry = report_map_remove(&map, id1);
@@ -159,7 +156,8 @@ void fixed_string_example() {
     assert(*fixed_string_map_read(&map, key3) == 789);
 
     fixed_string_map_iter_const iter = fixed_string_map_get_iter_const(&map);
-    ITER_ENUMERATE_LOOP(fixed_string_map_iter_const, iter, fixed_string_map_kv_const, entry, size_t, pos) {
+    ITER_ENUMERATE_LOOP(fixed_string_map_iter_const, iter, fixed_string_map_kv_const, entry, size_t,
+                        pos) {
         printf("Position: %zu Key: %.3s Value: %u\n", pos, entry.key->value, *entry.value);
     }
 

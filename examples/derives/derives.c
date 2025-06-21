@@ -1,9 +1,9 @@
 #include <assert.h>
 
-#include <derive-c/derives/std.h>
 #include <derive-c/derives/clone.h>
 #include <derive-c/derives/eq.h>
 #include <derive-c/derives/ord.h>
+#include <derive-c/derives/std.h>
 #include <derive-c/derives/struct.h>
 
 #define Foo_REFLECT(F)                                                                             \

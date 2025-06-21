@@ -24,7 +24,7 @@ typedef struct {
     int x;
 } derive_c_placeholder_value;
 #define V derive_c_placeholder_value
-void derive_c_placeholder_value_delete(derive_c_placeholder_value *) {}
+void derive_c_placeholder_value_delete(derive_c_placeholder_value*) {}
 #define V_DELETE derive_c_placeholder_value_delete
 #endif
 

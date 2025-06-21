@@ -222,7 +222,8 @@ struct Delete : Command {
 RC_GTEST_PROP(ArenaTests, General, ()) {
     Model model;
     SutWrapper sutWrapper;
-    rc::state::check(model, sutWrapper, rc::state::gen::execOneOfWithArgs<Insert, Insert, Write, Remove, Delete>());
+    rc::state::check(model, sutWrapper,
+                     rc::state::gen::execOneOfWithArgs<Insert, Insert, Write, Remove, Delete>());
 }
 
 } // namespace arena

@@ -1,4 +1,5 @@
-/// @brief A vector storing the first N elements in-place, and optionally spilling additional elements to a heap vector.
+/// @brief A vector storing the first N elements in-place, and optionally spilling additional
+/// elements to a heap vector.
 
 #include <stdint.h>
 
@@ -23,7 +24,7 @@ static void derive_c_placeholder_t_delete(derive_c_placeholder_t*) {}
 #define T_DELETE(value)
 #endif
 
-#ifndef INPLACE_CAPACITY 
+#ifndef INPLACE_CAPACITY
 #error "The number of elements to store in-place must be defined"
 #define INPLACE_CAPACITY 8
 #endif
@@ -39,22 +40,19 @@ static void derive_c_placeholder_t_delete(derive_c_placeholder_t*) {}
 #define INPLACE_TYPE size_t
 #endif
 
-
 typedef struct {
     INPLACE_TYPE size;
     T data[INPLACE_CAPACITY];
     gdb_marker derive_c_staticvec;
 } SELF;
 
-static SELF NAME(SELF, new)() {
-    return (SELF){.size = 0};
-}
+static SELF NAME(SELF, new)() { return (SELF){.size = 0}; }
 
 static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     SELF new_self = NAME(SELF, new)();
     new_self.size = self->size;
-    // TODO(oliverkillane): premature optimization, only copy the data needed. 
-    // If this is already a very small vector, may be better to just 
+    // TODO(oliverkillane): premature optimization, only copy the data needed.
+    // If this is already a very small vector, may be better to just
     // `return *self` and copy the entire buffer
     for (INPLACE_TYPE i = 0; i < self->size; i++) {
         new_self.data[i] = self->data[i];
@@ -158,7 +156,6 @@ static void NAME(SELF, delete)(SELF* self) {
         T_DELETE(&self->data[i]);
     }
 }
-
 
 #define ITER NAME(SELF, iter)
 

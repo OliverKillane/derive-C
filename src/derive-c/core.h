@@ -33,4 +33,4 @@ static inline size_t next_power_of_2(size_t x) {
     return x + 1;
 }
 
-#define	FORCE_INLINE inline __attribute__((always_inline))
+#define FORCE_INLINE inline __attribute__((always_inline))
