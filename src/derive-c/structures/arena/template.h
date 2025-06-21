@@ -106,8 +106,6 @@ typedef struct {
 static SELF NAME(SELF, new_with_capacity_for)(INDEX_TYPE items) {
     DEBUG_ASSERT(items > 0);
     size_t capacity = next_power_of_2(items);
-    // _Static_assert(MAX_CAPACITY > 0, "Capacity must be greater than 0");
-    size_t x = MAX_CAPACITY;
     ASSERT(capacity <= MAX_CAPACITY);
     SLOT* slots = (SLOT*)calloc(capacity, sizeof(SLOT));
     ASSERT(slots);
@@ -150,7 +148,7 @@ static INDEX NAME(SELF, insert)(SELF* self, V value) {
     return (INDEX){.index = new_index};
 }
 
-static V* NAME(SELF, write)(SELF* self, INDEX index) {
+static V* NAME(SELF, try_write)(SELF* self, INDEX index) {
     CHECK_ACCESS_INDEX(self, index);
     SLOT* slot = &self->slots[index.index];
     if (!slot->present) {
@@ -159,17 +157,20 @@ static V* NAME(SELF, write)(SELF* self, INDEX index) {
     return &slot->value;
 }
 
-static V* NAME(SELF, write_unchecked)(SELF* self, INDEX index) {
-    DEBUG_ASSERT(self);
-#ifdef NDEBUG
-    V* value = NAME(SELF, write)(self, index);
-    DEBUG_ASSERT(value);
+static V* NAME(SELF, write)(SELF* self, INDEX index) {
+    V* value = NAME(SELF, try_write)(self, index);
+    ASSERT(value);
     return value;
+}
+
+static V* NAME(SELF, write_unsafe_unchecked)(SELF* self, INDEX index) {
+#ifdef NDEBUG
+    return NAME(SELF, write)(self, index);
 #endif
     return &self->slots[index.index].value;
 }
 
-static V const* NAME(SELF, read)(SELF const* self, INDEX index) {
+static V const* NAME(SELF, try_read)(SELF const* self, INDEX index) {
     CHECK_ACCESS_INDEX(self, index);
     SLOT* slot = &self->slots[index.index];
     if (!slot->present) {
@@ -178,12 +179,15 @@ static V const* NAME(SELF, read)(SELF const* self, INDEX index) {
     return &slot->value;
 }
 
-static V const* NAME(SELF, read_unchecked)(SELF const* self, INDEX index) {
-    DEBUG_ASSERT(self);
-#ifdef NDEBUG
-    V* value = NAME(SELF, read)(self, index);
-    DEBUG_ASSERT(value);
+static V const* NAME(SELF, read)(SELF const* self, INDEX index) {
+    V const* value = NAME(SELF, try_read)(self, index);
+    ASSERT(value);
     return value;
+}
+
+static V const* NAME(SELF, read_unchecked)(SELF const* self, INDEX index) {
+#ifdef NDEBUG
+    return NAME(SELF, read)(self, index);
 #endif
     return &self->slots[index.index].value;
 }

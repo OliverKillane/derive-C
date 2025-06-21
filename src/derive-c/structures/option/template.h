@@ -49,10 +49,12 @@ static T* NAME(SELF, get)(SELF* self) {
     }
 }
 
-static T const* NAME(SELF, get_unchecked)(SELF* self) {
+static T const* NAME(SELF, get_present_unsafe_unchecked)(SELF* self) {
     DEBUG_ASSERT(self);
     #ifdef NDEBUG
-        return NAME(SELF, get)(self);
+        T* value = NAME(SELF, get)(self);
+        ASSERT(value);
+        return value;
     #else
         return &self->value;
     #endif
@@ -67,10 +69,12 @@ static T const* NAME(SELF, get_const)(SELF const* self) {
     }
 }
 
-static T const* NAME(SELF, get_const_unchecked)(SELF const* self) {
+static T const* NAME(SELF, get_const_present_unsafe_unchecked)(SELF const* self) {
     DEBUG_ASSERT(self);
     #ifdef NDEBUG
-        return NAME(SELF, get_const)(self);
+        T const* value = NAME(SELF, get_const)(self);
+        ASSERT(value);
+        return value;
     #else
         return &self->value;
     #endif

@@ -81,7 +81,7 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     };
 }
 
-static T const* NAME(SELF, read_optional)(SELF const* self, size_t index) {
+static T const* NAME(SELF, try_read)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -91,12 +91,12 @@ static T const* NAME(SELF, read_optional)(SELF const* self, size_t index) {
 }
 
 static T const* NAME(SELF, read)(SELF const* self, size_t index) {
-    T const* value = NAME(SELF, read_optional)(self, index);
+    T const* value = NAME(SELF, try_read)(self, index);
     ASSERT(value);
     return value;
 }
 
-static T* NAME(SELF, write_optional)(SELF* self, size_t index) {
+static T* NAME(SELF, try_write)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size))  {
         return &self->data[index];
@@ -115,7 +115,7 @@ static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index
 }
 
 static T* NAME(SELF, write)(SELF* self, size_t index) {
-    T * value = NAME(SELF, write_optional)(self, index);
+    T * value = NAME(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
 }
@@ -142,7 +142,6 @@ static T* NAME(SELF, push)(SELF* self, T value) {
             //           Otherwise an arbitrary choice (given we do not know the size of T)
             new_capacity = 8;
             new_data = (T*)malloc(new_capacity * sizeof(T));
-            ASSERT(new_data);
         } else {
             // JUSTIFY: Growth factor of 2
             //           - Simple arithmetic (for debugging)

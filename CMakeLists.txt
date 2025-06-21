@@ -14,10 +14,13 @@ if (DEVELOP)
     set(SANITIZER_FLAGS "-fsanitize=address,undefined")
 
     message(STATUS "Debug symbols on (including for macros)")
-    set(CMAKE_C_FLAGS_DEBUG "-g3 -O0")
+    set(CMAKE_C_FLAGS_DEBUG "-g3")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g3")
 
     message(STATUS "Coverage enabled: GCC/Clang coverage flags")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -fprofile-arcs -ftest-coverage -fno-inline -fno-inline-small-functions -fno-inline-functions-called-once")
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} --coverage")
 
     if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "Release")
         message(STATUS "DEVELOP flag set: Forcing CMAKE_BUILD_TYPE=Debug")
@@ -71,10 +74,11 @@ if(DEVELOP AND LCOV_EXECUTABLE AND GENHTML_EXECUTABLE)
             --directory .
             --capture
             --output-file coverage.info
+            --rc geninfo_unexecuted_blocks=1
+            --ignore-errors inconsistent # Inconsistencies in the hashmap.cpp file's rc integration
     COMMAND ${LCOV_EXECUTABLE}
-            --remove coverage.info
-                    "/usr/*"
-                    "*/tests/*"
+            --extract coverage.info 
+                "*/src/derive-c/*"
             --output-file coverage.filtered.info
             --ignore-errors unused
     COMMAND ${GENHTML_EXECUTABLE}

@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <derive-c/macros/iterators.h>
-
 
 typedef struct {
     char const* forename;
@@ -33,10 +33,8 @@ typedef struct {
 } employee;
 
 bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->value; }
-
 size_t age_hash(age const* age) { return age->value; }
 
-/* Structures */
 #define INDEX_BITS 16
 #define V employee
 #define SELF employees
@@ -53,7 +51,6 @@ size_t age_hash(age const* age) { return age->value; }
 #define SELF employees_by_age
 #include <derive-c/structures/hashmap/template.h>
 
-/* Functionality */
 typedef struct {
     employees data;
     employees_by_age by_age;
@@ -69,7 +66,7 @@ hr_system hr_system_new() {
 void hr_system_new_employee(hr_system* self, employee emp) {
     printf("Adding employee %s %s\n", emp.name.forename, emp.name.surname);
     employees_index idx = employees_insert(&self->data, emp);
-    same_age_employees* idxes = employees_by_age_write(&self->by_age, emp.age);
+    same_age_employees* idxes = employees_by_age_try_write(&self->by_age, emp.age);
     if (!idxes) {
         idxes = employees_by_age_insert(&self->by_age, emp.age, same_age_employees_new());
     }
@@ -77,7 +74,7 @@ void hr_system_new_employee(hr_system* self, employee emp) {
 }
 
 employee const* hr_system_newest_of_age(hr_system const* self, age age) {
-    same_age_employees const* idxes = employees_by_age_read(&self->by_age, age);
+    same_age_employees const* idxes = employees_by_age_try_read(&self->by_age, age);
     if (!idxes) {
         return NULL;
     }
@@ -126,7 +123,8 @@ int main() {
     hr_system_new_employee(&hr, bob);
 
     employee const* newest_22 = hr_system_newest_of_age(&hr, (age){.value = 22});
-    ASSERT(name_eq(&newest_22->name, &bob_name));
+    assert(newest_22);
+    assert(name_eq(&newest_22->name, &bob_name));
 
     hr_system_delete(&hr);
 }

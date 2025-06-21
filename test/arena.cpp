@@ -52,7 +52,7 @@ struct SutWrapper {
     // JUSTIFY: 3 items
     //          - Want to ensure tests have plenty of reallocations / extensions
     //          - odd number for hitting edge cases with capacity (set to power of 2)
-    SutWrapper() : sut(Sut_new_with_capacity_for(3)) {}
+    SutWrapper() : sut(Sut_new_with_capacity_for(1)) {}
     ~SutWrapper() { Sut_delete(&sut); }
 
     SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
@@ -222,7 +222,7 @@ struct Delete : Command {
 RC_GTEST_PROP(ArenaTests, General, ()) {
     Model model;
     SutWrapper sutWrapper;
-    rc::state::check(model, sutWrapper, rc::state::gen::execOneOfWithArgs<Insert, Write, Remove, Delete>());
+    rc::state::check(model, sutWrapper, rc::state::gen::execOneOfWithArgs<Insert, Insert, Write, Remove, Delete>());
 }
 
 } // namespace arena

@@ -120,7 +120,7 @@ static void NAME(SELF, delete)(SELF* self);
 
 static V* NAME(SELF, insert)(SELF* self, K key, V value);
 
-static SELF NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+static void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     DEBUG_ASSERT(self);
     size_t target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
@@ -128,19 +128,19 @@ static SELF NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
         for (size_t index = 0; index < self->capacity; index++) {
             KEY_ENTRY* entry = &self->keys[index];
             if (entry->present) {
-                ASSERT(NAME(SELF, insert)(&new_map, entry->key, self->values[index]));
+                NAME(SELF, insert)(&new_map, entry->key, self->values[index]);
             }
         }
-        NAME(SELF, delete)(self);
-        return new_map;
+        free(self->keys);
+        free(self->values);
+        *self = new_map;
     }
-    return *self;
 }
 
-static V* NAME(SELF, insert)(SELF* self, K key, V value) {
+static V* NAME(SELF, try_insert)(SELF* self, K key, V value) {
     DEBUG_ASSERT(self);
     if (apply_capacity_policy(self->items) > self->capacity / 2) {
-        *self = NAME(SELF, extend_capacity_for)(self, self->items * 2);
+        NAME(SELF, extend_capacity_for)(self, self->items * 2);
     }
 
     uint16_t distance_from_desired = 0;
@@ -190,7 +190,38 @@ static V* NAME(SELF, insert)(SELF* self, K key, V value) {
     }
 }
 
+static V* NAME(SELF, insert)(SELF* self, K key, V value) {
+    V* value_ptr = NAME(SELF, try_insert)(self, key, value);
+    ASSERT(value_ptr);
+    return value_ptr;
+}
+
+static V* NAME(SELF, try_write)(SELF* self, K key) {
+    DEBUG_ASSERT(self);
+    size_t hash = HASH(&key);
+    size_t index = modulus_capacity(hash, self->capacity);
+
+    for (;;) {
+        KEY_ENTRY* entry = &self->keys[index];
+        if (entry->present) {
+            if (EQ(&entry->key, &key)) {
+                return &self->values[index];
+            } else {
+                index = modulus_capacity(index + 1, self->capacity);
+            }
+        } else {
+            return NULL;
+        }
+    }
+}
+
 static V* NAME(SELF, write)(SELF* self, K key) {
+    V* value = NAME(SELF, try_write)(self, key);
+    ASSERT(value);
+    return value;
+}
+
+static V const* NAME(SELF, try_read)(SELF const* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = modulus_capacity(hash, self->capacity);
@@ -210,22 +241,9 @@ static V* NAME(SELF, write)(SELF* self, K key) {
 }
 
 static V const* NAME(SELF, read)(SELF const* self, K key) {
-    DEBUG_ASSERT(self);
-    size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
-
-    for (;;) {
-        KEY_ENTRY* entry = &self->keys[index];
-        if (entry->present) {
-            if (EQ(&entry->key, &key)) {
-                return &self->values[index];
-            } else {
-                index = modulus_capacity(index + 1, self->capacity);
-            }
-        } else {
-            return NULL;
-        }
-    }
+    V const* value = NAME(SELF, try_read)(self, key);
+    ASSERT(value);
+    return value;
 }
 
 #define REMOVED_ENTRY NAME(SELF, removed_entry)

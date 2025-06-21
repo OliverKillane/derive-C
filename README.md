@@ -1,6 +1,9 @@
-## What is this
-A small toolbox of generic C code.
- - ab(using) the preprocessor to write generic code
+# Derive C
+## What is this?
+A library of generic data structures & macro helpers for C.
+ - templated data structures
+ - gdb pretty printers
+ - derives for equality, clone, ord, etc
 
 ## Develop
 [nix-shell](./shell.nix) is included to setup the C/C++ toolchain.
@@ -8,26 +11,25 @@ A small toolbox of generic C code.
 nix-shell # from repo root
 ```
 
-Currently using clang19
-```bash
-export CC=clang
-export CXX=clang++
-```
-
 ```bash
 cmake -S . -B build -GNinja -DDEBUG=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 
-ninja -C build
-ninja -C build format
-ctest --test-dir build
+
+cd build
+ninja
+ninja format
+ninja docs
+ctest
+ninja coverage
 ```
 
 For using `infer`, infer must be installed separately (it is not yet packaged with nix - [see here](https://github.com/NixOS/nixpkgs/issues/148048))
  - Build with clang
 ```bash
 cmake -S . -B build -DEXTERNALS=Off -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-infer run --compilation-database build/compile_commands.json
+infer run --compilation-database build/compile_commands.json --bufferoverrun --liveness --pulse
+infer explore
 ```
- - Currently detects some issues in dependencies (rapidcheck)
+ - Statically detects generic bugs (e.g. use after freed, buffer overrun, integer overflow)
 
 ## Use
 In a `CMakeLists.txt`
@@ -41,19 +43,4 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(derive-c)
 ```
-
-## Features
-### Structures
-Generic data structures, built with includes & template files.
-
-### gdb 
-Prety printers for data structures.
- - [ ] [TODO] Add arena & option printers
-
-### Derive Macros
-Using a similar pattern to [xmacros](https://en.wikipedia.org/wiki/X_macro) we can derive equality, and structs (debug is more complex so not done yet).
-
-## TODO
- - Add regression benchmarks
- - CBMC verification for basic insert/amend/delete flow on hashmap.
- - Use asan intrinsics to mark deleted entries as poisoned in hashmap, arena
+- [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)

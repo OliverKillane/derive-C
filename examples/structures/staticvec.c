@@ -31,8 +31,8 @@ void push_example() {
     }
     
     // The next two should be NULL since they exceed the in-place capacity
-    assert(staticvec_chars_read_optional(&vec, MAX_CAPACITY) == NULL);
-    assert(staticvec_chars_read_optional(&vec, MAX_CAPACITY + 1) == NULL);
+    assert(staticvec_chars_try_read(&vec, MAX_CAPACITY) == NULL);
+    assert(staticvec_chars_try_read(&vec, MAX_CAPACITY + 1) == NULL);
     
     staticvec_chars_delete(&vec);    
 }

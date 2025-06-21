@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #define PANIC(...) \
     do { \
@@ -12,6 +13,7 @@
 
 #ifndef ASSERT
 #define ASSERT(expr, ...) \
+    assert(expr); \
     if (!(expr)) { \
         PANIC("assertion " #expr " failed: " __VA_ARGS__ "\n"); \
     }

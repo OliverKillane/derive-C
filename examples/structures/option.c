@@ -34,7 +34,7 @@ void option_example() {
     assert(!was_present_1);
 
     assert(complex_data_option_is_present(&opt));
-    struct complex_data* data = complex_data_option_get(&opt);
+    assert(complex_data_option_get(&opt));
 
     bool was_present_2 = complex_data_option_replace(&opt, (struct complex_data){ .x = 100, .y = 2.71, .description = strdup("Another complex data") });
     assert(was_present_2);

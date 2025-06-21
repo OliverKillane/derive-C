@@ -62,7 +62,7 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     return new_self;
 }
 
-static T const* NAME(SELF, read_optional)(SELF const* self, INPLACE_TYPE index) {
+static T const* NAME(SELF, try_read)(SELF const* self, INPLACE_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -72,13 +72,12 @@ static T const* NAME(SELF, read_optional)(SELF const* self, INPLACE_TYPE index) 
 }
 
 static T const* NAME(SELF, read)(SELF const* self, INPLACE_TYPE index) {
-    T const* value = NAME(SELF, read_optional)(self, index);
+    T const* value = NAME(SELF, try_read)(self, index);
     ASSERT(value);
     return value;
 }
 
 static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index) {
-    DEBUG_ASSERT(self);
 #ifdef NDEBUG
     return NAME(SELF, read)(self, index);
 #else
@@ -86,7 +85,7 @@ static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index
 #endif
 }
 
-static T* NAME(SELF, write_optional)(SELF* self, INPLACE_TYPE index) {
+static T* NAME(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -96,13 +95,12 @@ static T* NAME(SELF, write_optional)(SELF* self, INPLACE_TYPE index) {
 }
 
 static T* NAME(SELF, write)(SELF* self, INPLACE_TYPE index) {
-    T* value = NAME(SELF, write_optional)(self, index);
+    T* value = NAME(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
 }
 
 static T* NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
-    DEBUG_ASSERT(self);
 #ifdef NDEBUG
     return NAME(SELF, write)(self, index);
 #else
