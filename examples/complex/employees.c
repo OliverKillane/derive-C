@@ -1,16 +1,10 @@
-// A demo application showcasing complex data structures being used
-// without any casting, written as simply as possible.
-
-/* Setup */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <derive-c/macros/iterators.h>
 
-#define PANIC abort()
 
-/* Data */
 typedef struct {
     char const* forename;
     char const* surname;
@@ -43,21 +37,21 @@ bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->
 size_t age_hash(age const* age) { return age->value; }
 
 /* Structures */
+#define INDEX_BITS 16
 #define V employee
 #define SELF employees
-#define INDEX_BITS 16
-#include <derive-c/structures/arena.template.h>
+#include <derive-c/structures/arena/template.h>
 
 #define T employees_index
 #define SELF same_age_employees
-#include <derive-c/structures/vector.template.h>
+#include <derive-c/structures/vector/template.h>
 
 #define K age
 #define V same_age_employees
 #define EQ age_eq
 #define HASH age_hash
 #define SELF employees_by_age
-#include <derive-c/structures/hashmap.template.h>
+#include <derive-c/structures/hashmap/template.h>
 
 /* Functionality */
 typedef struct {

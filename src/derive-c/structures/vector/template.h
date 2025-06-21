@@ -1,7 +1,4 @@
-// ## Vector
-// A simple vector, growing by *2 on reallocation.
-
-#include <derive-c/core.h>
+/// @brief A simple vector
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -9,26 +6,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef PANIC
-#error "PANIC must be defined (used for unrecoverable failures)"
-#define PANIC abort() // Allows independent debugging
-#endif
+#include <derive-c/core.h>
+#include <derive-c/panic.h>
+#include <derive-c/self.h>
+
+/// @defgroup template parameters
+/// @{
 
 #ifndef T
-#error "T (contained type) must be defined for a vector template"
+#error "The contained type must be defined for a vector template"
 typedef struct {
     int x;
-} placeholder;
-#define T placeholder // Allows independent debugging
+} derive_c_placeholder_t;
+#define T derive_c_placeholder_t // Allows independent debugging
+static void derive_c_placeholder_t_delete(derive_c_placeholder_t*) {}
+#define T_DELETE derive_c_placeholder_t_delete
 #endif
 
-#ifndef SELF
-#ifndef MODULE
-#error                                                                                             \
-    "MODULE must be defined to use a template (it is prepended to the start of all methods, and the type)"
+#ifndef T_DELETE
+#define T_DELETE(value)
 #endif
-#define SELF NAME(MODULE, NAME(vector, T))
-#endif
+
+/// @}
 
 typedef struct {
     size_t size;
@@ -49,15 +48,12 @@ static SELF NAME(SELF, new)() {
 static SELF NAME(SELF, new_with_capacity)(size_t capacity) {
     DEBUG_ASSERT(capacity > 0);
     T* data = (T*)malloc(capacity * sizeof(T));
-    if (LIKELY(data)) {
-        return (SELF){
-            .size = 0,
-            .capacity = capacity,
-            .data = data,
-        };
-    } else {
-        PANIC;
-    }
+    ASSERT(LIKELY(data));
+    return (SELF){
+        .size = 0,
+        .capacity = capacity,
+        .data = data,
+    };
 }
 
 static SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
@@ -65,18 +61,15 @@ static SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
     for (size_t i = 0; i < size; i++) {
         data[i] = default_value;
     }
-    if (LIKELY(data)) {
-        return (SELF){
-            .size = size,
-            .capacity = size,
-            .data = data,
-        };
-    } else {
-        PANIC;
-    }
+    ASSERT(LIKELY(data));
+    return (SELF){
+        .size = size,
+        .capacity = size,
+        .data = data,
+    };
 }
 
-static SELF NAME(SELF, clone)(SELF const* self) {
+static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     DEBUG_ASSERT(self);
     T* data = (T*)malloc(self->capacity * sizeof(T));
     ASSERT(data);
@@ -88,33 +81,49 @@ static SELF NAME(SELF, clone)(SELF const* self) {
     };
 }
 
-static T const* NAME(SELF, read)(SELF const* self, size_t index) {
+static T const* NAME(SELF, read_optional)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
-    return LIKELY(index < self->size) ? &self->data[index] : NULL;
+    if (LIKELY(index < self->size)) {
+        return &self->data[index];
+    } else {
+        return NULL;
+    }
 }
 
-static T* NAME(SELF, write)(SELF* self, size_t index) {
+static T const* NAME(SELF, read)(SELF const* self, size_t index) {
+    T const* value = NAME(SELF, read_optional)(self, index);
+    ASSERT(value);
+    return value;
+}
+
+static T* NAME(SELF, write_optional)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
-    return LIKELY(index < self->size) ? &self->data[index] : NULL;
+    if (LIKELY(index < self->size))  {
+        return &self->data[index];
+    } else {
+        return NULL;
+    }
 }
 
 static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
 #ifdef NDEBUG
-    T* value = NAME(SELF, read)(self, index);
-    DEBUG_ASSERT(value);
-    return value;
+    return NAME(SELF, read)(self, index);
 #else
     return &self->data[index];
 #endif
 }
 
+static T* NAME(SELF, write)(SELF* self, size_t index) {
+    T * value = NAME(SELF, write_optional)(self, index);
+    ASSERT(value);
+    return value;
+}
+
 static T* NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
 #ifdef NDEBUG
-    T* value = NAME(SELF, write)(self, index);
-    DEBUG_ASSERT(value);
-    return value;
+    return NAME(SELF, write)(self, index);
 #else
     return &self->data[index];
 #endif
@@ -141,12 +150,9 @@ static T* NAME(SELF, push)(SELF* self, T value) {
             new_capacity = self->capacity * 2;
             new_data = (T*)realloc(self->data, new_capacity * sizeof(T));
         }
-        if (new_data) {
-            self->capacity = new_capacity;
-            self->data = new_data;
-        } else {
-            PANIC;
-        }
+        ASSERT(new_data);
+        self->capacity = new_capacity;
+        self->data = new_data;
     }
     T* entry = &self->data[self->size];
     *entry = value;
@@ -154,6 +160,7 @@ static T* NAME(SELF, push)(SELF* self, T value) {
     return entry;
 }
 
+// TODO(oliverkillane): Convert these into optionals, rather than their own type.
 #define POPPED_ENTRY NAME(SELF, popped_entry)
 
 typedef struct {
@@ -182,6 +189,9 @@ static size_t NAME(SELF, size)(SELF const* self) {
 
 static void NAME(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
+    for (size_t i = 0; i < self->size; i++) {
+        T_DELETE(&self->data[i]);
+    }
     free(self->data);
 }
 
@@ -220,6 +230,7 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
         .pos = 0,
     };
 }
+#undef ITER
 
 #define ITER_CONST NAME(SELF, iter_const)
 
@@ -257,7 +268,8 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-#undef ITER
 #undef ITER_CONST
+
 #undef SELF
 #undef T
+#undef T_DELETE

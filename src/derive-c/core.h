@@ -1,9 +1,6 @@
 #pragma once
 #include <stdlib.h>
 
-#ifndef CORE
-#define CORE
-
 #define NAME_EXPANDED(pre, post) pre##_##post
 #define NAME(pre, post) NAME_EXPANDED(pre, post)
 
@@ -18,19 +15,8 @@
 
 #define EXPAND(...) __VA_ARGS__
 
-#define ASSERT(expr)                                                                               \
-    if (!(expr))                                                                                   \
-        PANIC;
-
 typedef struct {
 } gdb_marker;
-
-#ifdef NDEBUG
-#define DEBUG_ASSERT(expr) ASSERT(expr)
-#else
-#define DEBUG_ASSERT(expr)
-#endif
-#endif
 
 static inline size_t next_power_of_2(size_t x) {
     if (x == 0)
@@ -46,3 +32,5 @@ static inline size_t next_power_of_2(size_t x) {
 #endif
     return x + 1;
 }
+
+#define	FORCE_INLINE inline __attribute__((always_inline))

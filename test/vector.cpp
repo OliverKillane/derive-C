@@ -13,20 +13,19 @@ using Data = size_t;
 using Model = std::vector<Data>;
 
 extern "C" {
-#define PANIC abort()
 #define SELF Sut
 #define T Data
-#include <derive-c/structures/vector.template.h>
+#include <derive-c/structures/vector/template.h>
 }
 
 struct SutWrapper {
     SutWrapper() : sut(Sut_new()) {}
     ~SutWrapper() { Sut_delete(&sut); }
-    SutWrapper(const Sut& sut) : sut(Sut_clone(&sut)) {}
+    SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
     SutWrapper& operator=(const SutWrapper& other) {
         if (this != &other) {
             Sut_delete(&sut);
-            sut = Sut_clone(&other.sut);
+            sut = Sut_shallow_clone(&other.sut);
         }
         return *this;
     }

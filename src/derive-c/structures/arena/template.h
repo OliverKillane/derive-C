@@ -1,9 +1,4 @@
-/**
- * @file
- * @brief A vector-backed arena, with support for small indices. 
- */
-
-#include <derive-c/core.h>
+/// @brief A vector-backed arena, with support for small indices.
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -11,55 +6,55 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef PANIC
-#error "PANIC must be defined (used for unrecoverable failures)"
-#define PANIC abort() // Allows independent debugging
-#endif
+#include <derive-c/core.h>
+#include <derive-c/panic.h>
+#include <derive-c/self.h>
+
+/// @defgroup template parameters
+/// @{
 
 #ifndef INDEX_BITS
-#error "The number of bits (8,16,32,64) needs to be specified"
-#define INDEX_BITS 64
-#endif
-
-#if INDEX_BITS == 8
-#define INDEX_TYPE uint8_t
-#define MAX_CAPACITY (UINT8_MAX + 1)
-#define MAX_INDEX (UINT8_MAX - 1)
-#define INDEX_NONE UINT8_MAX
-#elif INDEX_BITS == 16
-#define INDEX_TYPE uint16_t
-#define MAX_CAPACITY (UINT16_MAX + 1)
-#define MAX_INDEX (UINT16_MAX - 1)
-#define INDEX_NONE UINT16_MAX
-#elif INDEX_BITS == 32
-#define INDEX_TYPE uint32_t
-#define MAX_CAPACITY (UINT32_MAX + 1)
-#define MAX_INDEX (UINT32_MAX - 1)
-#define INDEX_NONE UINT32_MAX
-#elif INDEX_BITS == 64
-#define INDEX_TYPE uint64_t
-// NOTE: Special case, we cannot store the max capacity as a size_t integer
-#define MAX_CAPACITY UINT64_MAX
-#define MAX_INDEX (UINT64_MAX - 1)
-#define INDEX_NONE UINT64_MAX
-#else
-#error "INDEX_BITS must be 8, 16, 32 or 64"
+#error "The number of bits (8,16,32,64) to use for the arena's key"
+#define INDEX_BITS 32
 #endif
 
 #ifndef V
-#error "V (value type) must be defined for an arena template"
+#error "The value type to place in the arena must be defined"
 typedef struct {
     int x;
-} placeholder_value;
-#define V placeholder_value // Allows independent debugging
+} derive_c_placeholder_value;
+#define V derive_c_placeholder_value
+void derive_c_placeholder_value_delete(derive_c_placeholder_value *) {}
+#define V_DELETE derive_c_placeholder_value_delete
 #endif
 
-#ifndef SELF
-#ifndef MODULE
-#error                                                                                             \
-    "MODULE must be defined to use a template (it is prepended to the start of all methods, and the type)"
+#ifndef V_DELETE
+#define V_DELETE(value)
 #endif
-#define SELF NAME(MODULE, NAME(arena, NAME(I, V)))
+
+/// @}
+
+#if INDEX_BITS == 8
+#define INDEX_TYPE uint8_t
+#define MAX_CAPACITY (UINT8_MAX + 1ULL)
+#define MAX_INDEX (UINT8_MAX - 1ULL)
+#define INDEX_NONE UINT8_MAX
+#elif INDEX_BITS == 16
+#define INDEX_TYPE uint16_t
+#define MAX_CAPACITY (UINT16_MAX + 1ULL)
+#define MAX_INDEX (UINT16_MAX - 1ULL)
+#define INDEX_NONE UINT16_MAX
+#elif INDEX_BITS == 32
+#define INDEX_TYPE uint32_t
+#define MAX_CAPACITY (UINT32_MAX + 1ULL)
+#define MAX_INDEX (UINT32_MAX - 1ULL)
+#define INDEX_NONE UINT32_MAX
+#elif INDEX_BITS == 64
+#define INDEX_TYPE uint64_t
+// JUSTIFY: Special case, we cannot store the max capacity as a size_t integer
+#define MAX_CAPACITY UINT64_MAX
+#define MAX_INDEX (UINT64_MAX - 1ULL)
+#define INDEX_NONE UINT64_MAX
 #endif
 
 #define SLOT NAME(SELF, SLOT)
@@ -92,7 +87,6 @@ typedef struct {
     bool present;
 } SLOT;
 
-/// @brief A vector-backed arena, with support for small indices.
 typedef struct {
     SLOT* slots;
     size_t capacity;
@@ -112,10 +106,11 @@ typedef struct {
 static SELF NAME(SELF, new_with_capacity_for)(INDEX_TYPE items) {
     DEBUG_ASSERT(items > 0);
     size_t capacity = next_power_of_2(items);
+    // _Static_assert(MAX_CAPACITY > 0, "Capacity must be greater than 0");
+    size_t x = MAX_CAPACITY;
     ASSERT(capacity <= MAX_CAPACITY);
     SLOT* slots = (SLOT*)calloc(capacity, sizeof(SLOT));
-    if (!slots)
-        PANIC;
+    ASSERT(slots);
     return (SELF){
         .slots = slots,
         .capacity = (INDEX_TYPE)capacity,
@@ -139,19 +134,14 @@ static INDEX NAME(SELF, insert)(SELF* self, V value) {
     }
 
     if (self->exclusive_end == self->capacity) {
-        // TODO: Better way to check this
-        //        - maybe just have capacity as a size_t?
         ASSERT(self->capacity <= (MAX_CAPACITY / RESIZE_FACTOR));
-
         self->capacity *= RESIZE_FACTOR;
         SLOT* new_alloc = (SLOT*)realloc(self->slots, self->capacity * sizeof(SLOT));
-        if (!new_alloc)
-            PANIC;
+        ASSERT(new_alloc);
         self->slots = new_alloc;
     }
 
     INDEX_TYPE new_index = self->exclusive_end;
-
     SLOT* slot = &self->slots[new_index];
     slot->present = true;
     slot->value = value;
@@ -198,11 +188,10 @@ static V const* NAME(SELF, read_unchecked)(SELF const* self, INDEX index) {
     return &self->slots[index.index].value;
 }
 
-static SELF NAME(SELF, clone)(SELF const* self) {
+static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     DEBUG_ASSERT(self);
     SLOT* slots = (SLOT*)malloc(self->capacity * sizeof(SLOT));
-    if (!slots)
-        PANIC;
+    ASSERT(slots);
     memcpy(slots, self->slots, self->exclusive_end * sizeof(SLOT));
     return (SELF){
         .slots = slots,
@@ -231,11 +220,6 @@ static bool NAME(SELF, full)(SELF const* self) {
 static size_t NAME(SELF, max_capacity) = MAX_CAPACITY;
 static size_t NAME(SELF, max_index) = MAX_INDEX;
 
-static void NAME(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
-    free(self->slots);
-}
-
 #define REMOVED_ENTRY NAME(SELF, removed_entry)
 
 typedef struct {
@@ -257,6 +241,20 @@ static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, INDEX index) {
         return ret_val;
     }
     return (REMOVED_ENTRY){.present = false};
+}
+
+static bool NAME(SELF, delete_entry)(SELF* self, INDEX index) {
+    CHECK_ACCESS_INDEX(self, index);
+    SLOT* entry = &self->slots[index.index];
+    if (entry->present) {
+        V_DELETE(&entry->value);
+        entry->present = false;
+        entry->next_free = self->free_list;
+        self->free_list = index.index;
+        self->count--;
+        return true;
+    }
+    return false;
 }
 
 #undef REMOVED_ENTRY
@@ -318,6 +316,19 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
         .next_index = index,
         .pos = 0,
     };
+}
+
+static void NAME(SELF, delete)(SELF* self) {
+    DEBUG_ASSERT(self);
+    ITER iter = NAME(SELF, get_iter)(self);
+    while (!NAME(ITER, empty)(&iter)) {
+        IV_PAIR pair = NAME(ITER, next)(&iter);
+        if (pair.value) {
+            V_DELETE(pair.value);
+        }
+    }
+
+    free(self->slots);
 }
 
 #undef ITER
@@ -393,4 +404,5 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
 #undef INDEX
 
 #undef V
+#undef V_DELETE
 #undef SELF

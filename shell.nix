@@ -10,5 +10,8 @@ pkgs.mkShell {
     pkgs.doxygen
     pkgs.graphviz        # Optional: needed for diagrams like call graphs
     pkgs.unzip           # Optional: for extracting doxygen-awesome-css
+
+    pkgs.lcov # Coverage
+    pkgs.gcovr
   ];
 }

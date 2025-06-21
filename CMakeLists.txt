@@ -5,16 +5,22 @@ project(derivec_project C CXX)
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_C_STANDARD 99)
 
-option(DEBUG "Enable basic debug build" OFF)
+option(DEVELOP "Enable debug + coverage + sanitizers build" OFF)
 option(EXTERNALS "Include targets using externals" ON)
 
-if (DEBUG)
-    # NOTE: not compatible with msan and tsan, but can be easily set by passing CMAKe_C/CXX_FLAGS
+if (DEVELOP)
+    # NOTE: not compatible with msan and tsan, but can be easily set by passing CMAKE_{C/CXX}_FLAGS
     message(STATUS "Sanitizers enabled: ASAN & UBSAN")
     set(SANITIZER_FLAGS "-fsanitize=address,undefined")
 
+    message(STATUS "Debug symbols on (including for macros)")
+    set(CMAKE_C_FLAGS_DEBUG "-g3 -O0")
+
+    message(STATUS "Coverage enabled: GCC/Clang coverage flags")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
+
     if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "Release")
-        message(STATUS "DEBUG flag set: Forcing CMAKE_BUILD_TYPE=Debug")
+        message(STATUS "DEVELOP flag set: Forcing CMAKE_BUILD_TYPE=Debug")
         set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
     endif()
 
@@ -46,4 +52,34 @@ if(CLANG_FORMAT)
         COMMAND ${CLANG_FORMAT} -i ${SOURCE_FILES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
+endif()
+
+find_program(LCOV_EXECUTABLE NAMES lcov)
+find_program(GENHTML_EXECUTABLE NAMES genhtml)
+
+if(DEVELOP AND LCOV_EXECUTABLE AND GENHTML_EXECUTABLE)
+  add_custom_target(coverage
+    COMMENT "🔍 Running CTest + lcov → HTML coverage report"
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMAND ${LCOV_EXECUTABLE}
+            --directory .
+            --zerocounters
+    COMMAND ${CMAKE_CTEST_COMMAND}
+            --verbose
+            --output-on-failure
+    COMMAND ${LCOV_EXECUTABLE}
+            --directory .
+            --capture
+            --output-file coverage.info
+    COMMAND ${LCOV_EXECUTABLE}
+            --remove coverage.info
+                    "/usr/*"
+                    "*/tests/*"
+            --output-file coverage.filtered.info
+            --ignore-errors unused
+    COMMAND ${GENHTML_EXECUTABLE}
+            coverage.filtered.info
+            --output-directory coverage-report
+    VERBATIM
+  )
 endif()

@@ -14,27 +14,33 @@ using Key = size_t;
 using Model = std::unordered_map<Key, Value>;
 
 extern "C" {
-#define PANIC abort()
 bool key_equality(Key const* key_1, Key const* key_2) { return *key_1 == *key_2; }
-Key key_hash(Key const* key) { return *key; }
+Key key_hash(Key const* key) { 
+    // Bad hash exposes more collisions in the map
+    if (*key % 2 == 0) {
+        return 1000 + (*key % 1000);
+    } else {
+        return 0; 
+    }
+}
 
 #define K Key
 #define V Value
 #define EQ key_equality
 #define HASH key_hash
 #define SELF Sut
-#include <derive-c/structures/hashmap.template.h>
+#include <derive-c/structures/hashmap/template.h>
 }
 
 struct SutWrapper {
     SutWrapper() : sut(Sut_new()) {}
     ~SutWrapper() { Sut_delete(&sut); }
 
-    SutWrapper(const Sut& sut) : sut(Sut_clone(&sut)) {}
+    SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
     SutWrapper& operator=(const SutWrapper& other) {
         if (this != &other) {
             Sut_delete(&sut);
-            sut = Sut_clone(&other.sut);
+            sut = Sut_shallow_clone(&other.sut);
         }
         return *this;
     }

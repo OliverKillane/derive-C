@@ -31,4 +31,7 @@ target_link_libraries(derivec_tests
 gtest_discover_tests(derivec_tests
     DISCOVERY_TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    PROPERTIES
+    ENVIRONMENT
+      "RC_PARAMS=max_success=10000"
 )

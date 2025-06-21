@@ -1,73 +1,60 @@
-// ## HashMap
-// A simple hashtable using robin-hood hashing, and keeping keys and values in separate arrays. 
-
-#include <derive-c/core.h>
+/// @brief A simple open-addressed hashmap using robin-hood hashing.
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifndef PANIC
-#error "PANIC must be defined (used for unrecoverable failures)"
-#define PANIC abort() // Allows independent debugging
-#endif
+#include <derive-c/structures/hashmap/utils.h>
+#include <derive-c/core.h>
+#include <derive-c/panic.h>
+#include <derive-c/self.h>
+
+/// @defgroup template parameters
+/// @{
 
 #ifndef K
-#error "K (key type) must be defined to for a hashmap template"
+#error "Key type must be defined to for a hashmap template"
 typedef struct {
     int x;
-} placeholder_key;
-#define K placeholder_key // Allows independent debugging
+} derive_c_placeholder_key;
+#define K derive_c_placeholder_key
+static void derive_c_placeholder_key_delete(derive_c_placeholder_key*) {}
+#define K_DELETE derive_c_placeholder_key_delete
 #endif
 
 #ifndef V
-#error "V (value type) must be defined to for a hashmap template"
+#error "Value type must be defined to for a hashmap template"
 typedef struct {
     int x;
-} placeholder_value;
-#define V placeholder_value // Allows independent debugging
+} derive_c_placeholder_value;
+#define V derive_c_placeholder_value
+static void derive_c_placeholder_value_delete(derive_c_placeholder_value*) {}
+#define V_DELETE derive_c_placeholder_value_delete
 #endif
 
 #ifndef HASH
-#error "HASH (the hash function on K) must be defined"
-inline size_t placeholder_hash(placeholder_key const* key);
-#define HASH placeholder_hash
+#error "The hash function for K must be defined"
+static size_t derive_c_placeholder_hash(derive_c_placeholder_key const* key);
+#define HASH derive_c_placeholder_hash
 #endif
 
 #ifndef EQ
-#error "HASH (the equality function on K) must be defined"
-inline bool placeholder_eq(placeholder_key const* key_1, placeholder_key const* key_2);
-#define EQ placeholder_eq
+#error "The equality function for K must be defined"
+static bool derive_c_placeholder_eq(derive_c_placeholder_key const* key_1, derive_c_placeholder_key const* key_2);
+#define EQ derive_c_placeholder_eq
 #endif
 
-#ifndef SELF
-#ifndef MODULE
-#error                                                                                             \
-    "MODULE must be defined to use a template (it is prepended to the start of all methods, and the type)"
-#endif
-#define SELF NAME(MODULE, NAME(hashmap, NAME(K, NAME(V, NAME(HASH, EQ)))))
+#ifndef K_DELETE
+#define K_DELETE(key)
 #endif
 
-#ifndef HASHMAP_INTERNAL
-#define HASHMAP_INTERNAL
-
-static inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
-
-static inline size_t apply_capacity_policy(size_t capacity) {
-    // TODO(oliverkillane): play with overallocation policy
-    return next_power_of_2(capacity + capacity / 2);
-}
-
-static inline size_t modulus_capacity(size_t index, size_t capacity) {
-    DEBUG_ASSERT(is_power_of_2(capacity))
-    // NOTE: If we know capacity is a power of 2, we can reduce the cost of 'index + 1 % capacity'
-    return index & (capacity - 1);
-}
-
-static size_t const PROBE_DISTANCE = 1;
-static size_t const INITIAL_CAPACITY = 32;
+#ifndef V_DELETE
+#define V_DELETE(value)
 #endif
+
+/// @}
+
 
 #define KEY_ENTRY NAME(SELF, key_entry)
 typedef struct {
@@ -95,8 +82,7 @@ static SELF NAME(SELF, new_with_capacity_for)(size_t capacity) {
     //  - for the values, we do not need this (no precense checks are done on values)
     KEY_ENTRY* keys = (KEY_ENTRY*)calloc(sizeof(KEY_ENTRY), real_capacity);
     V* values = (V*)malloc(sizeof(V) * real_capacity);
-    if (!keys || !values)
-        PANIC;
+    ASSERT(keys && values);
     return (SELF){
         .capacity = real_capacity,
         .items = 0,
@@ -107,7 +93,7 @@ static SELF NAME(SELF, new_with_capacity_for)(size_t capacity) {
 
 static SELF NAME(SELF, new)() { return NAME(SELF, new_with_capacity_for)(INITIAL_CAPACITY); }
 
-static SELF NAME(SELF, clone)(SELF const* self) {
+static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     DEBUG_ASSERT(self);
 
     // JUSTIFY: Naive copy
@@ -118,8 +104,7 @@ static SELF NAME(SELF, clone)(SELF const* self) {
 
     KEY_ENTRY* keys = (KEY_ENTRY*)calloc(sizeof(KEY_ENTRY), self->capacity);
     V* values = (V*)malloc(sizeof(V) * self->capacity);
-    if (!keys || !values)
-        PANIC;
+    ASSERT(keys && values);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -131,11 +116,7 @@ static SELF NAME(SELF, clone)(SELF const* self) {
     return (SELF){.capacity = self->capacity, .items = self->items, .keys = keys, .values = values};
 }
 
-static void NAME(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
-    free(self->keys);
-    free(self->values);
-}
+static void NAME(SELF, delete)(SELF* self);
 
 static V* NAME(SELF, insert)(SELF* self, K key, V value);
 
@@ -147,8 +128,7 @@ static SELF NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
         for (size_t index = 0; index < self->capacity; index++) {
             KEY_ENTRY* entry = &self->keys[index];
             if (entry->present) {
-                if (!NAME(SELF, insert)(&new_map, entry->key, self->values[index]))
-                    PANIC;
+                ASSERT(NAME(SELF, insert)(&new_map, entry->key, self->values[index]));
             }
         }
         NAME(SELF, delete)(self);
@@ -272,6 +252,7 @@ static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, K key) {
                     .value = self->values[index],
                     .present = true,
                 };
+                K_DELETE(&entry->key);
 
                 // NOTE: For robin hood hashing, we need probe chains to be unbroken
                 //        - Need to find the entries that might use this chain (
@@ -312,6 +293,16 @@ static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, K key) {
         } else {
             return (REMOVED_ENTRY){.present = false};
         }
+    }
+}
+
+static bool NAME(SELF, delete_entry)(SELF* self, K key) {
+    REMOVED_ENTRY entry = NAME(SELF, remove)(self, key);
+    if (entry.present) {
+        V_DELETE(&entry.value);
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -377,6 +368,21 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
     };
 }
 
+static void NAME(SELF, delete)(SELF* self) {
+    DEBUG_ASSERT(self);
+    ITER iter = NAME(SELF, get_iter)(self);
+
+    for (size_t i = 0; i < self->capacity; i++) {
+        if (self->keys[i].present) {
+            K_DELETE(&self->keys[i].key);
+            V_DELETE(&self->values[i]);
+        }
+    }
+
+    free(self->keys);
+    free(self->values);
+}
+
 #undef ITER
 #undef KV_PAIR
 
@@ -438,9 +444,12 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
 #undef ITER_CONST
 #undef KV_PAIR_CONST
 
+#undef KEY_ENTRY
+
 #undef K
 #undef V
 #undef HASH
 #undef EQ
 #undef SELF
-#undef KEY_ENTRY
+#undef V_DELETE
+#undef K_DELETE

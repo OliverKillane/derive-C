@@ -6,9 +6,6 @@
 
 #include <unordered_map>
 
-// TODO(remove)
-#include <iostream>
-
 #include "rapidcheck/Assertions.h"
 #include "utils.hpp"
 
@@ -31,17 +28,11 @@ struct Model {
     IndexHelper indexHelper;
 };
 
-void my_panic() {
-    std::cerr << "Panic called!" << std::endl;
-    abort();
-}
-
 extern "C" {
-#define PANIC my_panic()
 #define SELF Sut
 #define V Value
 #define INDEX_BITS 8
-#include <derive-c/structures/arena.template.h>
+#include <derive-c/structures/arena/template.h>
 }
 
 inline bool operator==(const Sut_index& a, const Sut_index& b) { return a.index == b.index; }
@@ -64,11 +55,11 @@ struct SutWrapper {
     SutWrapper() : sut(Sut_new_with_capacity_for(3)) {}
     ~SutWrapper() { Sut_delete(&sut); }
 
-    SutWrapper(const Sut& sut) : sut(Sut_clone(&sut)) {}
+    SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
     SutWrapper& operator=(const SutWrapper& other) {
         if (this != &other) {
             Sut_delete(&sut);
-            sut = Sut_clone(&other.sut);
+            sut = Sut_shallow_clone(&other.sut);
         }
         return *this;
     }
@@ -197,10 +188,41 @@ struct Remove : Command {
     }
 };
 
+struct Delete : Command {
+    std::optional<ModelIndex> index = std::nullopt;
+
+    explicit Delete(const Model& m) {
+        if (!m.map.empty()) {
+            std::vector<ModelIndex> indices;
+            indices.reserve(m.map.size());
+            for (const auto& [k, _] : m.map) {
+                indices.push_back(k);
+            }
+            index = *rc::gen::elementOf(indices);
+        }
+    }
+
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(index.has_value());
+        RC_PRE(m.map.find(index.value()) != m.map.end());
+    }
+
+    void apply(Model& m) const override { m.map.erase(index.value()); }
+
+    void runAndCheck(const Model& m, SutWrapper& s) const override {
+        Sut_index sut_index = s.indexToSutIndex.at(index.value());
+        s.indexToSutIndex.erase(index.value());
+        s.SutIndexToIndex.erase(sut_index);
+
+        bool was_removed = Sut_delete_entry(s.get(), sut_index);
+        RC_ASSERT(was_removed);
+    }
+};
+
 RC_GTEST_PROP(ArenaTests, General, ()) {
     Model model;
     SutWrapper sutWrapper;
-    rc::state::check(model, sutWrapper, rc::state::gen::execOneOfWithArgs<Insert, Write, Remove>());
+    rc::state::check(model, sutWrapper, rc::state::gen::execOneOfWithArgs<Insert, Write, Remove, Delete>());
 }
 
 } // namespace arena

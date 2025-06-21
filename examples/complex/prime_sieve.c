@@ -6,10 +6,9 @@
 
 #include <derive-c/macros/iterators.h>
 
-#define PANIC abort()
 #define SELF sieve_vec
 #define T bool
-#include <derive-c/structures/vector.template.h>
+#include <derive-c/structures/vector/template.h>
 
 size_t sqrt_size_t(size_t n) {
     if (n == 0 || n == 1) {
