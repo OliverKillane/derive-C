@@ -1,0 +1,27 @@
+name: CI for Pull Requests
+
+on:
+  push:
+    branches:
+        - main
+  pull_request:
+
+jobs:
+  build_and_:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: CMake
+        run: nix-shell --run 'cmake -S . -B build -GNinja -DDEVELOP=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
+      - name: Build
+        run: nix-shell --run 'ninja -C build'
+      - name: Test
+        run: nix-shell --run 'ctest --test-dir build --output-on-failure'
+      - name: Test Coverage
+        run: nix-shell --run 'ninja -C build coverage'

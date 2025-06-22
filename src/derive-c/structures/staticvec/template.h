@@ -166,44 +166,45 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
         .vec = self,
         .pos = 0,
     };
+}
 
 #undef ITER
 
 #define ITER_CONST NAME(SELF, iter_const)
 
-    typedef struct {
-        SELF const* vec;
-        size_t pos;
-    } ITER_CONST;
+typedef struct {
+    SELF const* vec;
+    size_t pos;
+} ITER_CONST;
 
-    static T const* NAME(ITER_CONST, next)(ITER_CONST * iter) {
-        DEBUG_ASSERT(iter);
-        if (iter->pos < iter->vec->size) {
-            T const* item = &iter->vec->data[iter->pos];
-            iter->pos++;
-            return item;
-        } else {
-            return NULL;
-        }
+static T const* NAME(ITER_CONST, next)(ITER_CONST * iter) {
+    DEBUG_ASSERT(iter);
+    if (iter->pos < iter->vec->size) {
+        T const* item = &iter->vec->data[iter->pos];
+        iter->pos++;
+        return item;
+    } else {
+        return NULL;
     }
+}
 
-    static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
-        DEBUG_ASSERT(iter);
-        return iter->pos;
-    }
+static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
+    DEBUG_ASSERT(iter);
+    return iter->pos;
+}
 
-    static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
-        DEBUG_ASSERT(iter);
-        return iter->pos >= iter->vec->size;
-    }
+static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DEBUG_ASSERT(iter);
+    return iter->pos >= iter->vec->size;
+}
 
-    static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
-        DEBUG_ASSERT(self);
-        return (ITER_CONST){
-            .vec = self,
-            .pos = 0,
-        };
-    }
+static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+    DEBUG_ASSERT(self);
+    return (ITER_CONST){
+        .vec = self,
+        .pos = 0,
+    };
+}
 
 #undef ITER_CONST
 #undef INPLACE_TYPE

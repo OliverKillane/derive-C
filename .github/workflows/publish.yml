@@ -1,0 +1,64 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Version bump type (major, minor, patch)"
+        required: true
+        default: "patch"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: Bump version tag
+        id: bump
+        uses: anothrNick/github-tag-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_branches: main
+          tag_prefix: ''
+          bump: ${{ github.event.inputs.release_type }}
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.bump.outputs.new_tag }}
+          release_name: Release ${{ steps.bump.outputs.new_tag }}
+          draft: false
+          prerelease: false
+  docs:
+    name: Build & Deploy Docs
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: Build docs via Nix shell
+        run:  nix-shell --run "cmake -S . -B build -GNinja -DDEVELOP=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && ninja -C build docs"
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/docs/html
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
