@@ -10,24 +10,19 @@
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
 
-/// @defgroup template parameters
-/// @{
-
 #ifndef T
 #error "The contained type must be defined for a vector template"
 typedef struct {
     int x;
-} derive_c_placeholder_t;
-#define T derive_c_placeholder_t // Allows independent debugging
-static void derive_c_placeholder_t_delete(derive_c_placeholder_t*) {}
-#define T_DELETE derive_c_placeholder_t_delete
+} derive_c_parameter_t;
+#define T derive_c_parameter_t // Allows independent debugging
+static void derive_c_parameter_t_delete(derive_c_parameter_t*) {}
+#define T_DELETE derive_c_parameter_t_delete
 #endif
 
 #ifndef T_DELETE
 #define T_DELETE(value)
 #endif
-
-/// @}
 
 typedef struct {
     size_t size;
@@ -105,28 +100,10 @@ static T* NAME(SELF, try_write)(SELF* self, size_t index) {
     }
 }
 
-static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index) {
-    DEBUG_ASSERT(self);
-#ifdef NDEBUG
-    return NAME(SELF, read)(self, index);
-#else
-    return &self->data[index];
-#endif
-}
-
 static T* NAME(SELF, write)(SELF* self, size_t index) {
     T* value = NAME(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
-}
-
-static T* NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
-    DEBUG_ASSERT(self);
-#ifdef NDEBUG
-    return NAME(SELF, write)(self, index);
-#else
-    return &self->data[index];
-#endif
 }
 
 static T* NAME(SELF, push)(SELF* self, T value) {
@@ -159,27 +136,22 @@ static T* NAME(SELF, push)(SELF* self, T value) {
     return entry;
 }
 
-// TODO(oliverkillane): Convert these into optionals, rather than their own type.
-#define POPPED_ENTRY NAME(SELF, popped_entry)
-
-typedef struct {
-    union {
-        T value;
-    };
-    bool present;
-} POPPED_ENTRY;
-
-static POPPED_ENTRY NAME(SELF, pop)(SELF* self) {
+static bool NAME(SELF, try_pop)(SELF* self, T* destination) {
     DEBUG_ASSERT(self);
     if (LIKELY(self->size > 0)) {
         self->size--;
-        return (POPPED_ENTRY){.value = self->data[self->size], .present = true};
+        *destination = self->data[self->size];
+        return true;
     } else {
-        return (POPPED_ENTRY){.present = false};
+        return false;
     }
 }
 
-#undef POPPED_ENTRY
+static T NAME(SELF, pop)(SELF* self) {
+    T entry;
+    ASSERT(NAME(SELF, try_pop)(self, &entry));
+    return entry;
+}
 
 static size_t NAME(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);
@@ -219,7 +191,7 @@ static size_t NAME(ITER, position)(ITER const* iter) {
 
 static bool NAME(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
-    return iter->pos < iter->vec->size;
+    return iter->pos >= iter->vec->size;
 }
 
 static ITER NAME(SELF, get_iter)(SELF* self) {

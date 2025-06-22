@@ -10,9 +10,6 @@
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
 
-/// @defgroup template parameters
-/// @{
-
 #ifndef INDEX_BITS
 #error "The number of bits (8,16,32,64) to use for the arena's key"
 #define INDEX_BITS 32
@@ -22,17 +19,15 @@
 #error "The value type to place in the arena must be defined"
 typedef struct {
     int x;
-} derive_c_placeholder_value;
-#define V derive_c_placeholder_value
-void derive_c_placeholder_value_delete(derive_c_placeholder_value*) {}
-#define V_DELETE derive_c_placeholder_value_delete
+} derive_c_parameter_value;
+#define V derive_c_parameter_value
+void derive_c_parameter_value_delete(derive_c_parameter_value*) {}
+#define V_DELETE derive_c_parameter_value_delete
 #endif
 
 #ifndef V_DELETE
 #define V_DELETE(value)
 #endif
-
-/// @}
 
 #if INDEX_BITS == 8
 #define INDEX_TYPE uint8_t
@@ -59,9 +54,7 @@ void derive_c_placeholder_value_delete(derive_c_placeholder_value*) {}
 
 #define SLOT NAME(SELF, SLOT)
 
-#define CHECK_ACCESS_INDEX(self, index)                                                            \
-    DEBUG_ASSERT(self);                                                                            \
-    ASSERT(index.index < self->exclusive_end);
+#define CHECK_ACCESS_INDEX(self, index) (index.index < self->exclusive_end)
 
 // JUSTIFY: Macro rather than static
 //           - Avoids the need to cast to the INDEX_TYPE
@@ -149,7 +142,10 @@ static INDEX NAME(SELF, insert)(SELF* self, V value) {
 }
 
 static V* NAME(SELF, try_write)(SELF* self, INDEX index) {
-    CHECK_ACCESS_INDEX(self, index);
+    DEBUG_ASSERT(self);
+    if (!CHECK_ACCESS_INDEX(self, index)) {
+        return NULL;
+    }
     SLOT* slot = &self->slots[index.index];
     if (!slot->present) {
         return NULL;
@@ -163,15 +159,11 @@ static V* NAME(SELF, write)(SELF* self, INDEX index) {
     return value;
 }
 
-static V* NAME(SELF, write_unsafe_unchecked)(SELF* self, INDEX index) {
-#ifdef NDEBUG
-    return NAME(SELF, write)(self, index);
-#endif
-    return &self->slots[index.index].value;
-}
-
 static V const* NAME(SELF, try_read)(SELF const* self, INDEX index) {
-    CHECK_ACCESS_INDEX(self, index);
+    DEBUG_ASSERT(self);
+    if (!CHECK_ACCESS_INDEX(self, index)) {
+        return NULL;
+    }
     SLOT* slot = &self->slots[index.index];
     if (!slot->present) {
         return NULL;
@@ -183,13 +175,6 @@ static V const* NAME(SELF, read)(SELF const* self, INDEX index) {
     V const* value = NAME(SELF, try_read)(self, index);
     ASSERT(value);
     return value;
-}
-
-static V const* NAME(SELF, read_unchecked)(SELF const* self, INDEX index) {
-#ifdef NDEBUG
-    return NAME(SELF, read)(self, index);
-#endif
-    return &self->slots[index.index].value;
 }
 
 static SELF NAME(SELF, shallow_clone)(SELF const* self) {
@@ -224,31 +209,37 @@ static bool NAME(SELF, full)(SELF const* self) {
 static size_t NAME(SELF, max_capacity) = MAX_CAPACITY;
 static size_t NAME(SELF, max_index) = MAX_INDEX;
 
-#define REMOVED_ENTRY NAME(SELF, removed_entry)
+static bool NAME(SELF, try_remove)(SELF* self, INDEX index, V* destination) {
+    DEBUG_ASSERT(self);
+    if (!CHECK_ACCESS_INDEX(self, index)) {
+        return false;
+    }
 
-typedef struct {
-    union {
-        V value;
-    };
-    bool present;
-} REMOVED_ENTRY;
-
-static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, INDEX index) {
-    CHECK_ACCESS_INDEX(self, index);
     SLOT* entry = &self->slots[index.index];
     if (entry->present) {
-        REMOVED_ENTRY const ret_val = {.value = entry->value, .present = true};
+        *destination = entry->value;
         entry->present = false;
         entry->next_free = self->free_list;
         self->free_list = index.index;
         self->count--;
-        return ret_val;
+        return true;
+    } else {
+        return false;
     }
-    return (REMOVED_ENTRY){.present = false};
+}
+
+static V NAME(SELF, remove)(SELF* self, INDEX index) {
+    V value;
+    ASSERT(NAME(SELF, try_remove)(self, index, &value));
+    return value;
 }
 
 static bool NAME(SELF, delete_entry)(SELF* self, INDEX index) {
-    CHECK_ACCESS_INDEX(self, index);
+    DEBUG_ASSERT(self);
+    if (!CHECK_ACCESS_INDEX(self, index)) {
+        return false;
+    }
+
     SLOT* entry = &self->slots[index.index];
     if (entry->present) {
         V_DELETE(&entry->value);
@@ -261,13 +252,16 @@ static bool NAME(SELF, delete_entry)(SELF* self, INDEX index) {
     return false;
 }
 
-#undef REMOVED_ENTRY
-
 #define IV_PAIR NAME(SELF, iv)
 typedef struct {
     INDEX index;
     V* value;
 } IV_PAIR;
+
+static IV_PAIR NAME(SELF, iv_empty) = {
+    .index = {.index = INDEX_NONE},
+    .value = NULL,
+};
 
 #define ITER NAME(SELF, iter)
 typedef struct {
@@ -343,6 +337,11 @@ typedef struct {
     INDEX index;
     V const* value;
 } IV_PAIR_CONST;
+
+static IV_PAIR_CONST NAME(SELF, iv_const_empty) = {
+    .index = {.index = INDEX_NONE},
+    .value = NULL,
+};
 
 #define ITER_CONST NAME(SELF, iter_const)
 typedef struct {

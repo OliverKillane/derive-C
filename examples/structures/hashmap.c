@@ -1,3 +1,7 @@
+/// @file
+/// @example structures/hashmap.c
+/// @brief Examples for inserting, iterating, and deleting hashmaps.
+
 #include <assert.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -9,10 +13,6 @@
 #include <derive-c/derives/std.h>
 #include <derive-c/macros/iterators.h>
 #include <derive-c/structures/hashmap/hashers.h>
-
-/// @defgroup a map of integers to constant strings
-/// @brief Using a simple hash, storing values that do not need to be destroyed.
-/// @{
 
 #define K uint32_t
 #define V char const*
@@ -48,12 +48,6 @@ void id_to_name_example() {
 
     id_to_name_delete(&map);
 }
-
-/// @}
-
-/// @defgroup a map of strings to a struct that requires destruction
-/// @brief Properly manages ownership, freeing, and hashing the keys.
-/// @{
 
 struct report_id {
     char* name;
@@ -107,18 +101,11 @@ void report_map_example() {
                entry.key->section, entry.value->value);
     }
 
-    report_map_removed_entry entry = report_map_remove(&map, id1);
-    assert(entry.present);
-    report_delete(&entry.value);
+    struct report entry = report_map_remove(&map, id1);
+    report_delete(&entry);
 
     report_map_delete(&map);
 }
-
-/// @}
-
-/// @defgroup fast in-place strings to integers
-/// @brief Demonstratin g hashing on array types
-/// @{
 
 struct fixed_string {
     char value[4];
@@ -163,8 +150,6 @@ void fixed_string_example() {
 
     fixed_string_map_delete(&map);
 }
-
-/// @}
 
 int main() {
     id_to_name_example();

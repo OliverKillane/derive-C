@@ -1,11 +1,11 @@
+/// @file
+/// @example structures/staticvec.c
+/// @brief Examples for using static vectors (in-place storage, up to a fixed size).
+
 #include <assert.h>
 #include <stdint.h>
 
 #include <derive-c/macros/iterators.h>
-
-/// @defgroup Pushing Up to Capacity
-/// @brief Storing characters in place
-/// @{
 
 #define MAX_CAPACITY 8
 
@@ -23,7 +23,7 @@ void push_example() {
     }
 
     // Cannot push past the in-place capacity
-    assert(!staticvec_chars_push_optional(&vec, 8));
+    assert(!staticvec_chars_try_push(&vec, 8));
 
     // Check that the first 8 characters are in place
     for (unsigned char i = 0; i < MAX_CAPACITY; i++) {
@@ -36,12 +36,6 @@ void push_example() {
 
     staticvec_chars_delete(&vec);
 }
-
-/// @}
-
-/// @defgroup Pushing Up to Capacity
-/// @brief Storing characters in place
-/// @{
 
 void iter_example() {
     staticvec_chars vec = staticvec_chars_new();
@@ -61,8 +55,6 @@ void iter_example() {
 
     staticvec_chars_delete(&vec);
 }
-
-/// @}
 
 int main() {
     push_example();

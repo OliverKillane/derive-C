@@ -152,8 +152,7 @@ struct Remove : Command {
     }
     void runAndCheck(const Model& m, SutWrapper& s) const override {
         if (key.has_value()) {
-            Sut_removed_entry entry = Sut_remove(s.get(), key.value());
-            RC_ASSERT(entry.present);
+            Sut_remove(s.get(), key.value());
         }
     }
     void show(std::ostream& os) const override { os << "Remove(" << key.value() << ")"; }
@@ -162,6 +161,7 @@ struct Remove : Command {
 RC_GTEST_PROP(HashMapTests, General, ()) {
     Model model;
     SutWrapper sutWrapper;
-    rc::state::check(model, sutWrapper, rc::state::gen::execOneOfWithArgs<Insert, Write, Remove>());
+    rc::state::check(model, sutWrapper,
+                     rc::state::gen::execOneOfWithArgs<Insert, Insert, Insert, Write, Remove>());
 }
 } // namespace hashmap

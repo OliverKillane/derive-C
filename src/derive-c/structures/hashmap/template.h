@@ -10,40 +10,37 @@
 #include <derive-c/self.h>
 #include <derive-c/structures/hashmap/utils.h>
 
-/// @defgroup template parameters
-/// @{
-
 #ifndef K
 #error "Key type must be defined to for a hashmap template"
 typedef struct {
     int x;
-} derive_c_placeholder_key;
-#define K derive_c_placeholder_key
-static void derive_c_placeholder_key_delete(derive_c_placeholder_key*) {}
-#define K_DELETE derive_c_placeholder_key_delete
+} derive_c_parameter_key;
+#define K derive_c_parameter_key
+static void derive_c_parameter_key_delete(derive_c_parameter_key*) {}
+#define K_DELETE derive_c_parameter_key_delete
 #endif
 
 #ifndef V
 #error "Value type must be defined to for a hashmap template"
 typedef struct {
     int x;
-} derive_c_placeholder_value;
-#define V derive_c_placeholder_value
-static void derive_c_placeholder_value_delete(derive_c_placeholder_value*) {}
-#define V_DELETE derive_c_placeholder_value_delete
+} derive_c_parameter_value;
+#define V derive_c_parameter_value
+static void derive_c_parameter_value_delete(derive_c_parameter_value*) {}
+#define V_DELETE derive_c_parameter_value_delete
 #endif
 
 #ifndef HASH
 #error "The hash function for K must be defined"
-static size_t derive_c_placeholder_hash(derive_c_placeholder_key const* key);
-#define HASH derive_c_placeholder_hash
+static size_t derive_c_parameter_hash(derive_c_parameter_key const* key);
+#define HASH derive_c_parameter_hash
 #endif
 
 #ifndef EQ
 #error "The equality function for K must be defined"
-static bool derive_c_placeholder_eq(derive_c_placeholder_key const* key_1,
-                                    derive_c_placeholder_key const* key_2);
-#define EQ derive_c_placeholder_eq
+static bool derive_c_parameter_eq(derive_c_parameter_key const* key_1,
+                                  derive_c_parameter_key const* key_2);
+#define EQ derive_c_parameter_eq
 #endif
 
 #ifndef K_DELETE
@@ -53,8 +50,6 @@ static bool derive_c_placeholder_eq(derive_c_placeholder_key const* key_1,
 #ifndef V_DELETE
 #define V_DELETE(value)
 #endif
-
-/// @}
 
 #define KEY_ENTRY NAME(SELF, key_entry)
 typedef struct {
@@ -246,16 +241,7 @@ static V const* NAME(SELF, read)(SELF const* self, K key) {
     return value;
 }
 
-#define REMOVED_ENTRY NAME(SELF, removed_entry)
-
-typedef struct {
-    union {
-        V value;
-    };
-    bool present;
-} REMOVED_ENTRY;
-
-static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, K key) {
+static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
     size_t index = modulus_capacity(hash, self->capacity);
@@ -266,10 +252,7 @@ static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, K key) {
             if (EQ(&entry->key, &key)) {
                 self->items--;
 
-                REMOVED_ENTRY ret_val = {
-                    .value = self->values[index],
-                    .present = true,
-                };
+                *destination = self->values[index];
                 K_DELETE(&entry->key);
 
                 // NOTE: For robin hood hashing, we need probe chains to be unbroken
@@ -304,27 +287,26 @@ static REMOVED_ENTRY NAME(SELF, remove)(SELF* self, K key) {
 
                 free_entry->present = false;
 
-                return ret_val;
+                return true;
             } else {
                 index = modulus_capacity(index + 1, self->capacity);
             }
         } else {
-            return (REMOVED_ENTRY){.present = false};
+            return false;
         }
     }
 }
 
-static bool NAME(SELF, delete_entry)(SELF* self, K key) {
-    REMOVED_ENTRY entry = NAME(SELF, remove)(self, key);
-    if (entry.present) {
-        V_DELETE(&entry.value);
-        return true;
-    } else {
-        return false;
-    }
+static V NAME(SELF, remove)(SELF* self, K key) {
+    V value;
+    ASSERT(NAME(SELF, try_remove)(self, key, &value));
+    return value;
 }
 
-#undef REMOVED_ENTRY
+static void NAME(SELF, delete_entry)(SELF* self, K key) {
+    V value = NAME(SELF, remove)(self, key);
+    V_DELETE(&value);
+}
 
 static size_t NAME(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);

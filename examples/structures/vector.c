@@ -1,11 +1,11 @@
+/// @file
+/// @example structures/vector.c
+/// @brief Examples for inserting, iterating, and deleting from vectors.
+
 #include <assert.h>
 #include <stdint.h>
 
 #include <derive-c/macros/iterators.h>
-
-/// @defgroup Pushing and Popping
-/// @brief Storing integers in a vector
-/// @{
 
 #define T int32_t
 #define SELF vec_ints
@@ -30,19 +30,12 @@ void ints_example() {
     }
 
     // Pop the last value
-    vec_ints_popped_entry popped = vec_ints_pop(&ints);
-    assert(popped.present);
-    assert(popped.value == upto); // Last value should be 99 + 1
+    int32_t last_value = vec_ints_pop(&ints);
+    assert(last_value == upto); // Last value should be 99 + 1
     assert(vec_ints_size(&ints) == upto - 1);
 
     vec_ints_delete(&ints);
 }
-
-/// @}
-
-/// @defgroup Moving complex values
-/// @brief Storing complex values, removing them (and owning their data)
-/// @{
 
 struct complex {
     char* description;
@@ -71,20 +64,12 @@ void complex_example() {
 
     assert(vec_complex_read(&vec, 0)->score == 5);
 
-    vec_complex_popped_entry popped = vec_complex_pop(&vec);
-    assert(popped.present);
-    assert(popped.value.score == 40); // Last item's score should be 40
+    struct complex popped = vec_complex_pop(&vec);
+    assert(popped.score == 40); // Last item's score should be 40
 
     vec_complex_delete(&vec);
-
-    complex_delete(&popped.value);
+    complex_delete(&popped);
 }
-
-/// @}
-
-/// @defgroup Iterating over vectors
-/// @brief Iterating over values in a loop, demonstrating the iterator interface
-/// @{
 
 #define T char
 #define SELF char_vec
@@ -123,8 +108,6 @@ void iterate_example() {
 
     char_vec_delete(&vec);
 }
-
-/// @}
 
 int main() {
     ints_example();

@@ -41,7 +41,6 @@ void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* 
     const uint32_t c1 = 0xcc9e2d51;
     const uint32_t c2 = 0x1b873593;
 
-    //----------
     // body
 
     const uint32_t* blocks = (const uint32_t*)(data + nblocks * 4);
@@ -58,7 +57,6 @@ void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* 
         h1 = h1 * 5 + 0xe6546b64;
     }
 
-    //----------
     // tail
 
     const uint8_t* tail = (const uint8_t*)(data + nblocks * 4);
@@ -78,7 +76,6 @@ void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* 
         h1 ^= k1;
     };
 
-    //----------
     // finalization
 
     h1 ^= len;
@@ -252,7 +249,6 @@ void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t
     const uint64_t c1 = 0x87c37b91114253d5LLU;
     const uint64_t c2 = 0x4cf5ad432745937fLLU;
 
-    //----------
     // body
 
     const uint64_t* blocks = (const uint64_t*)(data);
@@ -280,7 +276,6 @@ void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t
         h2 = h2 * 5 + 0x38495ab5;
     }
 
-    //----------
     // tail
 
     const uint8_t* tail = (const uint8_t*)(data + nblocks * 16);
@@ -330,7 +325,6 @@ void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t
         h1 ^= k1;
     };
 
-    //----------
     // finalization
 
     h1 ^= len;

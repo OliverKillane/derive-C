@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @example complex/prime_sieve.c
+ * @brief Using a vector in implementing a basic prime sieve.
+ */
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>

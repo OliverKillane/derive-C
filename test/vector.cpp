@@ -18,8 +18,16 @@ extern "C" {
 #include <derive-c/structures/vector/template.h>
 }
 
+Sut newSut(size_t size) {
+    if (size == 0) {
+        return Sut_new();
+    } else {
+        return Sut_new_with_capacity(size);
+    }
+}
+
 struct SutWrapper {
-    SutWrapper() : sut(Sut_new()) {}
+    SutWrapper() : sut(newSut(*rc::gen::inRange(0, 100))) {}
     ~SutWrapper() { Sut_delete(&sut); }
     SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
     SutWrapper& operator=(const SutWrapper& other) {
@@ -103,16 +111,107 @@ struct Pop : Command {
 
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_back(); }
-    void runAndCheck(const Model& m, SutWrapper& sut) const override {
-        Sut_popped_entry entry = Sut_pop(sut.get());
-        RC_ASSERT(entry.present);
-    }
+    void runAndCheck(const Model& m, SutWrapper& sut) const override { Sut_pop(sut.get()); }
     void show(std::ostream& os) const override { os << "Pop()"; }
 };
 
 RC_GTEST_PROP(VectorTests, General, ()) {
     Model model;
     SutWrapper sut;
-    rc::state::check(model, sut, rc::state::gen::execOneOfWithArgs<Push>());
+    rc::state::check(model, sut, rc::state::gen::execOneOfWithArgs<Push, Push, Push, Write, Pop>());
 }
+
+TEST(VectorTests, CreateWithDefaults) {
+    Sut sut = Sut_new_with_defaults(128, 3);
+    ASSERT_EQ(Sut_size(&sut), 128);
+
+    for (size_t i = 0; i < Sut_size(&sut); ++i) {
+        ASSERT_EQ(*Sut_read(&sut, i), 3);
+    }
+
+    Sut_delete(&sut);
+}
+
+TEST(VectorTests, CreateWithZeroSize) {
+    Sut sut_1 = Sut_new_with_capacity(0);
+    ASSERT_EQ(Sut_size(&sut_1), 0);
+    Sut_delete(&sut_1);
+
+    Sut sut_2 = Sut_new();
+    ASSERT_EQ(Sut_size(&sut_2), 0);
+    Sut_delete(&sut_2);
+}
+
+TEST(VectorTests, CreateWithCapacity) {
+    Sut sut = Sut_new_with_capacity(64);
+    ASSERT_EQ(Sut_size(&sut), 0);
+    Sut_delete(&sut);
+}
+
+TEST(VectorTests, FailedAccesses) {
+    Sut sut = Sut_new_with_capacity(64);
+    ASSERT_EQ(Sut_size(&sut), 0);
+
+    ASSERT_EQ(Sut_try_read(&sut, 0), nullptr);
+    ASSERT_EQ(Sut_try_read(&sut, 63), nullptr);
+    ASSERT_EQ(Sut_try_write(&sut, 0), nullptr);
+
+    Sut_delete(&sut);
+}
+
+TEST(VectorTests, FailedPop) {
+    Sut sut = Sut_new_with_capacity(64);
+    ASSERT_EQ(Sut_size(&sut), 0);
+
+    Data value;
+    ASSERT_FALSE(Sut_try_pop(&sut, &value));
+    ASSERT_EQ(Sut_size(&sut), 0);
+
+    Sut_delete(&sut);
+}
+
+TEST(VectorTests, IteratorEdgeCases) {
+    Sut sut = Sut_new();
+
+    const size_t upto = 100;
+
+    for (size_t i = 0; i < upto; ++i) {
+        Sut_push(&sut, i);
+    }
+
+    Sut_iter_const iter_const = Sut_get_iter_const(&sut);
+    while (!Sut_iter_const_empty(&iter_const)) {
+        size_t pos = Sut_iter_const_position(&iter_const);
+        const Data* data = Sut_iter_const_next(&iter_const);
+        ASSERT_EQ(pos, *data);
+    }
+    ASSERT_EQ(Sut_iter_const_next(&iter_const), nullptr);
+    ASSERT_EQ(Sut_iter_const_position(&iter_const), upto);
+
+    Sut_iter iter = Sut_get_iter(&sut);
+    while (!Sut_iter_empty(&iter)) {
+        size_t pos = Sut_iter_position(&iter);
+        Data* data = Sut_iter_next(&iter);
+        ASSERT_EQ(pos, *data);
+    }
+    ASSERT_EQ(Sut_iter_next(&iter), nullptr);
+    ASSERT_EQ(Sut_iter_position(&iter), upto);
+    Sut_delete(&sut);
+}
+
+TEST(VectorTests, ShallowClone) {
+    Sut sut = Sut_new_with_defaults(100, 3);
+    ASSERT_EQ(Sut_size(&sut), 100);
+
+    Sut cloned_sut = Sut_shallow_clone(&sut);
+    ASSERT_EQ(Sut_size(&cloned_sut), 100);
+
+    for (size_t i = 0; i < Sut_size(&cloned_sut); ++i) {
+        ASSERT_EQ(*Sut_read(&cloned_sut, i), *Sut_read(&sut, i));
+    }
+
+    Sut_delete(&sut);
+    Sut_delete(&cloned_sut);
+}
+
 } // namespace vector

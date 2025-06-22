@@ -7,17 +7,14 @@
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
 
-/// @defgroup template parameters
-/// @{
-
 #ifndef T
 #error "The contained type must be defined for a vector template"
 typedef struct {
     int x;
-} derive_c_placeholder_t;
-#define T derive_c_placeholder_t // Allows independent debugging
-static void derive_c_placeholder_t_delete(derive_c_placeholder_t*) {}
-#define T_DELETE derive_c_placeholder_t_delete
+} derive_c_parameter_t;
+#define T derive_c_parameter_t // Allows independent debugging
+static void derive_c_parameter_t_delete(derive_c_parameter_t*) {}
+#define T_DELETE derive_c_parameter_t_delete
 #endif
 
 #ifndef T_DELETE
@@ -28,8 +25,6 @@ static void derive_c_placeholder_t_delete(derive_c_placeholder_t*) {}
 #error "The number of elements to store in-place must be defined"
 #define INPLACE_CAPACITY 8
 #endif
-
-/// @}
 
 #if INPLACE_CAPACITY <= 255
 #define INPLACE_TYPE uint8_t
@@ -75,14 +70,6 @@ static T const* NAME(SELF, read)(SELF const* self, INPLACE_TYPE index) {
     return value;
 }
 
-static T const* NAME(SELF, read_unsafe_unchecked)(SELF const* self, size_t index) {
-#ifdef NDEBUG
-    return NAME(SELF, read)(self, index);
-#else
-    return &self->data[index];
-#endif
-}
-
 static T* NAME(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
@@ -98,15 +85,7 @@ static T* NAME(SELF, write)(SELF* self, INPLACE_TYPE index) {
     return value;
 }
 
-static T* NAME(SELF, write_unsafe_unchecked)(SELF* self, size_t index) {
-#ifdef NDEBUG
-    return NAME(SELF, write)(self, index);
-#else
-    return &self->data[index];
-#endif
-}
-
-static T* NAME(SELF, push_optional)(SELF* self, T value) {
+static T* NAME(SELF, try_push)(SELF* self, T value) {
     DEBUG_ASSERT(self);
     if (self->size < INPLACE_CAPACITY) {
         T* slot = &self->data[self->size];
@@ -119,31 +98,27 @@ static T* NAME(SELF, push_optional)(SELF* self, T value) {
 }
 
 static T* NAME(SELF, push)(SELF* self, T value) {
-    T* slot = NAME(SELF, push_optional)(self, value);
+    T* slot = NAME(SELF, try_push)(self, value);
     ASSERT(slot);
     return slot;
 }
 
-#define POPPED_ENTRY NAME(SELF, popped_entry)
-
-typedef struct {
-    union {
-        T value;
-    };
-    bool present;
-} POPPED_ENTRY;
-
-static POPPED_ENTRY NAME(SELF, pop)(SELF* self) {
+static bool NAME(SELF, try_pop)(SELF* self, T* destination) {
     DEBUG_ASSERT(self);
     if (LIKELY(self->size > 0)) {
         self->size--;
-        return (POPPED_ENTRY){.value = self->data[self->size], .present = true};
+        *destination = self->data[self->size];
+        return true;
     } else {
-        return (POPPED_ENTRY){.present = false};
+        return false;
     }
 }
 
-#undef POPPED_ENTRY
+static T NAME(SELF, pop)(SELF* self) {
+    T entry;
+    ASSERT(NAME(SELF, try_pop)(self, &entry));
+    return entry;
+}
 
 static size_t NAME(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);
@@ -182,7 +157,7 @@ static size_t NAME(ITER, position)(ITER const* iter) {
 
 static bool NAME(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
-    return iter->pos < iter->vec->size;
+    return iter->pos >= iter->vec->size;
 }
 
 static ITER NAME(SELF, get_iter)(SELF* self) {
@@ -191,44 +166,44 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
         .vec = self,
         .pos = 0,
     };
-}
+
 #undef ITER
 
 #define ITER_CONST NAME(SELF, iter_const)
 
-typedef struct {
-    SELF const* vec;
-    size_t pos;
-} ITER_CONST;
+    typedef struct {
+        SELF const* vec;
+        size_t pos;
+    } ITER_CONST;
 
-static T const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
-    DEBUG_ASSERT(iter);
-    if (iter->pos < iter->vec->size) {
-        T const* item = &iter->vec->data[iter->pos];
-        iter->pos++;
-        return item;
-    } else {
-        return NULL;
+    static T const* NAME(ITER_CONST, next)(ITER_CONST * iter) {
+        DEBUG_ASSERT(iter);
+        if (iter->pos < iter->vec->size) {
+            T const* item = &iter->vec->data[iter->pos];
+            iter->pos++;
+            return item;
+        } else {
+            return NULL;
+        }
     }
-}
 
-static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
-}
+    static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
+        DEBUG_ASSERT(iter);
+        return iter->pos;
+    }
 
-static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos >= iter->vec->size;
-}
+    static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+        DEBUG_ASSERT(iter);
+        return iter->pos >= iter->vec->size;
+    }
 
-static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
-    DEBUG_ASSERT(self);
-    return (ITER_CONST){
-        .vec = self,
-        .pos = 0,
-    };
-}
+    static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+        DEBUG_ASSERT(self);
+        return (ITER_CONST){
+            .vec = self,
+            .pos = 0,
+        };
+    }
 
 #undef ITER_CONST
 #undef INPLACE_TYPE

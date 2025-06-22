@@ -59,8 +59,16 @@ size_t hash_murmurhash_string(const char* str) {
     return derive_c_murmurhash(str, (int)strlen(str), MURMURHASH_DEFAULT_SEED);
 }
 
-#define STRING_SIZES(_apply)                                                                       \
-    _apply(1) _apply(2) _apply(3) _apply(4) _apply(5) _apply(6) _apply(7) _apply(8)
+// clang-format off
+#define STRING_SIZES(_apply) \
+    _apply(1)                \
+    _apply(2)                \
+    _apply(3)                \
+    _apply(4)                \
+    _apply(5)                \
+    _apply(6)                \
+    _apply(7)                \
+    _apply(8) // clang-format on
 
 #define MURMURHASH_STRING_FIXED_SIZE(size)                                                         \
     static size_t hash_murmurhash_string_##size(const char str[size]) {                            \

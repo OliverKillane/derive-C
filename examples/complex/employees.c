@@ -1,3 +1,9 @@
+/// @file
+/// @example complex/employees.c
+/// @brief Composing arenas, maps & vectors
+/// Demonstrating embedding vectors inside hashmaps, and making efficient use of small indexes for
+/// arenas.
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

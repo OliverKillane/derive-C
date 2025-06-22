@@ -13,7 +13,6 @@
 
 #ifndef ASSERT
 #define ASSERT(expr, ...)                                                                          \
-    assert(expr);                                                                                  \
     if (!(expr)) {                                                                                 \
         PANIC("assertion " #expr " failed: " __VA_ARGS__ "\n");                                    \
     }

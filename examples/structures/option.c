@@ -1,11 +1,10 @@
+/// @file
+/// @example structures/option.c
+/// @brief Examples for using the optional type.
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-/// @defgroup storing complex optionals
-/// @brief Using a simple hash, storing values that do not need to be destroyed.
-/// @{
 
 struct complex_data {
     int x;
@@ -42,7 +41,5 @@ void option_example() {
 
     complex_data_option_delete(&opt);
 }
-
-/// @}
 
 int main() { option_example(); }

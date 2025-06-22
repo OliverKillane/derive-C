@@ -4,10 +4,23 @@ OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
 
+# Build
+QUIET                  = YES
+
 # Source input
-INPUT                  = @DOXYGEN_INPUT_FILES@
+INPUT                  = @CMAKE_SOURCE_DIR@/src/derive-c @CMAKE_SOURCE_DIR@/README.md @CMAKE_SOURCE_DIR@/examples 
 FILE_PATTERNS          = *.c *.h *.cpp *.hpp *.md
 RECURSIVE              = YES
+EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@/examples
+EXAMPLE_PATTERNS       = *.c
+
+# Macros
+ENABLE_PREPROCESSING  = YES
+MACRO_EXPANSION       = YES
+EXPAND_ONLY_PREDEF    = YES  
+EXPAND_AS_DEFINED     = NAME
+PREDEFINED           += NAME(SELF,name)=name
+EXCLUDE_SYMBOLS       = derive_c_parameter* ITER ITER_CONST
 
 # Documentation features
 EXTRACT_ALL            = YES
@@ -32,9 +45,22 @@ CALLER_GRAPH           = YES
 DOT_NUM_THREADS        = 2
 
 # Theme tweaks
-GENERATE_TREEVIEW      = NO
+GENERATE_TREEVIEW      = YES
 DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT
+HTML_COPY_CLIPBOARD    = YES
+CALLER_GRAPH           = YES
+TREEVIEW_WIDTH         = 335
+HTML_EXTRA_STYLESHEET  = @AWESOME_CSS_DIR@/doxygen-awesome.css \
+                         @AWESOME_CSS_DIR@/doxygen-custom/custom.css \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-sidebar-only.css \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                         @AWESOME_CSS_DIR@/doxygen-custom/custom-alternative.css
 
-HTML_EXTRA_STYLESHEET  = @DOXYGEN_AWESOME_CSS@
-HTML_EXTRA_FILES       = @DOXYGEN_AWESOME_JS@
-HTML_EXTRA_STYLESHEET += @DOXYGEN_AWESOME_COPY_CSS@
+HTML_EXTRA_FILES       = @AWESOME_CSS_DIR@/doxygen-awesome-darkmode-toggle.js \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-fragment-copy-button.js \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-paragraph-link.js \
+                         @AWESOME_CSS_DIR@/doxygen-custom/toggle-alternative-theme.js \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-interactive-toc.js \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-tabs.js

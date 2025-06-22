@@ -36,6 +36,12 @@ extern "C" {
 }
 
 inline bool operator==(const Sut_index& a, const Sut_index& b) { return a.index == b.index; }
+inline bool operator==(const Sut_iv& a, const Sut_iv& b) {
+    return a.index == b.index && a.value == b.value;
+}
+inline bool operator==(const Sut_iv_const& a, const Sut_iv_const& b) {
+    return a.index == b.index && a.value == b.value;
+}
 } // namespace arena
 
 namespace std {
@@ -105,7 +111,9 @@ struct Insert : Command {
     Value value =
         *rc::gen::inRange(std::numeric_limits<size_t>::min(), std::numeric_limits<Value>::max());
 
-    void checkPreconditions(const Model& s) const override { s.map.size() < Sut_max_capacity; }
+    void checkPreconditions(const Model& s) const override {
+        RC_ASSERT(s.map.size() < Sut_max_capacity);
+    }
 
     void apply(Model& s) const override {
         ModelIndex model_index = s.indexHelper.next();
@@ -182,9 +190,8 @@ struct Remove : Command {
         s.indexToSutIndex.erase(index.value());
         s.SutIndexToIndex.erase(sut_index);
 
-        Sut_removed_entry entry = Sut_remove(s.get(), sut_index);
-        RC_ASSERT(entry.value == m.map.at(index.value()));
-        RC_ASSERT(entry.present == true);
+        Value entry = Sut_remove(s.get(), sut_index);
+        RC_ASSERT(entry == m.map.at(index.value()));
     }
 };
 
@@ -224,6 +231,100 @@ RC_GTEST_PROP(ArenaTests, General, ()) {
     SutWrapper sutWrapper;
     rc::state::check(model, sutWrapper,
                      rc::state::gen::execOneOfWithArgs<Insert, Insert, Write, Remove, Delete>());
+}
+
+TEST(ArenaTests, Full) {
+    Sut sut = Sut_new_with_capacity_for(1);
+    ASSERT_FALSE(Sut_full(&sut));
+    ASSERT_EQ(Sut_max_capacity, 256);
+
+    for (size_t i = 0; i < Sut_max_capacity; ++i) {
+        Sut_insert(&sut, i);
+    }
+    ASSERT_TRUE(Sut_full(&sut));
+
+    Sut_delete(&sut);
+}
+
+TEST(VectorTests, IteratorEdgeCases) {
+    Sut sut = Sut_new_with_capacity_for(128);
+
+    const size_t upto = 100;
+
+    for (size_t i = 0; i < upto; ++i) {
+        Sut_insert(&sut, i);
+    }
+
+    Sut_iter_const iter_const = Sut_get_iter_const(&sut);
+    while (!Sut_iter_const_empty(&iter_const)) {
+        size_t pos = Sut_iter_const_position(&iter_const);
+        Sut_iv_const pair = Sut_iter_const_next(&iter_const);
+        ASSERT_EQ(pos, *pair.value);
+    }
+    ASSERT_EQ(Sut_iter_const_next(&iter_const), Sut_iv_const_empty);
+    ASSERT_EQ(Sut_iter_const_position(&iter_const), upto);
+
+    Sut_iter iter = Sut_get_iter(&sut);
+    while (!Sut_iter_empty(&iter)) {
+        size_t pos = Sut_iter_position(&iter);
+        Sut_iv pair = Sut_iter_next(&iter);
+        ASSERT_EQ(pos, *pair.value);
+    }
+    ASSERT_EQ(Sut_iter_next(&iter), Sut_iv_empty);
+    ASSERT_EQ(Sut_iter_position(&iter), upto);
+    Sut_delete(&sut);
+}
+
+TEST(ArenaTests, ShallowClone) {
+    Sut sut = Sut_new_with_capacity_for(128);
+    ASSERT_EQ(Sut_size(&sut), 0);
+
+    for (size_t i = 0; i < 128; ++i) {
+        Sut_insert(&sut, i);
+    }
+    ASSERT_EQ(Sut_size(&sut), 128);
+
+    Sut cloned_sut = Sut_shallow_clone(&sut);
+    ASSERT_EQ(Sut_size(&cloned_sut), 128);
+
+    for (uint8_t i = 0; i < Sut_size(&cloned_sut); ++i) {
+        ASSERT_EQ(*Sut_read(&cloned_sut, Sut_index{.index = i}),
+                  *Sut_read(&sut, Sut_index{.index = i}));
+    }
+
+    Sut_delete(&sut);
+    Sut_delete(&cloned_sut);
+}
+
+TEST(ArenaTests, FailedReadWrite) {
+    Sut sut = Sut_new_with_capacity_for(64);
+
+    // Accessing out of the bounds of the arena
+    ASSERT_EQ(Sut_try_read(&sut, Sut_index{.index = 0}), nullptr);
+    ASSERT_EQ(Sut_try_write(&sut, Sut_index{.index = 0}), nullptr);
+
+    // Accessing in bounds, but the entry was deleted
+    Sut_remove(&sut, Sut_insert(&sut, 3));
+    ASSERT_EQ(Sut_try_read(&sut, Sut_index{.index = 0}), nullptr);
+    ASSERT_EQ(Sut_try_write(&sut, Sut_index{.index = 0}), nullptr);
+
+    Sut_delete(&sut);
+}
+
+TEST(ArenaTests, FailedRemoveDelete) {
+    Sut sut = Sut_new_with_capacity_for(64);
+
+    // Accessing out of the bounds of the arena
+    Value v;
+    ASSERT_FALSE(Sut_try_remove(&sut, Sut_index{.index = 0}, &v));
+    ASSERT_FALSE(Sut_delete_entry(&sut, Sut_index{.index = 0}));
+
+    // Accessing in bounds, but the entry was deleted
+    Sut_remove(&sut, Sut_insert(&sut, 3));
+    ASSERT_FALSE(Sut_try_remove(&sut, Sut_index{.index = 0}, &v));
+    ASSERT_FALSE(Sut_delete_entry(&sut, Sut_index{.index = 0}));
+
+    Sut_delete(&sut);
 }
 
 } // namespace arena

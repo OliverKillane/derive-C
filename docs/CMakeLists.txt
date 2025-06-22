@@ -8,12 +8,13 @@ FetchContent_Declare(
     GIT_TAG v2.3.4
 )
 FetchContent_MakeAvailable(doxygen-awesome)
+FetchContent_GetProperties(doxygen-awesome SOURCE_DIR AWESOME_CSS_DIR)
 
 # Substitute paths from cmake to the Doxyfile
 # Replace @ONLY-style placeholders (e.g. @CMAKE_SOURCE_DIR@)
-set(DOXYGEN_AWESOME_CSS "${doxygen-awesome_SOURCE_DIR}/doxygen-awesome.css")
-set(DOXYGEN_AWESOME_JS  "${doxygen-awesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js")
-set(DOXYGEN_AWESOME_COPY_CSS "${doxygen-awesome_SOURCE_DIR}/doxygen-awesome-fragment-copy-button.css")
+# set(DOXYGEN_AWESOME_CSS "${doxygen-awesome_SOURCE_DIR}/doxygen-awesome.css")
+# set(DOXYGEN_AWESOME_JS  "${doxygen-awesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js")
+# set(DOXYGEN_AWESOME_COPY_CSS "${doxygen-awesome_SOURCE_DIR}/doxygen-awesome-fragment-copy-button.css")
 set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/../docs/Doxyfile.in)
 set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
