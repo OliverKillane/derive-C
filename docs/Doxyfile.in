@@ -1,5 +1,5 @@
 # Project info
-PROJECT_NAME           = "My Project"
+PROJECT_NAME           = "Derive-C"
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
