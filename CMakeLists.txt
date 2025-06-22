@@ -37,18 +37,31 @@ if (EXTERNALS)
     add_subdirectory(docs)
 endif()
 
-# TODO: Also format CMakeLists.txt files
 find_program(CLANG_FORMAT NAMES clang-format)
 if(CLANG_FORMAT)
     file(GLOB_RECURSE SOURCE_FILES
-        ${CMAKE_SOURCE_DIR}/*.c
-        ${CMAKE_SOURCE_DIR}/*.h
-        ${CMAKE_SOURCE_DIR}/*.cpp
-        ${CMAKE_SOURCE_DIR}/*.hpp
+        ${CMAKE_SOURCE_DIR}/src/*.h
+        ${CMAKE_SOURCE_DIR}/src/*.c
+        ${CMAKE_SOURCE_DIR}/examples/*.c
+        ${CMAKE_SOURCE_DIR}/examples/*.h
+        ${CMAKE_SOURCE_DIR}/test/*.cpp
+        ${CMAKE_SOURCE_DIR}/test/*.hpp
     )
+
     add_custom_target(
         format
         COMMAND ${CLANG_FORMAT} -i ${SOURCE_FILES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Reformatting all source files"
+    )
+
+    add_custom_target(
+        format-check
+        COMMAND ${CLANG_FORMAT}
+                --dry-run
+                --Werror
+                ${SOURCE_FILES}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Verifying clang-format compliance (fails if any file needs reformatting)"
     )
 endif()

@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  build_and_:
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,5 +23,7 @@ jobs:
         run: nix-shell --run 'ninja -C build'
       - name: Test
         run: nix-shell --run 'ctest --test-dir build --output-on-failure'
+      - name: Test
+        run: nix-shell --run 'ninja -C build format-check'  
       - name: Test Coverage
         run: nix-shell --run 'ninja -C build coverage'

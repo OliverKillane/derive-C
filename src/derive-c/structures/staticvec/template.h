@@ -177,7 +177,7 @@ typedef struct {
     size_t pos;
 } ITER_CONST;
 
-static T const* NAME(ITER_CONST, next)(ITER_CONST * iter) {
+static T const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->pos < iter->vec->size) {
         T const* item = &iter->vec->data[iter->pos];
