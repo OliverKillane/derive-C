@@ -52,6 +52,7 @@ In development, remaining tasks:
  - Finish gdb pretty printers
  - Increase coverage for hashmap
  - Regression benchmarks
+ - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
 
 ## References
 - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)

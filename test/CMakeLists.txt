@@ -4,11 +4,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(COVERAGE_FLAGS
       -fprofile-instr-generate
       -fcoverage-mapping
-  )
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(COVERAGE_FLAGS --coverage)
+    )
 endif()
 
+# Rapidcheck contains cpp23 deprecated features
+add_compile_options(-Wno-deprecated-declarations)
 add_compile_options(${COVERAGE_FLAGS})
 add_link_options(${COVERAGE_FLAGS})
 
@@ -45,23 +45,16 @@ gtest_discover_tests(derivec_tests
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES
     ENVIRONMENT
-      "RC_PARAMS=max_success=1000"
+      "RC_PARAMS=max_success=10000"
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
     find_program(LLVM_PROFDATA_EXECUTABLE NAMES llvm-profdata)
     find_program(GENHTML_EXECUTABLE NAMES genhtml)
-    if(DEVELOP AND LLVM_COV_EXECUTABLE AND LLVM_PROFDATA_EXECUTABLE AND GENHTML_EXECUTABLE)
-        add_custom_target(coverage-clean
-            COMMENT "🧹 Removing stale GCC coverage data (.gcda/.gcno)..."
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMAND find ${CMAKE_BINARY_DIR} -type f -name "*.gcda" -delete
-            COMMAND find ${CMAKE_BINARY_DIR} -type f -name "*.gcno" -delete
-        )
-    
+    if(DEVELOP AND LLVM_COV_EXECUTABLE AND LLVM_PROFDATA_EXECUTABLE AND GENHTML_EXECUTABLE)    
         add_custom_target(coverage
-            DEPENDS derivec_tests coverage-clean
+            DEPENDS derivec_tests
             COMMENT "🔍 Running llvm-cov → HTML coverage report (Clang/LLVM)"
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             COMMAND LLVM_PROFILE_FILE=default.profraw ${CMAKE_BINARY_DIR}/test/derivec_tests

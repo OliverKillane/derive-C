@@ -6,13 +6,6 @@
 
 #define LIKELY(x) __builtin_expect(!!(x), 1)
 
-#define MAYBE_NULL(T) T*
-#define NEVER_NULL(T) T*
-
-#define OUT(ptr) ptr
-#define IN(ptr) ptr
-#define INOUT(ptr) ptr
-
 #define EXPAND(...) __VA_ARGS__
 
 typedef struct {

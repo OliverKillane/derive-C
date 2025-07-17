@@ -10,7 +10,6 @@ myStdenv.mkDerivation {
   name = "derive-c-dev-shell";
 
   buildInputs =
-    # first the generic tools from pkgs
     (with pkgs; [
       cmake
       ninja
@@ -19,7 +18,6 @@ myStdenv.mkDerivation {
       lcov
       gcovr
     ])
-    # then concat the llvm-19 tools
     ++ (with llvm19; [
       clang        # clang-19
       clang-tools  # clang-format & clang-tidy for 19
