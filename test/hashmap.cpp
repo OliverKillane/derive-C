@@ -74,9 +74,9 @@ struct Command : rc::state::Command<Model, SutWrapper> {
         //             present in sut but not in model (not checked by previous loop)
         Sut_iter_const iter = Sut_get_iter_const(s.getConst());
         while (!Sut_iter_const_empty(&iter)) {
-            Sut_kv_const item = Sut_iter_const_next(&iter);
-            RC_ASSERT(item.key != nullptr && item.value != nullptr);
-            RC_ASSERT(m[*item.key] == *item.value);
+            Sut_kv_const const* item = Sut_iter_const_next(&iter);
+            RC_ASSERT(item->key != nullptr && item->value != nullptr);
+            RC_ASSERT(m[*item->key] == *item->value);
         }
     }
 };

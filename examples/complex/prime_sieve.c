@@ -9,8 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <derive-c/macros/iterators.h>
-
 #define SELF sieve_vec
 #define T bool
 #include <derive-c/structures/vector/template.h>
@@ -42,10 +40,13 @@ void display(sieve_vec const* sieve) {
     sieve_vec_iter_const_next(&iter); // skip 0
     sieve_vec_iter_const_next(&iter); // skip 1
 
-    ITER_ENUMERATE_LOOP(sieve_vec_iter_const, iter, bool const*, is_not_prime, size_t, index) {
+    bool const* is_not_prime;
+    size_t index = 0;
+    while ((is_not_prime = sieve_vec_iter_const_next(&iter))) {
         if (!*is_not_prime) {
-            printf("%zu is prime\n", sieve_vec_iter_const_position(&iter) - 1);
+            printf("%zu is prime\n", index);
         }
+        index++;
     }
 }
 

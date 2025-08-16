@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <derive-c/macros/iterators.h>
-
 typedef struct {
     char const* forename;
     char const* surname;
@@ -95,9 +93,9 @@ void hr_system_delete(hr_system* self) {
     employees_delete(&self->data);
 
     employees_by_age_iter iter = employees_by_age_get_iter(&self->by_age);
-    while (!employees_by_age_iter_empty(&iter)) {
-        employees_by_age_kv kv = employees_by_age_iter_next(&iter);
-        same_age_employees_delete(kv.value);
+    employees_by_age_kv const* entry = NULL;
+    while ((entry = employees_by_age_iter_next(&iter))) {
+        same_age_employees_delete(entry->value);
     }
 
     employees_by_age_delete(&self->by_age);

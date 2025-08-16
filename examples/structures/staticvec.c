@@ -5,8 +5,6 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include <derive-c/macros/iterators.h>
-
 #define MAX_CAPACITY 8
 
 #define T unsigned char
