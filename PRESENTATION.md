@@ -40,7 +40,7 @@ ctest --test-dir build
 We can then fix the bug.
  - Undo the bug I added 👍
 
-Now we see infer pass, and we can see the tests pass, but need some confidence.
+Now we see throw fewer errors, and we can see the tests pass, but need some confidence.
 ```bash
 ninja -C build coverage
 ```

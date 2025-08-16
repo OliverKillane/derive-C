@@ -17,6 +17,7 @@ myStdenv.mkDerivation {
       graphviz
       lcov
       gcovr
+      heaptrack
     ])
     ++ (with llvm19; [
       clang        # clang-19
