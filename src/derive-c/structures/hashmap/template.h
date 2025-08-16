@@ -326,22 +326,25 @@ typedef struct {
     SELF* map;
     size_t index;
     size_t pos;
+
+    // Used to hold the pair (so we can return an optional type - a ptr) from 
+    // next().
+    KV_PAIR curr;
 } ITER;
 
-static KV_PAIR NAME(ITER, next)(ITER* iter) {
+static KV_PAIR const* NAME(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
-        KV_PAIR ret_val = {.key = &iter->map->keys[iter->index].key,
+        iter->curr = (KV_PAIR){.key = &iter->map->keys[iter->index].key,
                            .value = &iter->map->values[iter->index]};
         iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
         }
-
-        return ret_val;
+        return &iter->curr;
     } else {
-        return (KV_PAIR){.key = NULL, .value = NULL};
+        return NULL;
     }
 }
 
@@ -365,6 +368,7 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
         .map = self,
         .index = first_index,
         .pos = 0,
+        .curr = (KV_PAIR){.key = NULL, .value = NULL},
     };
 }
 
@@ -399,22 +403,22 @@ typedef struct {
     SELF const* map;
     size_t index;
     size_t pos;
+    KV_PAIR_CONST curr;
 } ITER_CONST;
 
-static KV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
+static KV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
-        KV_PAIR_CONST ret_val = {.key = &iter->map->keys[iter->index].key,
+        iter->curr = (KV_PAIR_CONST){.key = &iter->map->keys[iter->index].key,
                                  .value = &iter->map->values[iter->index]};
         iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
         }
-
-        return ret_val;
+        return &iter->curr;
     } else {
-        return (KV_PAIR_CONST){.key = NULL, .value = NULL};
+        return NULL;
     }
 }
 
@@ -438,6 +442,7 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
         .map = self,
         .index = first_index,
         .pos = 0,
+        .curr = (KV_PAIR_CONST){.key = NULL, .value = NULL},
     };
 }
 

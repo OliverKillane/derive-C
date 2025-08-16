@@ -99,10 +99,10 @@ struct Command : rc::state::Command<Model, SutWrapper> {
 
         Sut_iter_const iter = Sut_get_iter_const(s.getConst());
         while (!Sut_iter_const_empty(&iter)) {
-            Sut_iv_const item = Sut_iter_const_next(&iter);
-            RC_ASSERT(item.value != nullptr);
-            ModelIndex modelIndex = s.SutIndexToIndex.at(item.index);
-            RC_ASSERT(m.map.at(modelIndex) == *item.value);
+            Sut_iv_const const* item = Sut_iter_const_next(&iter);
+            RC_ASSERT(item->value != nullptr);
+            ModelIndex modelIndex = s.SutIndexToIndex.at(item->index);
+            RC_ASSERT(m.map.at(modelIndex) == *item->value);
         }
     }
 };
@@ -258,19 +258,19 @@ TEST(VectorTests, IteratorEdgeCases) {
     Sut_iter_const iter_const = Sut_get_iter_const(&sut);
     while (!Sut_iter_const_empty(&iter_const)) {
         size_t pos = Sut_iter_const_position(&iter_const);
-        Sut_iv_const pair = Sut_iter_const_next(&iter_const);
-        ASSERT_EQ(pos, *pair.value);
+        Sut_iv_const const* pair = Sut_iter_const_next(&iter_const);
+        ASSERT_EQ(pos, *pair->value);
     }
-    ASSERT_EQ(Sut_iter_const_next(&iter_const), Sut_iv_const_empty);
+    ASSERT_EQ(Sut_iter_const_next(&iter_const), nullptr);
     ASSERT_EQ(Sut_iter_const_position(&iter_const), upto);
 
     Sut_iter iter = Sut_get_iter(&sut);
     while (!Sut_iter_empty(&iter)) {
         size_t pos = Sut_iter_position(&iter);
-        Sut_iv pair = Sut_iter_next(&iter);
-        ASSERT_EQ(pos, *pair.value);
+        Sut_iv const* pair = Sut_iter_next(&iter);
+        ASSERT_EQ(pos, *pair->value);
     }
-    ASSERT_EQ(Sut_iter_next(&iter), Sut_iv_empty);
+    ASSERT_EQ(Sut_iter_next(&iter), nullptr);
     ASSERT_EQ(Sut_iter_position(&iter), upto);
     Sut_delete(&sut);
 }

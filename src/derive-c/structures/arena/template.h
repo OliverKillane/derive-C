@@ -258,16 +258,12 @@ typedef struct {
     V* value;
 } IV_PAIR;
 
-static IV_PAIR NAME(SELF, iv_empty) = {
-    .index = {.index = INDEX_NONE},
-    .value = NULL,
-};
-
 #define ITER NAME(SELF, iter)
 typedef struct {
     SELF* arena;
     INDEX_TYPE next_index;
     size_t pos;
+    IV_PAIR curr;
 } ITER;
 
 static bool NAME(ITER, empty)(ITER const* iter) {
@@ -278,13 +274,13 @@ static bool NAME(ITER, empty)(ITER const* iter) {
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-static IV_PAIR NAME(ITER, next)(ITER* iter) {
+static IV_PAIR const* NAME(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
 
     if (NAME(ITER, empty)(iter)) {
-        return (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL};
+        return NULL;
     } else {
-        IV_PAIR out = (IV_PAIR){.index = (INDEX){.index = iter->next_index},
+        iter->curr = (IV_PAIR){.index = (INDEX){.index = iter->next_index},
                                 .value = &iter->arena->slots[iter->next_index].value};
         iter->next_index++;
         while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
@@ -293,7 +289,7 @@ static IV_PAIR NAME(ITER, next)(ITER* iter) {
         }
 
         iter->pos++;
-        return out;
+        return &iter->curr;
     }
 }
 
@@ -313,17 +309,16 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
         .arena = self,
         .next_index = index,
         .pos = 0,
+        .curr = (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
     };
 }
 
 static void NAME(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     ITER iter = NAME(SELF, get_iter)(self);
-    while (!NAME(ITER, empty)(&iter)) {
-        IV_PAIR pair = NAME(ITER, next)(&iter);
-        if (pair.value) {
-            V_DELETE(pair.value);
-        }
+    IV_PAIR const* entry;
+    while ((entry = NAME(ITER, next)(&iter))) {
+        V_DELETE(entry->value);
     }
 
     free(self->slots);
@@ -348,6 +343,7 @@ typedef struct {
     SELF const* arena;
     INDEX_TYPE next_index;
     size_t pos;
+    IV_PAIR_CONST curr;
 } ITER_CONST;
 
 static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
@@ -355,13 +351,13 @@ static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-static IV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
+static IV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
 
     if (NAME(ITER_CONST, empty)(iter)) {
-        return (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL};
+        return NULL;
     } else {
-        IV_PAIR_CONST out = (IV_PAIR_CONST){.index = (INDEX){.index = iter->next_index},
+        iter->curr = (IV_PAIR_CONST){.index = (INDEX){.index = iter->next_index},
                                             .value = &iter->arena->slots[iter->next_index].value};
         iter->next_index++;
         while (iter->next_index != INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
@@ -370,7 +366,7 @@ static IV_PAIR_CONST NAME(ITER_CONST, next)(ITER_CONST* iter) {
         }
 
         iter->pos++;
-        return out;
+        return &iter->curr;
     }
 }
 
@@ -390,6 +386,7 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
         .arena = self,
         .next_index = index,
         .pos = 0,
+        .curr = (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
     };
 }
 
