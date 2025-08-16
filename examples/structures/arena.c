@@ -21,7 +21,7 @@ void int_example() {
     assert(ints_size(&arena) == 4);
     {
         ints_iter_const print_ints = ints_get_iter_const(&arena);
-        ints_iv_const const*  entry = NULL;
+        ints_iv_const const* entry = NULL;
         while ((entry = ints_iter_const_next(&print_ints))) {
             printf("entry for %d at %d\n", *entry->value, entry->index.index);
         }
@@ -31,7 +31,8 @@ void int_example() {
         ints_iter inc_ints = ints_get_iter(&arena);
         ints_iv const* entry = NULL;
         while ((entry = ints_iter_next(&inc_ints))) {
-            printf("incrementing for %d = %d + 1 at %d\n", *entry->value, *entry->value, entry->index.index);
+            printf("incrementing for %d = %d + 1 at %d\n", *entry->value, *entry->value,
+                   entry->index.index);
             *entry->value += 1;
         }
     }

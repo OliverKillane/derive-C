@@ -281,7 +281,7 @@ static IV_PAIR const* NAME(ITER, next)(ITER* iter) {
         return NULL;
     } else {
         iter->curr = (IV_PAIR){.index = (INDEX){.index = iter->next_index},
-                                .value = &iter->arena->slots[iter->next_index].value};
+                               .value = &iter->arena->slots[iter->next_index].value};
         iter->next_index++;
         while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
                !iter->arena->slots[iter->next_index].present) {
@@ -358,7 +358,7 @@ static IV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
         return NULL;
     } else {
         iter->curr = (IV_PAIR_CONST){.index = (INDEX){.index = iter->next_index},
-                                            .value = &iter->arena->slots[iter->next_index].value};
+                                     .value = &iter->arena->slots[iter->next_index].value};
         iter->next_index++;
         while (iter->next_index != INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
                !iter->arena->slots[iter->next_index].present) {

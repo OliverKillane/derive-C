@@ -333,7 +333,7 @@ static KV_PAIR const* NAME(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR){.key = &iter->map->keys[iter->index].key,
-                           .value = &iter->map->values[iter->index]};
+                               .value = &iter->map->values[iter->index]};
         iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
@@ -407,7 +407,7 @@ static KV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR_CONST){.key = &iter->map->keys[iter->index].key,
-                                 .value = &iter->map->values[iter->index]};
+                                     .value = &iter->map->values[iter->index]};
         iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
