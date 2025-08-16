@@ -5,8 +5,6 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include <derive-c/macros/iterators.h>
-
 #define T int32_t
 #define SELF vec_ints
 #include <derive-c/structures/vector/template.h>
@@ -102,8 +100,13 @@ void iterate_example() {
 
     {
         char_vec_iter_const iter = char_vec_get_iter_const(&vec);
-        ITER_LOOP(char_vec_iter_const, iter, char const*, foo) { printf("%c", *foo); }
-        printf("\n");
+
+        char const* c = NULL;
+        size_t index = 0;
+        while ((c = char_vec_iter_const_next(&iter))) {
+            printf("entry for '%c' at index %zu\n", *c, index);
+            index++;
+        }
     }
 
     char_vec_delete(&vec);

@@ -11,7 +11,6 @@
 #include <string.h>
 
 #include <derive-c/derives/std.h>
-#include <derive-c/macros/iterators.h>
 #include <derive-c/structures/hashmap/hashers.h>
 
 #define K uint32_t
@@ -24,8 +23,12 @@
 void print_map(id_to_name const* map) {
     printf("Map has items:\n");
     id_to_name_iter_const iter = id_to_name_get_iter_const(map);
-    ITER_ENUMERATE_LOOP(id_to_name_iter_const, iter, id_to_name_kv_const, entry, size_t, pos) {
-        printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry.key, *entry.value);
+
+    id_to_name_kv_const const* entry = NULL;
+    size_t pos = 0;
+    while ((entry = id_to_name_iter_const_next(&iter))) {
+        printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry->key, *entry->value);
+        pos++;
     }
 }
 
@@ -95,10 +98,15 @@ void report_map_example() {
 
     assert(strcmp(report_map_read(&map, id1)->description, "Description A") == 0);
 
-    report_map_iter_const iter = report_map_get_iter_const(&map);
-    ITER_ENUMERATE_LOOP(report_map_iter_const, iter, report_map_kv_const, entry, size_t, pos) {
-        printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry.key->name,
-               entry.key->section, entry.value->value);
+    {
+        report_map_iter_const iter = report_map_get_iter_const(&map);
+        report_map_kv_const const* entry = NULL;
+        size_t pos = 0;
+        while ((entry = report_map_iter_const_next(&iter))) {
+            printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry->key->name,
+                   entry->key->section, entry->value->value);
+            pos++;
+        }
     }
 
     struct report entry = report_map_remove(&map, id1);
@@ -143,9 +151,12 @@ void fixed_string_example() {
     assert(*fixed_string_map_read(&map, key3) == 789);
 
     fixed_string_map_iter_const iter = fixed_string_map_get_iter_const(&map);
-    ITER_ENUMERATE_LOOP(fixed_string_map_iter_const, iter, fixed_string_map_kv_const, entry, size_t,
-                        pos) {
-        printf("Position: %zu Key: %.3s Value: %u\n", pos, entry.key->value, *entry.value);
+
+    fixed_string_map_kv_const const* entry = NULL;
+    size_t pos = 0;
+    while ((entry = fixed_string_map_iter_const_next(&iter))) {
+        printf("Position: %zu Key: %.3s Value: %u\n", pos, entry->key->value, *entry->value);
+        pos++;
     }
 
     fixed_string_map_delete(&map);
