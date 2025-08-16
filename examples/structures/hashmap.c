@@ -15,6 +15,32 @@
 #include <derive-c/structures/hashmap/hashers.h>
 
 #define K uint32_t
+#define V char*
+#define V_DELETE(t) free(*t)
+#define EQ uint32_t_eq
+#define HASH hash_id_uint32_t
+#define SELF id_to_str
+#include <derive-c/structures/hashmap/template.h>
+
+void example_many_allocs() {
+    for (size_t x = 0; x < 3; x++) {
+        id_to_str map = id_to_str_new();
+    
+        for (int i = 0; i < 100000; ++i) {
+            int size = 1 + (i % 10);
+            char* str = malloc(size);
+            id_to_str_insert(&map, i, str);
+            if (i > 100) {
+                id_to_str_delete_entry(&map, i - 100);
+            }
+            printf("%p allocated %d\n", str, size);
+        }
+    
+        id_to_str_delete(&map);
+    }
+}
+
+#define K uint32_t
 #define V char const*
 #define EQ uint32_t_eq
 #define HASH hash_id_uint32_t
@@ -152,7 +178,8 @@ void fixed_string_example() {
 }
 
 int main() {
-    id_to_name_example();
-    report_map_example();
-    fixed_string_example();
+    example_many_allocs();
+    // id_to_name_example();
+    // report_map_example();
+    // fixed_string_example();
 }
