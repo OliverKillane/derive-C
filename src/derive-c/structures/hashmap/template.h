@@ -326,9 +326,6 @@ typedef struct {
     SELF* map;
     size_t index;
     size_t pos;
-
-    // Used to hold the pair (so we can return an optional type - a ptr) from 
-    // next().
     KV_PAIR curr;
 } ITER;
 
