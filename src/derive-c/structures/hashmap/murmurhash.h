@@ -2,15 +2,16 @@
 /// implementation](https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.h)
 
 #include <derive-c/core.h>
+#include <stddef.h>
 #include <stdint.h>
 
 FORCE_INLINE uint32_t derive_c_rotl32(uint32_t x, int8_t r) { return (x << r) | (x >> (32 - r)); }
 
 FORCE_INLINE uint64_t derive_c_rotl64(uint64_t x, int8_t r) { return (x << r) | (x >> (64 - r)); }
 
-FORCE_INLINE uint32_t derive_c_getblock32(const uint32_t* p, int i) { return p[i]; }
+FORCE_INLINE uint32_t derive_c_getblock32(const uint32_t* p, int32_t i) { return p[i]; }
 
-FORCE_INLINE uint64_t derive_c_getblock64(const uint64_t* p, int i) { return p[i]; }
+FORCE_INLINE uint64_t derive_c_getblock64(const uint64_t* p, int32_t i) { return p[i]; }
 
 FORCE_INLINE uint32_t derive_c_fmix32(uint32_t h) {
     h ^= h >> 16;
@@ -32,9 +33,9 @@ FORCE_INLINE uint64_t derive_c_fmix64(uint64_t k) {
     return k;
 }
 
-void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* out) {
+void derive_c_MurmurHash3_x86_32(const void* key, int32_t len, uint32_t seed, void* out) {
     const uint8_t* data = (const uint8_t*)key;
-    const int nblocks = len / 4;
+    const int32_t nblocks = len / 4;
 
     uint32_t h1 = seed;
 
@@ -43,7 +44,7 @@ void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* 
 
     // body
 
-    const uint32_t* blocks = (const uint32_t*)(data + nblocks * 4);
+    const uint32_t* blocks = (const uint32_t*)(data + (ptrdiff_t)(nblocks * 4));
 
     for (int i = -nblocks; i; i++) {
         uint32_t k1 = derive_c_getblock32(blocks, i);
@@ -59,7 +60,7 @@ void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* 
 
     // tail
 
-    const uint8_t* tail = (const uint8_t*)(data + nblocks * 4);
+    const uint8_t* tail = (const uint8_t*)(data + (ptrdiff_t)(nblocks * 4));
 
     uint32_t k1 = 0;
 
@@ -74,6 +75,7 @@ void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* 
         k1 = derive_c_rotl32(k1, 15);
         k1 *= c2;
         h1 ^= k1;
+    default:
     };
 
     // finalization
@@ -85,9 +87,9 @@ void derive_c_MurmurHash3_x86_32(const void* key, int len, uint32_t seed, void* 
     *(uint32_t*)out = h1;
 }
 
-void derive_c_MurmurHash3_x86_128(const void* key, const int len, uint32_t seed, void* out) {
+void derive_c_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t seed, void* out) {
     const uint8_t* data = (const uint8_t*)key;
-    const int nblocks = len / 16;
+    const int32_t nblocks = len / 16;
 
     uint32_t h1 = seed;
     uint32_t h2 = seed;
@@ -101,13 +103,13 @@ void derive_c_MurmurHash3_x86_128(const void* key, const int len, uint32_t seed,
 
     // body
 
-    const uint32_t* blocks = (const uint32_t*)(data + nblocks * 16);
+    const uint32_t* blocks = (const uint32_t*)(data + (ptrdiff_t)(nblocks * 16));
 
     for (int i = -nblocks; i; i++) {
-        uint32_t k1 = derive_c_getblock32(blocks, i * 4 + 0);
-        uint32_t k2 = derive_c_getblock32(blocks, i * 4 + 1);
-        uint32_t k3 = derive_c_getblock32(blocks, i * 4 + 2);
-        uint32_t k4 = derive_c_getblock32(blocks, i * 4 + 3);
+        uint32_t k1 = derive_c_getblock32(blocks, (i * 4) + 0);
+        uint32_t k2 = derive_c_getblock32(blocks, (i * 4) + 1);
+        uint32_t k3 = derive_c_getblock32(blocks, (i * 4) + 2);
+        uint32_t k4 = derive_c_getblock32(blocks, (i * 4) + 3);
 
         k1 *= c1;
         k1 = derive_c_rotl32(k1, 15);
@@ -148,7 +150,7 @@ void derive_c_MurmurHash3_x86_128(const void* key, const int len, uint32_t seed,
 
     // tail
 
-    const uint8_t* tail = (const uint8_t*)(data + nblocks * 16);
+    const uint8_t* tail = (const uint8_t*)(data + (ptrdiff_t)(nblocks * 16));
 
     uint32_t k1 = 0;
     uint32_t k2 = 0;
@@ -205,6 +207,7 @@ void derive_c_MurmurHash3_x86_128(const void* key, const int len, uint32_t seed,
         k1 = derive_c_rotl32(k1, 15);
         k1 *= c2;
         h1 ^= k1;
+    default:
     };
 
     // finalization
@@ -239,9 +242,9 @@ void derive_c_MurmurHash3_x86_128(const void* key, const int len, uint32_t seed,
     ((uint32_t*)out)[3] = h4;
 }
 
-void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t seed, void* out) {
+void derive_c_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t seed, void* out) {
     const uint8_t* data = (const uint8_t*)key;
-    const int nblocks = len / 16;
+    const int32_t nblocks = len / 16;
 
     uint64_t h1 = seed;
     uint64_t h2 = seed;
@@ -253,9 +256,9 @@ void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t
 
     const uint64_t* blocks = (const uint64_t*)(data);
 
-    for (int i = 0; i < nblocks; i++) {
-        uint64_t k1 = derive_c_getblock64(blocks, i * 2 + 0);
-        uint64_t k2 = derive_c_getblock64(blocks, i * 2 + 1);
+    for (int32_t i = 0; i < nblocks; i++) {
+        uint64_t k1 = derive_c_getblock64(blocks, (i * 2) + 0);
+        uint64_t k2 = derive_c_getblock64(blocks, (i * 2) + 1);
 
         k1 *= c1;
         k1 = derive_c_rotl64(k1, 31);
@@ -278,7 +281,7 @@ void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t
 
     // tail
 
-    const uint8_t* tail = (const uint8_t*)(data + nblocks * 16);
+    const uint8_t* tail = (const uint8_t*)(data + (ptrdiff_t)(nblocks * 16));
 
     uint64_t k1 = 0;
     uint64_t k2 = 0;
@@ -323,6 +326,7 @@ void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t
         k1 = derive_c_rotl64(k1, 31);
         k1 *= c2;
         h1 ^= k1;
+    default:
     };
 
     // finalization
@@ -343,7 +347,7 @@ void derive_c_MurmurHash3_x64_128(const void* key, const int len, const uint32_t
     ((uint64_t*)out)[1] = h2;
 }
 
-size_t derive_c_murmurhash(const void* key, int len, uint32_t seed) {
+size_t derive_c_murmurhash(const void* key, int32_t len, uint32_t seed) {
 #if SIZE_MAX == UINT64_MAX
     // 64-bit platform: use the x64 128-bit variant, return lower 64 bits
     uint64_t out128[2];

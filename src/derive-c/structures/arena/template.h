@@ -21,7 +21,7 @@ typedef struct {
     int x;
 } derive_c_parameter_value;
 #define V derive_c_parameter_value
-void derive_c_parameter_value_delete(derive_c_parameter_value*) {}
+void derive_c_parameter_value_delete(derive_c_parameter_value* key __attribute__((unused))) {}
 #define V_DELETE derive_c_parameter_value_delete
 #endif
 
@@ -54,7 +54,7 @@ void derive_c_parameter_value_delete(derive_c_parameter_value*) {}
 
 #define SLOT NAME(SELF, SLOT)
 
-#define CHECK_ACCESS_INDEX(self, index) (index.index < self->exclusive_end)
+#define CHECK_ACCESS_INDEX(self, index) ((index).index < (self)->exclusive_end)
 
 // JUSTIFY: Macro rather than static
 //           - Avoids the need to cast to the INDEX_TYPE
@@ -223,9 +223,8 @@ static bool NAME(SELF, try_remove)(SELF* self, INDEX index, V* destination) {
         self->free_list = index.index;
         self->count--;
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 static V NAME(SELF, remove)(SELF* self, INDEX index) {

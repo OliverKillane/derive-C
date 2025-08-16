@@ -16,7 +16,7 @@ typedef struct {
     int x;
 } derive_c_parameter_key;
 #define K derive_c_parameter_key
-static void derive_c_parameter_key_delete(derive_c_parameter_key*) {}
+static void derive_c_parameter_key_delete(derive_c_parameter_key* key __attribute__((unused))) {}
 #define K_DELETE derive_c_parameter_key_delete
 #endif
 
@@ -26,7 +26,7 @@ typedef struct {
     int x;
 } derive_c_parameter_value;
 #define V derive_c_parameter_value
-static void derive_c_parameter_value_delete(derive_c_parameter_value*) {}
+static void derive_c_parameter_value_delete(derive_c_parameter_value* key __attribute__((unused))) {}
 #define V_DELETE derive_c_parameter_value_delete
 #endif
 
@@ -201,9 +201,8 @@ static V* NAME(SELF, try_write)(SELF* self, K key) {
         if (entry->present) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
-            } else {
-                index = modulus_capacity(index + 1, self->capacity);
             }
+            index = modulus_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -226,9 +225,8 @@ static V const* NAME(SELF, try_read)(SELF const* self, K key) {
         if (entry->present) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
-            } else {
-                index = modulus_capacity(index + 1, self->capacity);
             }
+            index = modulus_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -267,7 +265,7 @@ static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
                 size_t check_index = modulus_capacity(free_index + 1, self->capacity);
                 KEY_ENTRY* check_entry = &self->keys[check_index];
 
-                while (check_entry->present && check_entry->distance_from_desired > 0) {
+                while (check_entry->present && (check_entry->distance_from_desired > 0)) {
                     free_entry->key = check_entry->key;
                     free_entry->distance_from_desired = check_entry->distance_from_desired - 1;
                     self->values[free_index] = self->values[check_index];
@@ -288,9 +286,8 @@ static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
                 free_entry->present = false;
 
                 return true;
-            } else {
-                index = modulus_capacity(index + 1, self->capacity);
             }
+            index = modulus_capacity(index + 1, self->capacity);
         } else {
             return false;
         }
@@ -340,9 +337,8 @@ static KV_PAIR const* NAME(ITER, next)(ITER* iter) {
             iter->index++;
         }
         return &iter->curr;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static size_t NAME(ITER, position)(ITER const* iter) {
@@ -414,9 +410,8 @@ static KV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
             iter->index++;
         }
         return &iter->curr;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {

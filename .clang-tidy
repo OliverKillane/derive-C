@@ -1,0 +1,25 @@
+  Checks: >
+    -*,
+    bugprone-*,
+    -bugprone-easily-swappable-parameters,
+    -bugprone-reserved-identifier,
+    clang-analyzer-*,
+    -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+    misc-*,
+    -misc-no-recursion,
+    performance-*,
+    portability-*,
+    readability-*,
+    -readability-braces-around-statements,
+    -readability-function-cognitive-complexity,
+    -readability-identifier-length,
+    -readability-magic-numbers,
+    -readability-avoid-const-params-in-decls
+
+  WarningsAsErrors: ''
+
+  HeaderFilterRegex: '.*(src|test|examples)/.*'
+
+  ExcludeHeaderFilterRegex: '.*(third_party|external)/.*'
+
+  FormatStyle: file

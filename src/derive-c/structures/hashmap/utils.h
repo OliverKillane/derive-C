@@ -9,7 +9,7 @@ static inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0
 
 static inline size_t apply_capacity_policy(size_t capacity) {
     // TODO(oliverkillane): play with overallocation policy
-    return next_power_of_2(capacity + capacity / 2);
+    return next_power_of_2(capacity + (capacity / 2));
 }
 
 static inline size_t modulus_capacity(size_t index, size_t capacity) {

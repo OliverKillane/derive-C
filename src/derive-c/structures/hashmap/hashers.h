@@ -10,7 +10,7 @@
 
 /// The worst possible hash, for testing purposes.
 #define ALWAYS_COLLIDE(type)                                                                       \
-    static size_t hash_always_collide_##type(type const* key) { return 0; }
+    static size_t hash_always_collide_##type(type const* key __attribute__((unused))) { return 0; }
 
 /// No hashing, just returns the integer value.
 /// For most circumstances with a key as a single integer, this is a good option.
@@ -68,7 +68,8 @@ size_t hash_murmurhash_string(const char* str) {
     _apply(5)                \
     _apply(6)                \
     _apply(7)                \
-    _apply(8) // clang-format on
+    _apply(8)
+// clang-format on
 
 #define MURMURHASH_STRING_FIXED_SIZE(size)                                                         \
     static size_t hash_murmurhash_string_##size(const char str[size]) {                            \
