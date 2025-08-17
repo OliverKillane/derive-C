@@ -14,6 +14,7 @@ Derive-C aims to avoid these, and to get an experience close to simple templates
 
 For example:
 > Create a vector of characters '1'-'9', iterate and print them. No heap allocation & no memory leaks.
+
 ```c
 #include <stdio.h>
 
