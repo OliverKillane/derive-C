@@ -86,6 +86,4 @@ int main() {
     compute(&values);
     display(&values);
     sieve_vec_delete(&values);
-
-    return 0;
 }
