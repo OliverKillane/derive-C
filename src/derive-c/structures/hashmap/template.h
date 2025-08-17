@@ -10,6 +10,11 @@
 #include <derive-c/self.h>
 #include <derive-c/structures/hashmap/utils.h>
 
+#ifndef ALLOC
+#include <derive-c/allocs/std.h>
+#define ALLOC stdalloc
+#endif
+
 #ifndef K
 #ifndef __clang_analyzer__
 #error "Key type must be defined to for a hashmap template"
@@ -18,7 +23,7 @@ typedef struct {
     int x;
 } derive_c_parameter_key;
 #define K derive_c_parameter_key
-static void derive_c_parameter_key_delete(derive_c_parameter_key* key __attribute__((unused))) {}
+static void derive_c_parameter_key_delete(derive_c_parameter_key* UNUSED(key)) {}
 #define K_DELETE derive_c_parameter_key_delete
 #endif
 
@@ -30,8 +35,7 @@ typedef struct {
     int x;
 } derive_c_parameter_value;
 #define V derive_c_parameter_value
-static void derive_c_parameter_value_delete(derive_c_parameter_value* key __attribute__((unused))) {
-}
+static void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
 #define V_DELETE derive_c_parameter_value_delete
 #endif
 
@@ -74,28 +78,32 @@ typedef struct {
     // decomposed), should probably use 1 buffer.
     KEY_ENTRY* keys;
     V* values;
+    ALLOC* alloc;
     gdb_marker derive_c_hashmap;
 } SELF;
 
-static SELF NAME(SELF, new_with_capacity_for)(size_t capacity) {
+static SELF NAME(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     ASSERT(capacity > 0);
     size_t real_capacity = apply_capacity_policy(capacity);
     ASSERT(real_capacity > 0);
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
-    KEY_ENTRY* keys = (KEY_ENTRY*)calloc(sizeof(KEY_ENTRY), real_capacity);
-    V* values = (V*)malloc(sizeof(V) * real_capacity);
+    KEY_ENTRY* keys = (KEY_ENTRY*)NAME(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
+    V* values = (V*)NAME(ALLOC, malloc)(alloc, sizeof(V) * real_capacity);
     ASSERT(keys && values);
     return (SELF){
         .capacity = real_capacity,
         .items = 0,
         .keys = keys,
         .values = values,
+        .alloc = alloc,
     };
 }
 
-static SELF NAME(SELF, new)() { return NAME(SELF, new_with_capacity_for)(INITIAL_CAPACITY); }
+static SELF NAME(SELF, new)(ALLOC* alloc) {
+    return NAME(SELF, new_with_capacity_for)(INITIAL_CAPACITY, alloc);
+}
 
 static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     DEBUG_ASSERT(self);
@@ -106,8 +114,9 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     // JUSTIFY: Individually copy keys
     //           - Many entries are zeroed, no need to copy uninit data
 
-    KEY_ENTRY* keys = (KEY_ENTRY*)calloc(sizeof(KEY_ENTRY), self->capacity);
-    V* values = (V*)malloc(sizeof(V) * self->capacity);
+    KEY_ENTRY* keys =
+        (KEY_ENTRY*)NAME(ALLOC, calloc)(self->alloc, sizeof(KEY_ENTRY), self->capacity);
+    V* values = (V*)NAME(ALLOC, malloc)(self->alloc, sizeof(V) * self->capacity);
     ASSERT(keys && values);
 
     for (size_t i = 0; i < self->capacity; i++) {
@@ -117,7 +126,13 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
         }
     }
 
-    return (SELF){.capacity = self->capacity, .items = self->items, .keys = keys, .values = values};
+    return (SELF){
+        .capacity = self->capacity,
+        .items = self->items,
+        .keys = keys,
+        .values = values,
+        .alloc = self->alloc,
+    };
 }
 
 static void NAME(SELF, delete)(SELF* self);
@@ -128,15 +143,15 @@ static void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     DEBUG_ASSERT(self);
     size_t target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
-        SELF new_map = NAME(SELF, new_with_capacity_for)(expected_items);
+        SELF new_map = NAME(SELF, new_with_capacity_for)(expected_items, self->alloc);
         for (size_t index = 0; index < self->capacity; index++) {
             KEY_ENTRY* entry = &self->keys[index];
             if (entry->present) {
                 NAME(SELF, insert)(&new_map, entry->key, self->values[index]);
             }
         }
-        free((void*)self->keys);
-        free((void*)self->values);
+        NAME(ALLOC, free)(self->alloc, (void*)self->keys);
+        NAME(ALLOC, free)(self->alloc, (void*)self->values);
         *self = new_map;
     }
 }
@@ -385,8 +400,8 @@ static void NAME(SELF, delete)(SELF* self) {
         }
     }
 
-    free((void*)self->keys);
-    free((void*)self->values);
+    NAME(ALLOC, free)(self->alloc, (void*)self->keys);
+    NAME(ALLOC, free)(self->alloc, (void*)self->values);
 }
 
 #undef ITER

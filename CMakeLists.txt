@@ -26,10 +26,8 @@ if (DEVELOP)
     set(CMAKE_C_FLAGS_DEBUG "-g3 -O1")
     set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O1")
 
-    if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "Release")
-        message(STATUS "DEVELOP flag set: Forcing CMAKE_BUILD_TYPE=Debug")
-        set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
-    endif()
+    message(STATUS "DEVELOP flag set: Forcing CMAKE_BUILD_TYPE=Debug")
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 
     add_compile_options(${SANITIZER_FLAGS})
     add_link_options(${SANITIZER_FLAGS})

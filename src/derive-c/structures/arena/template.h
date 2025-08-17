@@ -10,6 +10,11 @@
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
 
+#ifndef ALLOC
+#include <derive-c/allocs/std.h>
+#define ALLOC stdalloc
+#endif
+
 #ifndef INDEX_BITS
 #ifndef __clang_analyzer__
 #error "The number of bits (8,16,32,64) to use for the arena's key"
@@ -25,7 +30,7 @@ typedef struct {
     int x;
 } derive_c_parameter_value;
 #define V derive_c_parameter_value
-void derive_c_parameter_value_delete(derive_c_parameter_value* key __attribute__((unused))) {}
+void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
 #define V_DELETE derive_c_parameter_value_delete
 #endif
 
@@ -98,13 +103,15 @@ typedef struct {
     // INVARIANT: If free_list == EMPTY_INDEX, then all values from [0, count)
     //            are present
     size_t count;
+
+    ALLOC* alloc;
 } SELF;
 
-static SELF NAME(SELF, new_with_capacity_for)(INDEX_TYPE items) {
+static SELF NAME(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
     DEBUG_ASSERT(items > 0);
     size_t capacity = next_power_of_2(items);
     ASSERT(capacity <= MAX_CAPACITY);
-    SLOT* slots = (SLOT*)calloc(capacity, sizeof(SLOT));
+    SLOT* slots = (SLOT*)NAME(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
     ASSERT(slots);
     return (SELF){
         .slots = slots,
@@ -112,6 +119,7 @@ static SELF NAME(SELF, new_with_capacity_for)(INDEX_TYPE items) {
         .free_list = INDEX_NONE,
         .exclusive_end = 0,
         .count = 0,
+        .alloc = alloc,
     };
 }
 
@@ -183,7 +191,7 @@ static V const* NAME(SELF, read)(SELF const* self, INDEX index) {
 
 static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     DEBUG_ASSERT(self);
-    SLOT* slots = (SLOT*)malloc(self->capacity * sizeof(SLOT));
+    SLOT* slots = (SLOT*)NAME(ALLOC, calloc)(self->alloc, self->capacity, sizeof(SLOT));
     ASSERT(slots);
     memcpy(slots, self->slots, self->exclusive_end * sizeof(SLOT));
     return (SELF){
@@ -192,6 +200,7 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
         .free_list = self->free_list,
         .exclusive_end = self->exclusive_end,
         .count = self->count,
+        .alloc = self->alloc,
     };
 }
 
@@ -323,7 +332,7 @@ static void NAME(SELF, delete)(SELF* self) {
         V_DELETE(entry->value);
     }
 
-    free(self->slots);
+    NAME(ALLOC, free)(self->alloc, self->slots);
 }
 
 #undef ITER

@@ -6,11 +6,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <derive-c/core.h>
 #include <derive-c/structures/hashmap/murmurhash.h>
 
 /// The worst possible hash, for testing purposes.
 #define ALWAYS_COLLIDE(type)                                                                       \
-    static size_t hash_always_collide_##type(type const* key __attribute__((unused))) { return 0; }
+    static size_t hash_always_collide_##type(type const* UNUSED(key)) { return 0; }
 
 /// No hashing, just returns the integer value.
 /// For most circumstances with a key as a single integer, this is a good option.

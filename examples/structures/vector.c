@@ -9,12 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <derive-c/allocs/std.h>
+
 #define T int32_t
 #define SELF vec_ints
 #include <derive-c/structures/vector/template.h>
 
 void ints_example() {
-    vec_ints ints = vec_ints_new_with_capacity(10);
+    vec_ints ints = vec_ints_new_with_capacity(10, stdalloc_get());
     const int32_t upto = 100;
 
     for (int32_t i = 0; i < upto; i++) {
@@ -52,7 +54,7 @@ void complex_data_delete(struct complex_data* self) { free(self->description); }
 #include <derive-c/structures/vector/template.h>
 
 void complex_data_example() {
-    vec_complex_data vec = vec_complex_data_new_with_capacity(5);
+    vec_complex_data vec = vec_complex_data_new_with_capacity(5, stdalloc_get());
     size_t entries = 5;
     for (size_t i = 0; i < entries; i++) {
         struct complex_data item = {.description = strdup("Complex item"), .score = i * 10};
@@ -78,7 +80,7 @@ void complex_data_example() {
 #include <derive-c/structures/vector/template.h>
 
 void iterate_example() {
-    char_vec vec = char_vec_new();
+    char_vec vec = char_vec_new(stdalloc_get());
     char_vec_push(&vec, 'H');
     char_vec_push(&vec, 'e');
     char_vec_push(&vec, 'l');
