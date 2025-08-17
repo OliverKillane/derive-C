@@ -19,23 +19,25 @@ typedef struct {
 
 static nullalloc NAME(nullalloc, get)() { return (nullalloc){}; }
 
-static void* NAME(nullalloc, malloc)(nullalloc* self, size_t size) {
+static void* NAME(nullalloc, malloc)(nullalloc* DEBUG_UNUSED(self), size_t UNUSED(size)) {
     DEBUG_ASSERT(self);
     return NULL;
 }
 
-static void* NAME(nullalloc, realloc)(nullalloc* self, void* ptr, size_t size) {
+static void* NAME(nullalloc, realloc)(nullalloc* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr),
+                                      size_t UNUSED(size)) {
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(ptr);
     return NULL;
 }
 
-static void* NAME(nullalloc, calloc)(nullalloc* self, size_t count, size_t size) {
+static void* NAME(nullalloc, calloc)(nullalloc* DEBUG_UNUSED(self), size_t UNUSED(count),
+                                     size_t UNUSED(size)) {
     DEBUG_ASSERT(self);
     return NULL;
 }
 
-static void NAME(nullalloc, free)(nullalloc* self, void* ptr) {
+static void NAME(nullalloc, free)(nullalloc* DEBUG_UNUSED(self), void* UNUSED(ptr)) {
     DEBUG_ASSERT(self);
     PANIC("Not possible to free memory from the null allocator, as it allocates nothing")
 }

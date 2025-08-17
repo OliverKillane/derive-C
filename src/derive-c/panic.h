@@ -19,7 +19,7 @@
     }
 #endif
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 #define DEBUG_ASSERT(expr) ASSERT(expr)
 #else
 #define DEBUG_ASSERT(expr)

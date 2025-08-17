@@ -47,7 +47,7 @@ int main() {
 
 ## Use
 In a `CMakeLists.txt`
-```cmake
+```
 include(FetchContent)
 
 FetchContent_Declare(

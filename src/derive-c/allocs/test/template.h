@@ -1,20 +1,25 @@
 /// @brief For unit tests expected to throw, as C has no unwind, we cannot free allocated memory.
 ///        This macro wraps the allocator in debug, to allow clearing leaks after an exception.
-/// 
+///
 /// In release, it is a no-op / pass through.
+///
+/// As this is entirely C, we do not get the niceties of a C++ RAII allocator guard shebang.
+// However, this is usable inside unit tests written in C.
 
+#include <stddef.h>
+
+#include <derive-c/allocs/std.h>
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
-#include <derive-c/allocs/std.h>
 
 #ifndef ALLOC
 #ifndef __clang_analyzer__
 #error "The allocator being wrapped must be defined"
 #endif
-#include <derive-c/allocs/null.h>
+#include <derive-c/allocs/null.h> // NOLINT(misc-include-cleaner)
 #define ALLOC nullalloc
-#endif 
+#endif
 
 #ifndef ENTRIES
 #ifndef __clang_analyzer__
@@ -23,15 +28,13 @@
 #define ENTRIES derive_c_entries_placeholder_name
 #endif
 
-#ifndef NDEBUG
+#ifdef NDEBUG
 
 typedef struct {
     ALLOC* alloc;
 } SELF;
 
-static SELF NAME(SELF, new)(ALLOC* alloc) {
-    return (SELF){.alloc = alloc};
-}
+static SELF NAME(SELF, new)(ALLOC* alloc) { return (SELF){.alloc = alloc}; }
 
 static void* NAME(SELF, malloc)(SELF* self, size_t size) {
     return NAME(ALLOC, malloc)(self->alloc, size);
@@ -45,9 +48,7 @@ static void* NAME(SELF, realloc)(SELF* self, void* ptr, size_t size) {
     return NAME(ALLOC, realloc)(self->alloc, ptr, size);
 }
 
-static void NAME(SELF, free)(SELF* self, void* ptr) {
-    return NAME(ALLOC, free)(self->alloc, ptr);
-}
+static void NAME(SELF, free)(SELF* self, void* ptr) { return NAME(ALLOC, free)(self->alloc, ptr); }
 
 #else
 
@@ -63,8 +64,9 @@ typedef struct {
 
 // JUSTIFY: Using a vector rather than a faster lookup map.
 //           - Give this will be used for test & debug, performance matters less
-//           - Much easier to explore a vector, than a hashmap in gdb. 
+//           - Much easier to explore a vector, than a hashmap in gdb.
 #define T TRACKED_ENTRY
+#define ALLOC stdalloc
 #define SELF ENTRIES
 #include <derive-c/structures/vector/template.h>
 
@@ -84,7 +86,7 @@ static ENTRIES const* NAME(SELF, get_entries)(SELF const* self) {
     return &self->entries;
 }
 
-static void NAME(SELF, unleak)(SELF* self) {
+static void NAME(SELF, unleak_and_delete)(SELF* self) {
     NAME(ENTRIES, iter) iter = NAME(ENTRIES, get_iter)(&self->entries);
     TRACKED_ENTRY* entry;
 
@@ -93,22 +95,32 @@ static void NAME(SELF, unleak)(SELF* self) {
             NAME(ALLOC, free)(self->alloc, entry->ptr);
         }
     }
+
+    NAME(ENTRIES, delete)(&self->entries);
 }
 
 static void* NAME(SELF, calloc)(SELF* self, size_t count, size_t size) {
     DEBUG_ASSERT(self);
     void* ptr = NAME(ALLOC, calloc)(self->alloc, count, size);
     if (ptr) {
-        TRACKED_ENTRY entry = {.ptr = ptr, .freed = false};
-        NAME(ENTRIES, push_back)(&self->entries, entry);
+        NAME(ENTRIES, push)(&self->entries, (TRACKED_ENTRY){
+                                                .ptr = ptr,
+                                                .freed = false,
+                                            });
     }
     return ptr;
 }
 
 static void* NAME(SELF, malloc)(SELF* self, size_t size) {
-    // JUSTIFY: All mallocs are actually callocs:
-    //           - easier for testing & debugging, which is the purpose of this allocator
-    return NAME(SELF, calloc)(self->alloc, size);
+    DEBUG_ASSERT(self);
+    void* ptr = NAME(ALLOC, malloc)(self->alloc, size);
+    if (ptr) {
+        NAME(ENTRIES, push)(&self->entries, (TRACKED_ENTRY){
+                                                .ptr = ptr,
+                                                .freed = false,
+                                            });
+    }
+    return ptr;
 }
 
 static void* NAME(SELF, realloc)(SELF* self, void* ptr, size_t size) {
@@ -141,4 +153,3 @@ static void NAME(SELF, free)(SELF* self, void* ptr) {
 #endif
 
 #undef SELF
-
