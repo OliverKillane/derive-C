@@ -242,7 +242,8 @@ void derive_c_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t s
     ((uint32_t*)out)[3] = h4;
 }
 
-void derive_c_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t seed, void* out) {
+void derive_c_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t seed,
+                                  void* out) {
     const uint8_t* data = (const uint8_t*)key;
     const int32_t nblocks = len / 16;
 

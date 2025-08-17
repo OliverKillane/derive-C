@@ -11,12 +11,16 @@
 #include <derive-c/self.h>
 
 #ifndef INDEX_BITS
+#ifndef __clang_analyzer__
 #error "The number of bits (8,16,32,64) to use for the arena's key"
+#endif
 #define INDEX_BITS 32
 #endif
 
 #ifndef V
+#ifndef __clang_analyzer__
 #error "The value type to place in the arena must be defined"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_value;
@@ -26,7 +30,7 @@ void derive_c_parameter_value_delete(derive_c_parameter_value* key __attribute__
 #endif
 
 #ifndef V_DELETE
-#define V_DELETE(value)
+#define V_DELETE(value) (void)value
 #endif
 
 #if INDEX_BITS == 8
@@ -116,7 +120,7 @@ static INDEX NAME(SELF, insert)(SELF* self, V value) {
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
         SLOT* slot = &self->slots[free_index];
-        DEBUG_ASSERT(!SLOT->present);
+        DEBUG_ASSERT(!slot->present);
         self->free_list = slot->next_free;
         slot->present = true;
         slot->value = value;
@@ -278,18 +282,17 @@ static IV_PAIR const* NAME(ITER, next)(ITER* iter) {
 
     if (NAME(ITER, empty)(iter)) {
         return NULL;
-    } else {
-        iter->curr = (IV_PAIR){.index = (INDEX){.index = iter->next_index},
-                               .value = &iter->arena->slots[iter->next_index].value};
-        iter->next_index++;
-        while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
-               !iter->arena->slots[iter->next_index].present) {
-            iter->next_index++;
-        }
-
-        iter->pos++;
-        return &iter->curr;
     }
+    iter->curr = (IV_PAIR){.index = (INDEX){.index = iter->next_index},
+                           .value = &iter->arena->slots[iter->next_index].value};
+    iter->next_index++;
+    while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
+           !iter->arena->slots[iter->next_index].present) {
+        iter->next_index++;
+    }
+
+    iter->pos++;
+    return &iter->curr;
 }
 
 static size_t NAME(ITER, position)(ITER const* iter) {
@@ -355,18 +358,18 @@ static IV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
 
     if (NAME(ITER_CONST, empty)(iter)) {
         return NULL;
-    } else {
-        iter->curr = (IV_PAIR_CONST){.index = (INDEX){.index = iter->next_index},
-                                     .value = &iter->arena->slots[iter->next_index].value};
-        iter->next_index++;
-        while (iter->next_index != INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
-               !iter->arena->slots[iter->next_index].present) {
-            iter->next_index++;
-        }
-
-        iter->pos++;
-        return &iter->curr;
     }
+
+    iter->curr = (IV_PAIR_CONST){.index = (INDEX){.index = iter->next_index},
+                                 .value = &iter->arena->slots[iter->next_index].value};
+    iter->next_index++;
+    while (iter->next_index != INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
+           !iter->arena->slots[iter->next_index].present) {
+        iter->next_index++;
+    }
+
+    iter->pos++;
+    return &iter->curr;
 }
 
 static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {

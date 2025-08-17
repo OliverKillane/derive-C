@@ -3,7 +3,7 @@
  * @example complex/prime_sieve.c
  * @brief Using a vector in implementing a basic prime sieve.
  */
-#include <errno.h>
+// #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -17,14 +17,19 @@ size_t sqrt_size_t(size_t n) {
     if (n == 0 || n == 1) {
         return n;
     }
-    size_t left = 1, right = n, mid, result = 0;
+    size_t left = 1;
+    size_t right = n;
+    size_t mid;
+    size_t result = 0;
     while (left <= right) {
         mid = left + (right - left) / 2;
         size_t square = mid * mid;
 
         if (square == n) {
             return mid;
-        } else if (square < n) {
+        }
+
+        if (square < n) {
             result = mid; // Store the last valid result
             left = mid + 1;
         } else {

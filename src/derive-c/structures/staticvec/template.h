@@ -1,6 +1,7 @@
 /// @brief A vector storing the first N elements in-place, and optionally spilling additional
 /// elements to a heap vector.
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <derive-c/core.h>
@@ -8,7 +9,9 @@
 #include <derive-c/self.h>
 
 #ifndef T
+#ifndef __clang_analyzer__
 #error "The contained type must be defined for a vector template"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_t;
@@ -22,7 +25,9 @@ static void derive_c_parameter_t_delete(derive_c_parameter_t* key __attribute__(
 #endif
 
 #ifndef INPLACE_CAPACITY
+#ifndef __clang_analyzer__
 #error "The number of elements to store in-place must be defined"
+#endif
 #define INPLACE_CAPACITY 8
 #endif
 

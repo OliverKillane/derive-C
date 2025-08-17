@@ -5,10 +5,8 @@ project(derivec_project C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # NOTE: Want latest cpp for testing/benchmark, but the derive-c library to be usable for C99 codebases
-# set (CMAKE_CXX_STANDARD 23)
-# set (CMAKE_C_STANDARD 99)
 
-set( CMAKE_C_STANDARD            99           CACHE STRING "C standard"        FORCE )
+set( CMAKE_C_STANDARD            23           CACHE STRING "C standard"        FORCE )
 set( CMAKE_C_STANDARD_REQUIRED   ON           CACHE BOOL   "Require C std"     FORCE )
 set( CMAKE_C_EXTENSIONS          OFF          CACHE BOOL   "No compiler extensions" FORCE )
 
@@ -75,28 +73,36 @@ if(CLANG_FORMAT)
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Verifying clang-format compliance (fails if any file needs reformatting)"
     )
+
+    add_test(NAME format-check COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target format-check)
 endif()
 
 find_program(CLANG_TIDY NAMES clang-tidy)
 
 if(CLANG_TIDY)
-  # C: examples/ sources only (since src/ is header-only)
+  message(STATUS "Found clang-tidy: ${CLANG_TIDY}")
   file(GLOB_RECURSE TIDY_C_SRC  "${CMAKE_SOURCE_DIR}/examples/*.c")
-  # Headers: both src/ and examples/
   file(GLOB_RECURSE TIDY_C_HDRS "${CMAKE_SOURCE_DIR}/src/*.h" "${CMAKE_SOURCE_DIR}/examples/*.h")
-
-  # C++: test/
   file(GLOB_RECURSE TIDY_CPP "${CMAKE_SOURCE_DIR}/test/*.cpp")
+
+  # Get the resource directory from the compiler
+  execute_process(
+    COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
+    OUTPUT_VARIABLE CLANG_RESOURCE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  message(STATUS "Clang resource directory: ${CLANG_RESOURCE_DIR}")
 
   # Create separate targets for sources and headers
   if(TIDY_C_SRC)
     add_custom_target(lint-c-src
-      COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --extra-arg-before=-xc ${TIDY_C_SRC}
+      COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} ${TIDY_C_SRC}
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} VERBATIM)
   endif()
 
   add_custom_target(lint-c-hdrs
-    COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --extra-arg-before=-xc --header-filter="^${CMAKE_SOURCE_DIR}/src/" ${TIDY_C_HDRS}
+    COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --extra-arg-before=-xc --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} --header-filter="^${CMAKE_SOURCE_DIR}/src/" ${TIDY_C_HDRS}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} VERBATIM)
 
   if(TIDY_C_SRC)
@@ -105,29 +111,5 @@ if(CLANG_TIDY)
     add_custom_target(lint-c DEPENDS lint-c-hdrs)
   endif()
 
-  add_custom_target(lint-cpp
-    COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --header-filter="^${CMAKE_SOURCE_DIR}/test/" ${TIDY_CPP}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} VERBATIM)
-
-  add_custom_target(lint DEPENDS lint-c lint-cpp)
+  add_test(NAME lint-c COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target lint-c)
 endif()
-# if(CLANG_TIDY)
-#   file(GLOB_RECURSE ALL_SRC
-#     "${CMAKE_SOURCE_DIR}/src/*.cpp"
-#     "${CMAKE_SOURCE_DIR}/test/*.cpp"
-#     "${CMAKE_SOURCE_DIR}/examples/*.cpp"
-#   )
-
-#   add_custom_target(lint
-#     COMMAND ${CLANG_TIDY}
-#             -p ${CMAKE_BINARY_DIR}
-#             --header-filter "^${CMAKE_SOURCE_DIR}/(src|test|examples)/"
-#             # Suppress diagnostics for all deps
-#             --extra-arg-before=--system-header-prefix=${CMAKE_BINARY_DIR}/_deps/
-#              --extra-arg-before=-isystem${CMAKE_BINARY_DIR}/_deps/rapidcheck-src/include
-#             ${ALL_SRC}
-#     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-#     COMMENT "Running clang-tidy on project sources"
-#     VERBATIM
-#   )
-# endif()

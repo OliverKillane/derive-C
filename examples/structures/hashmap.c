@@ -43,8 +43,8 @@ void id_to_name_example() {
 
     print_map(&map);
 
-    char const** entry;
-    ASSERT((entry = id_to_name_write(&map, 23)));
+    char const** entry = id_to_name_write(&map, 23);
+    ASSERT(entry);
     *entry = "a different string!";
 
     print_map(&map);

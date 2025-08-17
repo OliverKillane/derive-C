@@ -11,12 +11,14 @@
 #include <derive-c/self.h>
 
 #ifndef T
+#ifndef __clang_analyzer__
 #error "The contained type must be defined for a vector template"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_t;
 #define T derive_c_parameter_t // Allows independent debugging
-static void derive_c_parameter_t_delete(derive_c_parameter_t*) {}
+static void derive_c_parameter_t_delete(derive_c_parameter_t* t __attribute__((unused))) {}
 #define T_DELETE derive_c_parameter_t_delete
 #endif
 

@@ -9,7 +9,9 @@
 #include <derive-c/self.h>
 
 #ifndef T
+#ifndef __clang_analyzer__
 #error "The contained type must be defined"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_t;

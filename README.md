@@ -31,10 +31,15 @@ cmake -S . -B build -GNinja -DDEVELOP=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cd build
 ninja
 ninja format
+ninja lint
 ninja docs
 ninja coverage
 
 ctest # includes examples/ as well as test/
+```
+Then when opening vscode from the nix-shell, the correct clangd & library paths are used:
+```bash
+code .
 ```
 
 For using `infer`, infer must be installed separately (it is not yet packaged with nix - [see here](https://github.com/NixOS/nixpkgs/issues/148048))
