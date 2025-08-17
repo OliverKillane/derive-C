@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <derive-c/allocs/std.h>
+
 typedef struct {
     char const* forename;
     char const* surname;
@@ -62,8 +64,8 @@ typedef struct {
 
 hr_system hr_system_new() {
     return (hr_system){
-        .data = employees_new_with_capacity_for(1000),
-        .by_age = employees_by_age_new(),
+        .data = employees_new_with_capacity_for(1000, stdalloc_get()),
+        .by_age = employees_by_age_new(stdalloc_get()),
     };
 }
 
@@ -72,7 +74,8 @@ void hr_system_new_employee(hr_system* self, employee emp) {
     employees_index idx = employees_insert(&self->data, emp);
     same_age_employees* idxes = employees_by_age_try_write(&self->by_age, emp.age);
     if (!idxes) {
-        idxes = employees_by_age_insert(&self->by_age, emp.age, same_age_employees_new());
+        idxes =
+            employees_by_age_insert(&self->by_age, emp.age, same_age_employees_new(stdalloc_get()));
     }
     same_age_employees_push(idxes, idx);
 }

@@ -13,6 +13,8 @@ using Data = size_t;
 using Model = std::vector<Data>;
 
 extern "C" {
+#include <derive-c/allocs/std.h>
+
 #define SELF Sut
 #define T Data
 #include <derive-c/structures/vector/template.h>
@@ -21,9 +23,9 @@ extern "C" {
 static const int MAX_SIZE = 100;
 Sut newSut(size_t size) {
     if (size == 0) {
-        return Sut_new();
+        return Sut_new(stdalloc_get());
     }
-    return Sut_new_with_capacity(size);
+    return Sut_new_with_capacity(size, stdalloc_get());
 }
 
 struct SutWrapper {
@@ -122,7 +124,7 @@ RC_GTEST_PROP(VectorTests, General, ()) {
 }
 
 TEST(VectorTests, CreateWithDefaults) {
-    Sut sut = Sut_new_with_defaults(128, 3);
+    Sut sut = Sut_new_with_defaults(128, 3, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 128);
 
     for (size_t i = 0; i < Sut_size(&sut); ++i) {
@@ -133,23 +135,23 @@ TEST(VectorTests, CreateWithDefaults) {
 }
 
 TEST(VectorTests, CreateWithZeroSize) {
-    Sut sut_1 = Sut_new_with_capacity(0);
+    Sut sut_1 = Sut_new_with_capacity(0, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut_1), 0);
     Sut_delete(&sut_1);
 
-    Sut sut_2 = Sut_new();
+    Sut sut_2 = Sut_new(stdalloc_get());
     ASSERT_EQ(Sut_size(&sut_2), 0);
     Sut_delete(&sut_2);
 }
 
 TEST(VectorTests, CreateWithCapacity) {
-    Sut sut = Sut_new_with_capacity(64);
+    Sut sut = Sut_new_with_capacity(64, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 0);
     Sut_delete(&sut);
 }
 
 TEST(VectorTests, FailedAccesses) {
-    Sut sut = Sut_new_with_capacity(64);
+    Sut sut = Sut_new_with_capacity(64, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 0);
 
     ASSERT_EQ(Sut_try_read(&sut, 0), nullptr);
@@ -160,7 +162,7 @@ TEST(VectorTests, FailedAccesses) {
 }
 
 TEST(VectorTests, FailedPop) {
-    Sut sut = Sut_new_with_capacity(64);
+    Sut sut = Sut_new_with_capacity(64, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 0);
 
     Data value;
@@ -171,7 +173,7 @@ TEST(VectorTests, FailedPop) {
 }
 
 TEST(VectorTests, IteratorEdgeCases) {
-    Sut sut = Sut_new();
+    Sut sut = Sut_new(stdalloc_get());
 
     const size_t upto = 100;
 
@@ -200,7 +202,7 @@ TEST(VectorTests, IteratorEdgeCases) {
 }
 
 TEST(VectorTests, ShallowClone) {
-    Sut sut = Sut_new_with_defaults(100, 3);
+    Sut sut = Sut_new_with_defaults(100, 3, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 100);
 
     Sut cloned_sut = Sut_shallow_clone(&sut);

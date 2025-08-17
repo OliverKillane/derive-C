@@ -6,13 +6,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <derive-c/allocs/std.h>
+
 #define INDEX_BITS 32
 #define V uint32_t
 #define SELF ints
 #include <derive-c/structures/arena/template.h>
 
 void int_example() {
-    ints arena = ints_new_with_capacity_for(12);
+    ints arena = ints_new_with_capacity_for(12, stdalloc_get());
     ints_insert(&arena, 23);
     ints_insert(&arena, 42);
     ints_insert(&arena, 1000);
@@ -55,7 +57,7 @@ void my_foo_delete(struct foo* self) { free(self->owned_data); }
 #include <derive-c/structures/arena/template.h>
 
 void foo_example() {
-    foo_arena arena = foo_arena_new_with_capacity_for(12);
+    foo_arena arena = foo_arena_new_with_capacity_for(12, stdalloc_get());
     foo_arena_index index_a = foo_arena_insert(
         &arena, (struct foo){.x = 42, .y = "A", .owned_data = (int*)malloc(sizeof(int))});
     foo_arena_index index_b = foo_arena_insert(

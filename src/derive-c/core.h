@@ -4,13 +4,21 @@
 #define NAME_EXPANDED(pre, post) pre##_##post
 #define NAME(pre, post) NAME_EXPANDED(pre, post)
 
+#ifdef NDEBUG
+#define DEBUG_UNUSED(ident) ident __attribute__((unused))
+#else
+#define DEBUG_UNUSED(ident) ident __attribute__((unused))
+#endif
+
+#define UNUSED(ident) ident __attribute__((unused))
+
 #define LIKELY(x) __builtin_expect(!!(x), 1)
 
 #define EXPAND(...) __VA_ARGS__
 
 #ifdef __cplusplus
 struct gdb_marker {
-    char _dummy_cpp_object_size_compatibility __attribute__((unused));
+    char UNUSED(_dummy_cpp_object_size_compatibility);
 };
 #else
 typedef struct {

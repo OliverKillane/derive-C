@@ -6,8 +6,8 @@
 
 #include <unordered_map>
 
+#include "../utils.hpp"
 #include "rapidcheck/Assertions.h"
-#include "utils.hpp"
 
 namespace arena {
 
@@ -29,6 +29,8 @@ struct Model {
 };
 
 extern "C" {
+#include <derive-c/allocs/std.h>
+
 #define SELF Sut
 #define V Value
 #define INDEX_BITS 8
@@ -58,7 +60,7 @@ struct SutWrapper {
     // JUSTIFY: 3 items
     //          - Want to ensure tests have plenty of reallocations / extensions
     //          - odd number for hitting edge cases with capacity (set to power of 2)
-    SutWrapper() : sut(Sut_new_with_capacity_for(1)) {}
+    SutWrapper() : sut(Sut_new_with_capacity_for(1, stdalloc_get())) {}
     ~SutWrapper() { Sut_delete(&sut); }
 
     SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
@@ -234,7 +236,7 @@ RC_GTEST_PROP(ArenaTests, General, ()) {
 }
 
 TEST(ArenaTests, Full) {
-    Sut sut = Sut_new_with_capacity_for(1);
+    Sut sut = Sut_new_with_capacity_for(1, stdalloc_get());
     ASSERT_FALSE(Sut_full(&sut));
     ASSERT_EQ(Sut_max_capacity, 256);
 
@@ -247,7 +249,7 @@ TEST(ArenaTests, Full) {
 }
 
 TEST(VectorTests, IteratorEdgeCases) {
-    Sut sut = Sut_new_with_capacity_for(128);
+    Sut sut = Sut_new_with_capacity_for(128, stdalloc_get());
 
     const size_t upto = 100;
 
@@ -276,7 +278,7 @@ TEST(VectorTests, IteratorEdgeCases) {
 }
 
 TEST(ArenaTests, ShallowClone) {
-    Sut sut = Sut_new_with_capacity_for(128);
+    Sut sut = Sut_new_with_capacity_for(128, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 0);
 
     for (size_t i = 0; i < 128; ++i) {
@@ -297,7 +299,7 @@ TEST(ArenaTests, ShallowClone) {
 }
 
 TEST(ArenaTests, FailedReadWrite) {
-    Sut sut = Sut_new_with_capacity_for(64);
+    Sut sut = Sut_new_with_capacity_for(64, stdalloc_get());
 
     // Accessing out of the bounds of the arena
     ASSERT_EQ(Sut_try_read(&sut, Sut_index{.index = 0}), nullptr);
@@ -312,7 +314,7 @@ TEST(ArenaTests, FailedReadWrite) {
 }
 
 TEST(ArenaTests, FailedRemoveDelete) {
-    Sut sut = Sut_new_with_capacity_for(64);
+    Sut sut = Sut_new_with_capacity_for(64, stdalloc_get());
 
     // Accessing out of the bounds of the arena
     Value v;

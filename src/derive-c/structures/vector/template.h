@@ -10,6 +10,11 @@
 #include <derive-c/panic.h>
 #include <derive-c/self.h>
 
+#ifndef ALLOC
+#include <derive-c/allocs/std.h>
+#define ALLOC stdalloc
+#endif
+
 #ifndef T
 #ifndef __clang_analyzer__
 #error "The contained type must be defined for a vector template"
@@ -18,7 +23,7 @@ typedef struct {
     int x;
 } derive_c_parameter_t;
 #define T derive_c_parameter_t // Allows independent debugging
-static void derive_c_parameter_t_delete(derive_c_parameter_t* t __attribute__((unused))) {}
+static void derive_c_parameter_t_delete(derive_c_parameter_t* UNUSED(t)) {}
 #define T_DELETE derive_c_parameter_t_delete
 #endif
 
@@ -30,31 +35,34 @@ typedef struct {
     size_t size;
     size_t capacity;
     T* data;
+    ALLOC* alloc;
     gdb_marker derive_c_vector;
 } SELF;
 
-static SELF NAME(SELF, new)() {
+static SELF NAME(SELF, new)(ALLOC* alloc) {
     SELF temp = (SELF){
         .size = 0,
         .capacity = 0,
         .data = NULL,
+        .alloc = alloc,
     };
     return temp;
 }
 
-static SELF NAME(SELF, new_with_capacity)(size_t capacity) {
+static SELF NAME(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
     DEBUG_ASSERT(capacity > 0);
-    T* data = (T*)malloc(capacity * sizeof(T));
+    T* data = (T*)NAME(ALLOC, malloc)(alloc, capacity * sizeof(T));
     ASSERT(LIKELY(data));
     return (SELF){
         .size = 0,
         .capacity = capacity,
         .data = data,
+        .alloc = alloc,
     };
 }
 
-static SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
-    T* data = (T*)malloc(size * sizeof(T));
+static SELF NAME(SELF, new_with_defaults)(size_t size, T default_value, ALLOC* alloc) {
+    T* data = (T*)NAME(ALLOC, malloc)(alloc, size * sizeof(T));
     for (size_t i = 0; i < size; i++) {
         data[i] = default_value;
     }
@@ -63,18 +71,20 @@ static SELF NAME(SELF, new_with_defaults)(size_t size, T default_value) {
         .size = size,
         .capacity = size,
         .data = data,
+        .alloc = alloc,
     };
 }
 
 static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     DEBUG_ASSERT(self);
-    T* data = (T*)malloc(self->capacity * sizeof(T));
+    T* data = (T*)NAME(ALLOC, malloc)(self->alloc, self->capacity * sizeof(T));
     ASSERT(data);
     memcpy(data, self->data, self->size * sizeof(T));
     return (SELF){
         .size = self->size,
         .capacity = self->capacity,
         .data = data,
+        .alloc = self->alloc,
     };
 }
 
@@ -118,13 +128,13 @@ static T* NAME(SELF, push)(SELF* self, T value) {
             //             size sero (from new)
             //           Otherwise an arbitrary choice (given we do not know the size of T)
             new_capacity = 8;
-            new_data = (T*)malloc(new_capacity * sizeof(T));
+            new_data = (T*)NAME(ALLOC, malloc)(self->alloc, new_capacity * sizeof(T));
         } else {
             // JUSTIFY: Growth factor of 2
             //           - Simple arithmetic (for debugging)
             //           - Same as used by GCC's std::vector implementation
             new_capacity = self->capacity * 2;
-            new_data = (T*)realloc(self->data, new_capacity * sizeof(T));
+            new_data = (T*)NAME(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(T));
         }
         ASSERT(new_data);
         self->capacity = new_capacity;
@@ -162,7 +172,7 @@ static void NAME(SELF, delete)(SELF* self) {
     for (size_t i = 0; i < self->size; i++) {
         T_DELETE(&self->data[i]);
     }
-    free(self->data);
+    NAME(ALLOC, free)(self->alloc, self->data);
 }
 
 #define ITER NAME(SELF, iter)

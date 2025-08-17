@@ -33,7 +33,7 @@ Key key_hash(Key const* key) {
 }
 
 struct SutWrapper {
-    SutWrapper() : sut(Sut_new()) {}
+    SutWrapper() : sut(Sut_new(stdalloc_get())) {}
     ~SutWrapper() { Sut_delete(&sut); }
 
     SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
