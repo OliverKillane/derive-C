@@ -51,7 +51,7 @@ static SELF NAME(SELF, new)() {
 static void NAME(SELF, clear)(SELF* self) {
     DEBUG_ASSERT(self);
 
-#ifdef NDEBUG
+#ifndef NDEBUG
     // JUSTIFY: Allocations & sizes zeroed on free in debug, we check all data has been freed.
     for (size_t i = 0; i < self->used; i++) {
         if (self->buffer[i] != 0) {
@@ -84,13 +84,12 @@ static void NAME(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) 
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(ptr);
 
-#ifdef NDEBUG
+#ifndef NDEBUG
     // JUSTIFY: Zero memory in debug.
     //           - Expensive for release, but helpful when debugging
     // NOTE: This means that users should free, before they clear and reuse the buffer.
-    USED* used_ptr = (USED*)(ptr - sizeof(USED));
-    *used_ptr;
-    memset(ptr, *used_ptr, 0);
+    USED* used_ptr = (USED*)((char*)ptr - sizeof(USED));
+    memset(ptr, 0, *used_ptr);
     *used_ptr = 0;
 #endif
 }

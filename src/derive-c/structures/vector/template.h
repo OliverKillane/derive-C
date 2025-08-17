@@ -169,10 +169,12 @@ static size_t NAME(SELF, size)(SELF const* self) {
 
 static void NAME(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
-    for (size_t i = 0; i < self->size; i++) {
-        T_DELETE(&self->data[i]);
+    if (self->data) {
+        for (size_t i = 0; i < self->size; i++) {
+            T_DELETE(&self->data[i]);
+        }
+        NAME(ALLOC, free)(self->alloc, self->data);
     }
-    NAME(ALLOC, free)(self->alloc, self->data);
 }
 
 #define ITER NAME(SELF, iter)

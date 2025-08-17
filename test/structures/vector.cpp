@@ -135,7 +135,7 @@ TEST(VectorTests, CreateWithDefaults) {
 }
 
 TEST(VectorTests, CreateWithZeroSize) {
-    Sut sut_1 = Sut_new_with_capacity(0, stdalloc_get());
+    Sut sut_1 = Sut_new(stdalloc_get());
     ASSERT_EQ(Sut_size(&sut_1), 0);
     Sut_delete(&sut_1);
 
