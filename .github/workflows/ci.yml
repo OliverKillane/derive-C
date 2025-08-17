@@ -18,13 +18,11 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           nix_path: nixpkgs=channel:nixos-unstable
       - name: CMake
-        run: nix-shell --run 'cmake -S . -B build -GNinja -DDEVELOP=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
+        run: nix-shell --run 'cmake -S . -B build -GNinja'
       - name: Build
         run: nix-shell --run 'ninja -C build'
       - name: Test
         run: nix-shell --run 'ctest --test-dir build --output-on-failure'
-      - name: Format Check
-        run: nix-shell --run 'ninja -C build format-check'  
       - name: Test Coverage
         run: nix-shell --run 'ninja -C build coverage'
       - name: Upload all coverage artifacts

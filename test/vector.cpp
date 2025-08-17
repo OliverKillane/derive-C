@@ -18,16 +18,16 @@ extern "C" {
 #include <derive-c/structures/vector/template.h>
 }
 
+static const int MAX_SIZE = 100;
 Sut newSut(size_t size) {
     if (size == 0) {
         return Sut_new();
-    } else {
-        return Sut_new_with_capacity(size);
     }
+    return Sut_new_with_capacity(size);
 }
 
 struct SutWrapper {
-    SutWrapper() : sut(newSut(*rc::gen::inRange(0, 100))) {}
+    SutWrapper() : sut(newSut(*rc::gen::inRange(0, MAX_SIZE))) {}
     ~SutWrapper() { Sut_delete(&sut); }
     SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
     SutWrapper& operator=(const SutWrapper& other) {
@@ -38,8 +38,8 @@ struct SutWrapper {
         return *this;
     }
 
-    Sut* get() { return &sut; }
-    Sut const* getConst() const { return &sut; }
+    [[nodiscard]] Sut* get() { return &sut; }
+    [[nodiscard]] Sut const* getConst() const { return &sut; }
 
     Sut sut;
 };

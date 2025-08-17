@@ -17,11 +17,11 @@ extern "C" {
 bool key_equality(Key const* key_1, Key const* key_2) { return *key_1 == *key_2; }
 Key key_hash(Key const* key) {
     // Bad hash exposes more collisions in the map
+    constexpr size_t SMALL_MOD = 1000;
     if (*key % 2 == 0) {
-        return 1000 + (*key % 1000);
-    } else {
-        return 0;
+        return SMALL_MOD + (*key % SMALL_MOD);
     }
+    return 0;
 }
 
 #define K Key
@@ -45,8 +45,8 @@ struct SutWrapper {
         return *this;
     }
 
-    Sut* get() { return &sut; }
-    Sut const* getConst() const { return &sut; }
+    [[nodiscard]] Sut* get() { return &sut; }
+    [[nodiscard]] Sut const* getConst() const { return &sut; }
 
     Sut sut;
 };

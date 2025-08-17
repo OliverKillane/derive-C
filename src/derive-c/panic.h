@@ -1,9 +1,10 @@
-#ifndef PANIC
-
+// JUSTIFY: No guards, just for each macro
+//           - allows overriding panic, differently for each template instantiation
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 
+#ifndef PANIC
+#include <stdio.h> // NOLINT(misc-include-cleaner) (for default panic implementation)
 #define PANIC(...)                                                                                 \
     do {                                                                                           \
         fprintf(stderr, __VA_ARGS__);                                                              \

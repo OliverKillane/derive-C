@@ -1,6 +1,7 @@
 /// @brief A vector storing the first N elements in-place, and optionally spilling additional
 /// elements to a heap vector.
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <derive-c/core.h>
@@ -8,12 +9,14 @@
 #include <derive-c/self.h>
 
 #ifndef T
+#ifndef __clang_analyzer__
 #error "The contained type must be defined for a vector template"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_t;
 #define T derive_c_parameter_t // Allows independent debugging
-static void derive_c_parameter_t_delete(derive_c_parameter_t*) {}
+static void derive_c_parameter_t_delete(derive_c_parameter_t* key __attribute__((unused))) {}
 #define T_DELETE derive_c_parameter_t_delete
 #endif
 
@@ -22,7 +25,9 @@ static void derive_c_parameter_t_delete(derive_c_parameter_t*) {}
 #endif
 
 #ifndef INPLACE_CAPACITY
+#ifndef __clang_analyzer__
 #error "The number of elements to store in-place must be defined"
+#endif
 #define INPLACE_CAPACITY 8
 #endif
 
@@ -59,9 +64,8 @@ static T const* NAME(SELF, try_read)(SELF const* self, INPLACE_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static T const* NAME(SELF, read)(SELF const* self, INPLACE_TYPE index) {
@@ -74,9 +78,8 @@ static T* NAME(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static T* NAME(SELF, write)(SELF* self, INPLACE_TYPE index) {
@@ -92,9 +95,8 @@ static T* NAME(SELF, try_push)(SELF* self, T value) {
         *slot = value;
         self->size++;
         return slot;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static T* NAME(SELF, push)(SELF* self, T value) {
@@ -109,9 +111,8 @@ static bool NAME(SELF, try_pop)(SELF* self, T* destination) {
         self->size--;
         *destination = self->data[self->size];
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 static T NAME(SELF, pop)(SELF* self) {
@@ -145,9 +146,8 @@ static T* NAME(ITER, next)(ITER* iter) {
         T* item = &iter->vec->data[iter->pos];
         iter->pos++;
         return item;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static size_t NAME(ITER, position)(ITER const* iter) {
@@ -183,9 +183,8 @@ static T const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
         T const* item = &iter->vec->data[iter->pos];
         iter->pos++;
         return item;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {

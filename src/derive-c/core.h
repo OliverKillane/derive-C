@@ -8,11 +8,14 @@
 
 #define EXPAND(...) __VA_ARGS__
 
-typedef struct {
 #ifdef __cplusplus
+struct gdb_marker {
     char _dummy_cpp_object_size_compatibility __attribute__((unused));
-#endif
+};
+#else
+typedef struct {
 } gdb_marker;
+#endif
 
 static inline size_t next_power_of_2(size_t x) {
     if (x == 0)

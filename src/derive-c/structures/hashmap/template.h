@@ -11,33 +11,42 @@
 #include <derive-c/structures/hashmap/utils.h>
 
 #ifndef K
+#ifndef __clang_analyzer__
 #error "Key type must be defined to for a hashmap template"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_key;
 #define K derive_c_parameter_key
-static void derive_c_parameter_key_delete(derive_c_parameter_key*) {}
+static void derive_c_parameter_key_delete(derive_c_parameter_key* key __attribute__((unused))) {}
 #define K_DELETE derive_c_parameter_key_delete
 #endif
 
 #ifndef V
+#ifndef __clang_analyzer__
 #error "Value type must be defined to for a hashmap template"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_value;
 #define V derive_c_parameter_value
-static void derive_c_parameter_value_delete(derive_c_parameter_value*) {}
+static void derive_c_parameter_value_delete(derive_c_parameter_value* key __attribute__((unused))) {
+}
 #define V_DELETE derive_c_parameter_value_delete
 #endif
 
 #ifndef HASH
+#ifndef __clang_analyzer__
 #error "The hash function for K must be defined"
+#endif
 static size_t derive_c_parameter_hash(derive_c_parameter_key const* key);
 #define HASH derive_c_parameter_hash
 #endif
 
 #ifndef EQ
+#ifndef __clang_analyzer__
 #error "The equality function for K must be defined"
+#endif
 static bool derive_c_parameter_eq(derive_c_parameter_key const* key_1,
                                   derive_c_parameter_key const* key_2);
 #define EQ derive_c_parameter_eq
@@ -126,8 +135,8 @@ static void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
                 NAME(SELF, insert)(&new_map, entry->key, self->values[index]);
             }
         }
-        free(self->keys);
-        free(self->values);
+        free((void*)self->keys);
+        free((void*)self->values);
         *self = new_map;
     }
 }
@@ -201,9 +210,8 @@ static V* NAME(SELF, try_write)(SELF* self, K key) {
         if (entry->present) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
-            } else {
-                index = modulus_capacity(index + 1, self->capacity);
             }
+            index = modulus_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -226,9 +234,8 @@ static V const* NAME(SELF, try_read)(SELF const* self, K key) {
         if (entry->present) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
-            } else {
-                index = modulus_capacity(index + 1, self->capacity);
             }
+            index = modulus_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -267,7 +274,7 @@ static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
                 size_t check_index = modulus_capacity(free_index + 1, self->capacity);
                 KEY_ENTRY* check_entry = &self->keys[check_index];
 
-                while (check_entry->present && check_entry->distance_from_desired > 0) {
+                while (check_entry->present && (check_entry->distance_from_desired > 0)) {
                     free_entry->key = check_entry->key;
                     free_entry->distance_from_desired = check_entry->distance_from_desired - 1;
                     self->values[free_index] = self->values[check_index];
@@ -288,9 +295,8 @@ static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
                 free_entry->present = false;
 
                 return true;
-            } else {
-                index = modulus_capacity(index + 1, self->capacity);
             }
+            index = modulus_capacity(index + 1, self->capacity);
         } else {
             return false;
         }
@@ -340,9 +346,8 @@ static KV_PAIR const* NAME(ITER, next)(ITER* iter) {
             iter->index++;
         }
         return &iter->curr;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static size_t NAME(ITER, position)(ITER const* iter) {
@@ -380,8 +385,8 @@ static void NAME(SELF, delete)(SELF* self) {
         }
     }
 
-    free(self->keys);
-    free(self->values);
+    free((void*)self->keys);
+    free((void*)self->values);
 }
 
 #undef ITER
@@ -414,9 +419,8 @@ static KV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
             iter->index++;
         }
         return &iter->curr;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {

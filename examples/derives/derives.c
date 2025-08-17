@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 
 #include <derive-c/derives/clone.h>
 #include <derive-c/derives/eq.h>

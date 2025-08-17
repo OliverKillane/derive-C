@@ -9,12 +9,14 @@
 #include <derive-c/self.h>
 
 #ifndef T
+#ifndef __clang_analyzer__
 #error "The contained type must be defined"
+#endif
 typedef struct {
     int x;
 } derive_c_parameter_t;
 #define T derive_c_parameter_t
-static void derive_c_parameter_t_delete(derive_c_parameter_t*) {}
+static void derive_c_parameter_t_delete(derive_c_parameter_t* key __attribute__((unused))) {}
 #define T_DELETE derive_c_parameter_t_delete
 #endif
 
@@ -38,18 +40,16 @@ static T* NAME(SELF, get)(SELF* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
         return &self->value;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static T const* NAME(SELF, get_const)(SELF const* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
         return &self->value;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 static bool NAME(SELF, is_present)(SELF const* self) {

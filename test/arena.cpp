@@ -70,8 +70,8 @@ struct SutWrapper {
         return *this;
     }
 
-    Sut* get() { return &sut; }
-    Sut const* getConst() const { return &sut; }
+    [[nodiscard]] Sut* get() { return &sut; }
+    [[nodiscard]] Sut const* getConst() const { return &sut; }
 
     Sut sut;
     std::unordered_map<ModelIndex, Sut_index> indexToSutIndex;

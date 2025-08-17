@@ -16,7 +16,6 @@ myStdenv.mkDerivation {
       doxygen
       graphviz
       lcov
-      gcovr
     ])
     ++ (with llvm19; [
       clang        # clang-19

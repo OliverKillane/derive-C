@@ -3,7 +3,11 @@
 /// @brief Examples for inserting, iterating, and deleting from vectors.
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define T int32_t
 #define SELF vec_ints
@@ -35,38 +39,38 @@ void ints_example() {
     vec_ints_delete(&ints);
 }
 
-struct complex {
+struct complex_data {
     char* description;
     size_t score;
 };
 
-void complex_delete(struct complex* self) { free(self->description); }
+void complex_data_delete(struct complex_data* self) { free(self->description); }
 
-#define T struct complex
-#define T_DELETE complex_delete
-#define SELF vec_complex
+#define T struct complex_data
+#define T_DELETE complex_data_delete
+#define SELF vec_complex_data
 #include <derive-c/structures/vector/template.h>
 
-void complex_example() {
-    vec_complex vec = vec_complex_new_with_capacity(5);
+void complex_data_example() {
+    vec_complex_data vec = vec_complex_data_new_with_capacity(5);
     size_t entries = 5;
     for (size_t i = 0; i < entries; i++) {
-        struct complex item = {.description = strdup("Complex item"), .score = i * 10};
-        vec_complex_push(&vec, item);
+        struct complex_data item = {.description = strdup("Complex item"), .score = i * 10};
+        vec_complex_data_push(&vec, item);
     }
 
-    assert(vec_complex_size(&vec) == entries);
+    assert(vec_complex_data_size(&vec) == entries);
 
-    struct complex* first_item = vec_complex_write(&vec, 0);
+    struct complex_data* first_item = vec_complex_data_write(&vec, 0);
     first_item->score += 5;
 
-    assert(vec_complex_read(&vec, 0)->score == 5);
+    assert(vec_complex_data_read(&vec, 0)->score == 5);
 
-    struct complex popped = vec_complex_pop(&vec);
+    struct complex_data popped = vec_complex_data_pop(&vec);
     assert(popped.score == 40); // Last item's score should be 40
 
-    vec_complex_delete(&vec);
-    complex_delete(&popped);
+    vec_complex_data_delete(&vec);
+    complex_data_delete(&popped);
 }
 
 #define T char
@@ -114,6 +118,6 @@ void iterate_example() {
 
 int main() {
     ints_example();
-    complex_example();
+    complex_data_example();
     iterate_example();
 }
