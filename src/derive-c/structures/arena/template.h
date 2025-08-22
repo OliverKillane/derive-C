@@ -8,57 +8,58 @@
 
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
-#include <derive-c/self.h>
 
-#ifndef ALLOC
-#include <derive-c/allocs/std.h>
-#define ALLOC stdalloc
-#endif
+#include <derive-c/self/def.h>
 
-#ifndef INDEX_BITS
-#ifndef __clang_analyzer__
-#error "The number of bits (8,16,32,64) to use for the arena's key"
-#endif
-#define INDEX_BITS 32
+#if !defined ALLOC
+    #include <derive-c/allocs/std.h>
+    #define ALLOC stdalloc
 #endif
 
-#ifndef V
-#ifndef __clang_analyzer__
-#error "The value type to place in the arena must be defined"
-#endif
-typedef struct {
-    int x;
-} derive_c_parameter_value;
-#define V derive_c_parameter_value
-void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
-#define V_DELETE derive_c_parameter_value_delete
+#if !defined INDEX_BITS
+    #if !defined __clang_analyzer__
+        #error "The number of bits (8,16,32,64) to use for the arena's key"
+    #endif
+    #define INDEX_BITS 32
 #endif
 
-#ifndef V_DELETE
-#define V_DELETE(value) (void)value
+#if !defined V
+    #if !defined __clang_analyzer__
+        #error "The value type to place in the arena must be defined"
+    #endif
+    typedef struct {
+        int x;
+    } derive_c_parameter_value;
+    #define V derive_c_parameter_value
+    void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
+    #define V_DELETE derive_c_parameter_value_delete
+#endif
+
+#if !defined V_DELETE
+    #define V_DELETE(value) (void)value
 #endif
 
 #if INDEX_BITS == 8
-#define INDEX_TYPE uint8_t
-#define MAX_CAPACITY (UINT8_MAX + 1ULL)
-#define MAX_INDEX (UINT8_MAX - 1ULL)
-#define INDEX_NONE UINT8_MAX
+    #define INDEX_TYPE uint8_t
+    #define MAX_CAPACITY (UINT8_MAX + 1ULL)
+    #define MAX_INDEX (UINT8_MAX - 1ULL)
+    #define INDEX_NONE UINT8_MAX
 #elif INDEX_BITS == 16
-#define INDEX_TYPE uint16_t
-#define MAX_CAPACITY (UINT16_MAX + 1ULL)
-#define MAX_INDEX (UINT16_MAX - 1ULL)
-#define INDEX_NONE UINT16_MAX
+    #define INDEX_TYPE uint16_t
+    #define MAX_CAPACITY (UINT16_MAX + 1ULL)
+    #define MAX_INDEX (UINT16_MAX - 1ULL)
+    #define INDEX_NONE UINT16_MAX
 #elif INDEX_BITS == 32
-#define INDEX_TYPE uint32_t
-#define MAX_CAPACITY (UINT32_MAX + 1ULL)
-#define MAX_INDEX (UINT32_MAX - 1ULL)
-#define INDEX_NONE UINT32_MAX
+    #define INDEX_TYPE uint32_t
+    #define MAX_CAPACITY (UINT32_MAX + 1ULL)
+    #define MAX_INDEX (UINT32_MAX - 1ULL)
+    #define INDEX_NONE UINT32_MAX
 #elif INDEX_BITS == 64
-#define INDEX_TYPE uint64_t
-// JUSTIFY: Special case, we cannot store the max capacity as a size_t integer
-#define MAX_CAPACITY UINT64_MAX
-#define MAX_INDEX (UINT64_MAX - 1ULL)
-#define INDEX_NONE UINT64_MAX
+    #define INDEX_TYPE uint64_t
+    // JUSTIFY: Special case, we cannot store the max capacity as a size_t integer
+    #define MAX_CAPACITY UINT64_MAX
+    #define MAX_INDEX (UINT64_MAX - 1ULL)
+    #define INDEX_NONE UINT64_MAX
 #endif
 
 #define SLOT NAME(SELF, SLOT)
@@ -404,16 +405,19 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
 #undef ITER_CONST
 #undef IV_PAIR_CONST
 
+#undef ALLOC
 #undef INDEX_BITS
+#undef V
+#undef V_DELETE
+
 #undef INDEX_TYPE
 #undef MAX_CAPACITY
 #undef MAX_INDEX
 #undef INDEX_NONE
+
 #undef SLOT
 #undef CHECK_ACCESS_INDEX
 #undef RESIZE_FACTOR
 #undef INDEX
 
-#undef V
-#undef V_DELETE
-#undef SELF
+#include <derive-c/self/undef.h>

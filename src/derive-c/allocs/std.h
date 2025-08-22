@@ -1,20 +1,18 @@
 /// An allocator for the standard allocator, which only has global state,
 // and just uses malloc/calloc/free.
 
-#ifndef STDALLOC_H
-#define STDALLOC_H
+#pragma once
 
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-struct stdalloc {
-    char UNUSED(_dummy_cpp_object_size_compatibility);
-};
+#if defined __cplusplus
+    struct stdalloc {
+        char UNUSED(_dummy_cpp_object_size_compatibility);
+    };
 #else
-typedef struct {
-} stdalloc;
+    typedef struct {} stdalloc;
 #endif
 
 static stdalloc* NAME(stdalloc, get)() {
@@ -43,5 +41,3 @@ static void NAME(stdalloc, free)(stdalloc* DEBUG_UNUSED(self), void* ptr) {
     DEBUG_ASSERT(ptr);
     free(ptr);
 }
-
-#endif

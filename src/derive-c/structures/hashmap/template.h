@@ -7,16 +7,17 @@
 
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
-#include <derive-c/self.h>
 #include <derive-c/structures/hashmap/utils.h>
 
-#ifndef ALLOC
-#include <derive-c/allocs/std.h>
-#define ALLOC stdalloc
+#include <derive-c/self/def.h>
+
+#if !defined ALLOC
+    #include <derive-c/allocs/std.h>
+    #define ALLOC stdalloc
 #endif
 
-#ifndef K
-#ifndef __clang_analyzer__
+#if !defined K
+#if !defined __clang_analyzer__
 #error "Key type must be defined to for a hashmap template"
 #endif
 typedef struct {
@@ -27,8 +28,8 @@ static void derive_c_parameter_key_delete(derive_c_parameter_key* UNUSED(key)) {
 #define K_DELETE derive_c_parameter_key_delete
 #endif
 
-#ifndef V
-#ifndef __clang_analyzer__
+#if !defined V
+#if !defined __clang_analyzer__
 #error "Value type must be defined to for a hashmap template"
 #endif
 typedef struct {
@@ -39,16 +40,16 @@ static void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key
 #define V_DELETE derive_c_parameter_value_delete
 #endif
 
-#ifndef HASH
-#ifndef __clang_analyzer__
+#if !defined HASH
+#if !defined __clang_analyzer__
 #error "The hash function for K must be defined"
 #endif
 static size_t derive_c_parameter_hash(derive_c_parameter_key const* key);
 #define HASH derive_c_parameter_hash
 #endif
 
-#ifndef EQ
-#ifndef __clang_analyzer__
+#if !defined EQ
+#if !defined __clang_analyzer__
 #error "The equality function for K must be defined"
 #endif
 static bool derive_c_parameter_eq(derive_c_parameter_key const* key_1,
@@ -56,11 +57,11 @@ static bool derive_c_parameter_eq(derive_c_parameter_key const* key_1,
 #define EQ derive_c_parameter_eq
 #endif
 
-#ifndef K_DELETE
+#if !defined K_DELETE
 #define K_DELETE(key)
 #endif
 
-#ifndef V_DELETE
+#if !defined V_DELETE
 #define V_DELETE(value)
 #endif
 

@@ -1,20 +1,19 @@
 /// An allocator for the standard allocator, which only has global state,
 // and just uses malloc/calloc/free.
 
-#ifndef NULLALLOC_H
-#define NULLALLOC_H
+#pragma once
 
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-struct nullalloc {
-    char UNUSED(_dummy_cpp_object_size_compatibility);
-};
+#if defined __cplusplus
+    struct nullalloc {
+        char UNUSED(_dummy_cpp_object_size_compatibility);
+    };
 #else
-typedef struct {
-} nullalloc;
+    typedef struct {
+    } nullalloc;
 #endif
 
 static nullalloc NAME(nullalloc, get)() { return (nullalloc){}; }
@@ -41,5 +40,3 @@ static void NAME(nullalloc, free)(nullalloc* DEBUG_UNUSED(self), void* UNUSED(pt
     DEBUG_ASSERT(self);
     PANIC("Not possible to free memory from the null allocator, as it allocates nothing")
 }
-
-#endif

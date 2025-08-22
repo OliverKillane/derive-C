@@ -7,27 +7,28 @@
 
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
-#include <derive-c/self.h>
 
-#ifndef CAPACITY
-#ifndef __clang_analyzer__
-#error "The capacity of the static allocator must be defined"
-#endif
-#define CAPACITY 1024
+#include <derive-c/self/def.h>
+
+#if !defined CAPACITY
+    #if !defined __clang_analyzer__
+        #error "The capacity of the static allocator must be defined"
+    #endif
+    #define CAPACITY 1024
 #endif
 
 #if CAPACITY > (1ULL << 30)
-#error "CAPACITY must not exceed 1 GiB"
+    #error "CAPACITY must not exceed 1 GiB"
 #endif
 
 #if CAPACITY <= UINT8_MAX
-#define USED uint8_t
+    #define USED uint8_t
 #elif CAPACITY <= UINT16_MAX
-#define USED uint16_t
+    #define USED uint16_t
 #elif CAPACITY <= UINT32_MAX
-#define USED uint32_t
+    #define USED uint32_t
 #else
-#define USED uint64_t
+    #define USED uint64_t
 #endif
 
 typedef struct {
@@ -137,6 +138,7 @@ static void* NAME(SELF, calloc)(SELF* self, size_t count, size_t size) {
     return NAME(SELF, malloc)(self, count * size);
 }
 
+#undef CAPACITY
 #undef USED
-#undef ALLOC
-#undef SELF
+
+#include <derive-c/self/undef.h>

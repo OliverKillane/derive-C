@@ -7,14 +7,15 @@
 
 #include <derive-c/core.h>
 #include <derive-c/panic.h>
-#include <derive-c/self.h>
 
-#ifndef ALLOC
-#ifndef __clang_analyzer__
-#error "The allocator being debugged must be defined"
-#endif
-#include <derive-c/allocs/null.h>
-#define ALLOC nullalloc
+#include <derive-c/self/def.h>
+
+#if !defined ALLOC
+    #if !defined __clang_analyzer__
+        #error "The allocator being debugged must be defined"
+    #endif
+    #include <derive-c/allocs/null.h>
+    #define ALLOC nullalloc
 #endif
 
 typedef struct {
@@ -66,4 +67,5 @@ static void NAME(SELF, free)(SELF* self, void* ptr) {
 }
 
 #undef ALLOC
-#undef SELF
+
+#include <derive-c/self/undef.h>
