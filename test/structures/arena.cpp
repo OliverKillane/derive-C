@@ -31,7 +31,7 @@ struct Model {
 extern "C" {
 #include <derive-c/allocs/std.h>
 
-#define SELF Sut
+#define NAME Sut
 #define V Value
 #define INDEX_BITS 8
 #include <derive-c/structures/arena/template.h>

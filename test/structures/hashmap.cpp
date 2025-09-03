@@ -28,7 +28,7 @@ Key key_hash(Key const* key) {
 #define V Value
 #define EQ key_equality
 #define HASH key_hash
-#define SELF Sut
+#define NAME Sut
 #include <derive-c/structures/hashmap/template.h>
 }
 

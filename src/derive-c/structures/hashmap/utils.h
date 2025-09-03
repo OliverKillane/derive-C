@@ -2,8 +2,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <derive-c/core.h>
-#include <derive-c/panic.h>
+#include <derive-c/core/helpers.h>
+#include <derive-c/core/panic.h>
 
 static inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
 

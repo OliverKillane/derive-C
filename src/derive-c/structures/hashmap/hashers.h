@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <derive-c/core.h>
+#include <derive-c/core/helpers.h>
 #include <derive-c/structures/hashmap/murmurhash.h>
 
 /// The worst possible hash, for testing purposes.

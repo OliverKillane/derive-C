@@ -19,7 +19,7 @@ ENABLE_PREPROCESSING  = YES
 MACRO_EXPANSION       = YES
 EXPAND_ONLY_PREDEF    = YES  
 EXPAND_AS_DEFINED     = NAME
-PREDEFINED           += NAME(SELF,name)=name
+PREDEFINED           += NS(SELF,name)=name
 EXCLUDE_SYMBOLS       = derive_c_parameter* ITER ITER_CONST
 
 # Documentation features

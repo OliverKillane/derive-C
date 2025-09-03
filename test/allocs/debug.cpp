@@ -6,7 +6,7 @@ extern "C" {
 #include <derive-c/allocs/std.h>
 
 #define ALLOC stdalloc
-#define SELF stddebugalloc
+#define NAME stddebugalloc
 #include <derive-c/allocs/debug/template.h>
 }
 

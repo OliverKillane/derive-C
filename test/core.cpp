@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <derive-c/core.h>
+#include <derive-c/core/helpers.h>
 
 namespace core {
 

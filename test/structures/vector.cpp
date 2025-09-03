@@ -15,7 +15,7 @@ using Model = std::vector<Data>;
 extern "C" {
 #include <derive-c/allocs/std.h>
 
-#define SELF Sut
+#define NAME Sut
 #define T Data
 #include <derive-c/structures/vector/template.h>
 }

@@ -5,7 +5,7 @@ namespace option {
 void free_int(int** ptr) { delete *ptr; }
 
 extern "C" {
-#define SELF optional_int
+#define NAME optional_int
 #define T int*
 #define T_DELETE free_int
 #include <derive-c/structures/option/template.h>

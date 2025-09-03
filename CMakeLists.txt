@@ -100,7 +100,7 @@ if(CLANG_TIDY)
   endif()
 
   add_custom_target(lint-c-hdrs
-    COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --extra-arg-before=-xc --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} --header-filter="^${CMAKE_SOURCE_DIR}/src/" ${TIDY_C_HDRS}
+    COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --extra-arg-before=-xc --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} --extra-arg=-I${CMAKE_SOURCE_DIR}/src --header-filter="^${CMAKE_SOURCE_DIR}/src/" ${TIDY_C_HDRS}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} VERBATIM)
 
   if(TIDY_C_SRC)

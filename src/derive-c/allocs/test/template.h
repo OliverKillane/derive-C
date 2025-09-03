@@ -9,145 +9,134 @@
 #include <stddef.h>
 
 #include <derive-c/allocs/std.h>
-#include <derive-c/core.h>
-#include <derive-c/panic.h>
+#include <derive-c/core/helpers.h>
+#include <derive-c/core/panic.h>
 
-#include <derive-c/self/def.h>
-
-#if !defined ALLOC
-    #if !defined __clang_analyzer__
-        #error "The allocator being wrapped must be defined"
-    #endif
-    #include <derive-c/allocs/null.h> // NOLINT(misc-include-cleaner)
-    #define ALLOC nullalloc
-#endif
-
-#if !defined ENTRIES
-    #if !defined __clang_analyzer__
-        #error "The name of the type to generate for storing entries must be defined"
-    #endif
-    #define ENTRIES derive_c_entries_placeholder_name
-#endif
+#include <derive-c/core/alloc/def.h>
+#include <derive-c/core/self/def.h>
 
 #ifdef NDEBUG
-    typedef struct {
-        ALLOC* alloc;
-    } SELF;
+typedef struct {
+    ALLOC* alloc;
+} SELF;
 
-    static SELF NAME(SELF, new)(ALLOC* alloc) { return (SELF){.alloc = alloc}; }
+static SELF NS(SELF, new)(ALLOC* alloc) { return (SELF){.alloc = alloc}; }
 
-    static void* NAME(SELF, malloc)(SELF* self, size_t size) {
-        return NAME(ALLOC, malloc)(self->alloc, size);
-    }
+static void* NS(SELF, malloc)(SELF* self, size_t size) {
+    return NS(ALLOC, malloc)(self->alloc, size);
+}
 
-    static void* NAME(SELF, calloc)(SELF* self, size_t count, size_t size) {
-        return NAME(ALLOC, calloc)(self->alloc, count, size);
-    }
+static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
+    return NS(ALLOC, calloc)(self->alloc, count, size);
+}
 
-    static void* NAME(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-        return NAME(ALLOC, realloc)(self->alloc, ptr, size);
-    }
+static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
+    return NS(ALLOC, realloc)(self->alloc, ptr, size);
+}
 
-    static void NAME(SELF, free)(SELF* self, void* ptr) { return NAME(ALLOC, free)(self->alloc, ptr); }
+static void NS(SELF, free)(SELF* self, void* ptr) { return NS(ALLOC, free)(self->alloc, ptr); }
 
 #else
-    #define TRACKED_ENTRY NAME(ENTRIES, entry)
+    #define ENTRIES_VECTOR NS(NAME, entries)
+    #define TRACKED_ENTRY NS(EXPAND(ENTRIES), entry)
 
-    typedef struct {
-        void* ptr;
-        bool freed;
-    } TRACKED_ENTRY;
+typedef struct {
+    void* ptr;
+    bool freed;
+} TRACKED_ENTRY;
 
-    #pragma push_macro("SELF")
-    #undef SELF
+    #pragma push_macro("ALLOC")
 
     // JUSTIFY: Using a vector rather than a faster lookup map.
     //           - Give this will be used for test & debug, performance matters less
     //           - Much easier to explore a vector, than a hashmap in gdb.
+    // JUSTIFY: Always use the std allocator for test book keeping
+    //          - keeps the observed behaviour (e.g. allocator usage) the same as in release
     #define T TRACKED_ENTRY
     #define ALLOC stdalloc
-    #define SELF ENTRIES
+    #define INTERNAL_NAME ENTRIES_VECTOR
     #include <derive-c/structures/vector/template.h>
 
-    #pragma pop_macro("SELF")
+    #pragma pop_macro("ALLOC")
 
-    typedef struct {
-        ALLOC* alloc;
-        ENTRIES entries;
-    } SELF;
+typedef struct {
+    ALLOC* alloc;
+    ENTRIES_VECTOR entries;
+} SELF;
 
-    static SELF NAME(SELF, new)(ALLOC* alloc) {
-        return (SELF){.alloc = alloc, .entries = NAME(ENTRIES, new)(stdalloc_get())};
-    }
+static SELF NS(SELF, new)(ALLOC* alloc) {
+    return (SELF){.alloc = alloc, .entries = NS(ENTRIES_VECTOR, new)(stdalloc_get())};
+}
 
-    static ENTRIES const* NAME(SELF, get_entries)(SELF const* self) {
-        DEBUG_ASSERT(self);
-        return &self->entries;
-    }
+static ENTRIES_VECTOR const* NS(SELF, get_entries)(SELF const* self) {
+    DEBUG_ASSERT(self);
+    return &self->entries;
+}
 
-    static void NAME(SELF, unleak_and_delete)(SELF* self) {
-        NAME(ENTRIES, iter) iter = NAME(ENTRIES, get_iter)(&self->entries);
-        TRACKED_ENTRY* entry;
+static void NS(SELF, unleak_and_delete)(SELF* self) {
+    NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
+    TRACKED_ENTRY* entry;
 
-        while ((entry = NAME(ENTRIES, iter_next)(&iter))) {
-            if (!entry->freed) {
-                NAME(ALLOC, free)(self->alloc, entry->ptr);
-            }
+    while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
+        if (!entry->freed) {
+            NS(ALLOC, free)(self->alloc, entry->ptr);
         }
-
-        NAME(ENTRIES, delete)(&self->entries);
     }
 
-    static void* NAME(SELF, calloc)(SELF* self, size_t count, size_t size) {
-        DEBUG_ASSERT(self);
-        void* ptr = NAME(ALLOC, calloc)(self->alloc, count, size);
-        if (ptr) {
-            NAME(ENTRIES, push)(&self->entries, (TRACKED_ENTRY){
-                                                    .ptr = ptr,
-                                                    .freed = false,
-                                                });
+    NS(ENTRIES_VECTOR, delete)(&self->entries);
+}
+
+static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
+    DEBUG_ASSERT(self);
+    void* ptr = NS(ALLOC, calloc)(self->alloc, count, size);
+    if (ptr) {
+        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
+                                                     .ptr = ptr,
+                                                     .freed = false,
+                                                 });
+    }
+    return ptr;
+}
+
+static void* NS(SELF, malloc)(SELF* self, size_t size) {
+    DEBUG_ASSERT(self);
+    void* ptr = NS(ALLOC, malloc)(self->alloc, size);
+    if (ptr) {
+        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
+                                                     .ptr = ptr,
+                                                     .freed = false,
+                                                 });
+    }
+    return ptr;
+}
+
+static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
+    DEBUG_ASSERT(self);
+    DEBUG_ASSERT(ptr);
+    return NS(ALLOC, realloc)(self->alloc, ptr, size);
+}
+
+static void NS(SELF, free)(SELF* self, void* ptr) {
+    DEBUG_ASSERT(ptr);
+    DEBUG_ASSERT(self);
+
+    NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
+    TRACKED_ENTRY* entry;
+
+    while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
+        if (entry->ptr == ptr) {
+            DEBUG_ASSERT(!entry->freed);
+            entry->freed = true;
+            break;
         }
-        return ptr;
     }
 
-    static void* NAME(SELF, malloc)(SELF* self, size_t size) {
-        DEBUG_ASSERT(self);
-        void* ptr = NAME(ALLOC, malloc)(self->alloc, size);
-        if (ptr) {
-            NAME(ENTRIES, push)(&self->entries, (TRACKED_ENTRY){
-                                                    .ptr = ptr,
-                                                    .freed = false,
-                                                });
-        }
-        return ptr;
-    }
+    NS(ALLOC, free)(self->alloc, ptr);
+}
 
-    static void* NAME(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-        DEBUG_ASSERT(self);
-        DEBUG_ASSERT(ptr);
-        return NAME(ALLOC, realloc)(self->alloc, ptr, size);
-    }
-
-    static void NAME(SELF, free)(SELF* self, void* ptr) {
-        DEBUG_ASSERT(ptr);
-        DEBUG_ASSERT(self);
-
-        NAME(ENTRIES, iter) iter = NAME(ENTRIES, get_iter)(&self->entries);
-        TRACKED_ENTRY* entry;
-
-        while ((entry = NAME(ENTRIES, iter_next)(&iter))) {
-            if (entry->ptr == ptr) {
-                DEBUG_ASSERT(!entry->freed);
-                entry->freed = true;
-                break;
-            }
-        }
-
-        NAME(ALLOC, free)(self->alloc, ptr);
-    }
-
-    #undef ENTRIES
+    #undef ENTRIES_VECTOR
     #undef TRACKED_ENTRY
 #endif
 
-#include <derive-c/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/self/undef.h>

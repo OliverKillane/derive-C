@@ -1,4 +1,4 @@
-#include <derive-c/core.h>
+#include <derive-c/core/helpers.h>
 
 #define DERIVE_STRUCT_MEMBER(t, n) t n;
 
@@ -12,5 +12,5 @@
 // ```
 #define DERIVE_STRUCT(ID)                                                                          \
     typedef struct {                                                                               \
-        NAME(ID, REFLECT)(DERIVE_STRUCT_MEMBER)                                                    \
+        NS(ID, REFLECT)(DERIVE_STRUCT_MEMBER)                                                      \
     }(ID);

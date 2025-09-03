@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #define CAPACITY 1024
-#define SELF foopool
+#define NAME foopool
 #include <derive-c/allocs/staticbump/template.h>
 
 void foopool_raw_example() {

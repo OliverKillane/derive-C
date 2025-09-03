@@ -1,12 +1,12 @@
 #include <stdio.h>
 
 #define CAPACITY 2048
-#define SELF alloc_2048
+#define NAME alloc_2048
 #include <derive-c/allocs/staticbump/template.h>
 
 #define T char
 #define ALLOC alloc_2048
-#define SELF vec_char
+#define NAME vec_char
 #include <derive-c/structures/vector/template.h>
 
 int main() {

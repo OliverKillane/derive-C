@@ -1,13 +1,13 @@
 #pragma once
 #include <stdlib.h>
 
-#define NAME_EXPANDED(pre, post) pre##_##post
-#define NAME(pre, post) NAME_EXPANDED(pre, post)
+#define NS_EXPANDED(pre, post) pre##_##post
+#define NS(pre, post) NS_EXPANDED(pre, post)
 
 #ifndef NDEBUG
-#define DEBUG_UNUSED(ident) ident __attribute__((unused))
+    #define DEBUG_UNUSED(ident) ident __attribute__((unused))
 #else
-#define DEBUG_UNUSED(ident)
+    #define DEBUG_UNUSED(ident)
 #endif
 
 #define UNUSED(ident) ident __attribute__((unused))

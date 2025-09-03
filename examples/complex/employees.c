@@ -43,18 +43,18 @@ size_t age_hash(age const* age) { return age->value; }
 
 #define INDEX_BITS 16
 #define V employee
-#define SELF employees
+#define NAME employees
 #include <derive-c/structures/arena/template.h>
 
 #define T employees_index
-#define SELF same_age_employees
+#define NAME same_age_employees
 #include <derive-c/structures/vector/template.h>
 
 #define K age
 #define V same_age_employees
 #define EQ age_eq
 #define HASH age_hash
-#define SELF employees_by_age
+#define NAME employees_by_age
 #include <derive-c/structures/hashmap/template.h>
 
 typedef struct {

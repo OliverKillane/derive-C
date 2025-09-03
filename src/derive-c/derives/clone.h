@@ -1,6 +1,6 @@
-#include <derive-c/core.h>
+#include <derive-c/core/helpers.h>
 
-#define DERIVE_CLONE_MEMBER(t, n) .n = NAME(t, clone)(&self->n),
+#define DERIVE_CLONE_MEMBER(t, n) .n = NS(t, clone)(&self->n),
 
 // Given you have define a reflect for an ID, the struct can be defined.
 // ```c
@@ -11,4 +11,4 @@
 // DERIVE_STRUCT(Foo)
 // ```
 #define DERIVE_CLONE(ID)                                                                           \
-    ID NAME(ID, clone)(ID const* self) { return (ID){NAME(ID, REFLECT)(DERIVE_CLONE_MEMBER)}; }
+    ID NS(ID, clone)(ID const* self) { return (ID){NS(ID, REFLECT)(DERIVE_CLONE_MEMBER)}; }

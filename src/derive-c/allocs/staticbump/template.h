@@ -5,10 +5,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <derive-c/core.h>
-#include <derive-c/panic.h>
+#include <derive-c/core/helpers.h>
+#include <derive-c/core/panic.h>
 
-#include <derive-c/self/def.h>
+#include <derive-c/core/self/def.h>
 
 #if !defined CAPACITY
     #if !defined __clang_analyzer__
@@ -37,9 +37,9 @@ typedef struct {
     gdb_marker derive_c_staticbumpalloc;
 } SELF;
 
-static size_t NAME(SELF, metadata_size) = sizeof(USED);
+static size_t NS(SELF, metadata_size) = sizeof(USED);
 
-static SELF NAME(SELF, new)() {
+static SELF NS(SELF, new)() {
     SELF self = {.used = 0, .derive_c_staticbumpalloc = {}};
     // JUSTIFY: Zeroed buffer
     //           - For easier debugging & view in gdb.
@@ -49,7 +49,7 @@ static SELF NAME(SELF, new)() {
 }
 
 /// Clear the allocator, note that all data should be freed before this occurs.
-static void NAME(SELF, clear)(SELF* self) {
+static void NS(SELF, clear)(SELF* self) {
     DEBUG_ASSERT(self);
 
 #ifndef NDEBUG
@@ -64,12 +64,12 @@ static void NAME(SELF, clear)(SELF* self) {
     self->used = 0;
 }
 
-static USED NAME(SELF, get_used)(SELF const* self) {
+static USED NS(SELF, get_used)(SELF const* self) {
     DEBUG_ASSERT(self);
     return self->used;
 }
 
-static void* NAME(SELF, malloc)(SELF* self, size_t size) {
+static void* NS(SELF, malloc)(SELF* self, size_t size) {
     DEBUG_ASSERT(self);
     if (self->used + (size + sizeof(USED)) > CAPACITY) {
         return NULL;
@@ -81,7 +81,7 @@ static void* NAME(SELF, malloc)(SELF* self, size_t size) {
     return ptr + sizeof(USED);
 }
 
-static void NAME(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) {
+static void NS(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) {
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(ptr);
 
@@ -95,7 +95,7 @@ static void NAME(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) 
 #endif
 }
 
-static void* NAME(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
+static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(ptr);
 
@@ -121,24 +121,24 @@ static void* NAME(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
         return ptr;
     }
 
-    void* new_buff = NAME(SELF, malloc)(self, new_size);
+    void* new_buff = NS(SELF, malloc)(self, new_size);
     if (!new_buff) {
         return NULL;
     }
 
     memcpy(new_buff, ptr, *old_size);
 
-    NAME(SELF, free)(self, ptr);
+    NS(SELF, free)(self, ptr);
     return new_buff;
 }
 
-static void* NAME(SELF, calloc)(SELF* self, size_t count, size_t size) {
+static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
     // JUSTIFY:
     //  - We already zeroed the buffer in `new()`
-    return NAME(SELF, malloc)(self, count * size);
+    return NS(SELF, malloc)(self, count * size);
 }
 
 #undef CAPACITY
 #undef USED
 
-#include <derive-c/self/undef.h>
+#include <derive-c/core/self/undef.h>
