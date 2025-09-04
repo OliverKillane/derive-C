@@ -72,6 +72,16 @@ static SELF NS(SELF, new_with_defaults)(size_t size, T default_value, ALLOC* all
     };
 }
 
+static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
+    DEBUG_ASSERT(self);
+    if (new_capacity > self->capacity) {
+        T* new_data = (T*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(T));
+        ASSERT(new_data);
+        self->data = new_data;
+        self->capacity = new_capacity;
+    }
+}
+
 static SELF NS(SELF, shallow_clone)(SELF const* self) {
     DEBUG_ASSERT(self);
     T* data = (T*)NS(ALLOC, malloc)(self->alloc, self->capacity * sizeof(T));
@@ -111,6 +121,38 @@ static T* NS(SELF, write)(SELF* self, size_t index) {
     T* value = NS(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
+}
+
+static void NS(SELF, insert_at)(SELF* self, size_t at, T* data, size_t items) {
+    DEBUG_ASSERT(self);
+    DEBUG_ASSERT(data);
+    ASSERT(at <= self->size);
+
+    if (items == 0) {
+        return;
+    }
+
+    NS(SELF, reserve)(self, self->size + items);
+
+    memmove(&self->data[at + items], &self->data[at], (self->size - at) * sizeof(T));
+    memcpy(&self->data[at], data, items * sizeof(T));
+    self->size += items;
+}
+
+static void NS(SELF, remove_at)(SELF* self, size_t at, size_t items) {
+    DEBUG_ASSERT(self);
+    ASSERT(at + items <= self->size);
+
+    if (items == 0) {
+        return;
+    }
+
+    for (size_t i = at; i < at + items; i++) {
+        T_DELETE(&self->data[i]);
+    }
+
+    memmove(&self->data[at], &self->data[at + items], (self->size - (at + items)) * sizeof(T));
+    self->size -= items;
 }
 
 static T* NS(SELF, push)(SELF* self, T value) {
@@ -153,9 +195,23 @@ static bool NS(SELF, try_pop)(SELF* self, T* destination) {
     return false;
 }
 
+static T* NS(SELF, data)(SELF* self) {
+    DEBUG_ASSERT(self);
+    return self->data;
+}
+
 static T NS(SELF, pop)(SELF* self) {
     T entry;
     ASSERT(NS(SELF, try_pop)(self, &entry));
+    return entry;
+}
+
+static T NS(SELF, pop_front)(SELF* self) {
+    DEBUG_ASSERT(self);
+    ASSERT(self->size > 0);
+    T entry = self->data[0];
+    memmove(&self->data[0], &self->data[1], (self->size - 1) * sizeof(T));
+    self->size--;
     return entry;
 }
 
