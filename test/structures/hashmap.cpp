@@ -7,8 +7,6 @@
 #include <optional>
 #include <unordered_map>
 
-namespace hashmap {
-
 using Value = size_t;
 using Key = size_t;
 using Model = std::unordered_map<Key, Value>;
@@ -164,4 +162,3 @@ RC_GTEST_PROP(HashMapTests, General, ()) {
     rc::state::check(model, sutWrapper,
                      rc::state::gen::execOneOfWithArgs<Insert, Insert, Insert, Write, Remove>());
 }
-} // namespace hashmap

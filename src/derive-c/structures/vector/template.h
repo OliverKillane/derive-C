@@ -123,7 +123,7 @@ static T* NS(SELF, write)(SELF* self, size_t index) {
     return value;
 }
 
-static void NS(SELF, insert_at)(SELF* self, size_t at, T* data, size_t items) {
+static void NS(SELF, insert_at)(SELF* self, size_t at, T const* data, size_t items) {
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(data);
     ASSERT(at <= self->size);

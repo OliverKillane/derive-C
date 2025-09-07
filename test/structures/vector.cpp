@@ -7,14 +7,10 @@
 #include <limits>
 #include <vector>
 
-namespace vector {
-
-using Data = size_t;
+using Data = std::size_t;
 using Model = std::vector<Data>;
 
 extern "C" {
-#include <derive-c/allocs/std.h>
-
 #define NAME Sut
 #define T Data
 #include <derive-c/structures/vector/template.h>
@@ -55,6 +51,7 @@ struct Command : rc::state::Command<Model, SutWrapper> {
     }
 
     void checkInvariants(const Model& oldModel, const SutWrapper& s) const {
+        static_assert(std::is_same_v<unsigned long, unsigned long>);
         Model m = nextState(oldModel);
         RC_ASSERT(m.size() == Sut_size(s.getConst()));
         for (size_t i = 0; i < m.size(); ++i) {
@@ -109,8 +106,58 @@ struct Write : Command {
     }
 };
 
-struct Pop : Command {
+struct WriteAt : Command {
+    std::vector<Data> values;
+    size_t fromIndex;
 
+    explicit WriteAt(const Model& m)
+        : values(*rc::gen::container<std::vector<Data>>(
+              *rc::gen::inRange(static_cast<size_t>(1), static_cast<size_t>(10)),
+              rc::gen::inRange(std::numeric_limits<Data>::min(),
+                               std::numeric_limits<Data>::max()))),
+          fromIndex(*rc::gen::inRange(static_cast<size_t>(0), m.size())) {}
+
+    void checkPreconditions(const Model& m) const override {}
+
+    void apply(Model& m) const override {
+        m.insert(m.begin() + fromIndex, values.begin(), values.end());
+    }
+
+    void runAndCheck(const Model& m, SutWrapper& s) const override {
+        Sut_insert_at(s.get(), fromIndex, values.data(), values.size());
+    }
+
+    void show(std::ostream& os) const override {
+        os << "WriteAt(index=" << fromIndex << ", values.size()=" << values.size() << ")";
+    }
+};
+
+struct RemoveAt : Command {
+    size_t fromIndex;
+    size_t count;
+
+    explicit RemoveAt(const Model& m)
+        : fromIndex(*rc::gen::inRange(static_cast<size_t>(0), m.size())),
+          count(*rc::gen::inRange(static_cast<size_t>(0), m.size() - fromIndex + 1)) {}
+
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(fromIndex + count <= m.size());
+    }
+
+    void apply(Model& m) const override {
+        m.erase(m.begin() + fromIndex, m.begin() + fromIndex + count);
+    }
+
+    void runAndCheck(const Model& m, SutWrapper& s) const override {
+        Sut_remove_at(s.get(), fromIndex, count);
+    }
+
+    void show(std::ostream& os) const override {
+        os << "RemoveAt(index=" << fromIndex << ", count=" << count << ")";
+    }
+};
+
+struct Pop : Command {
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_back(); }
     void runAndCheck(const Model& m, SutWrapper& sut) const override { Sut_pop(sut.get()); }
@@ -120,7 +167,9 @@ struct Pop : Command {
 RC_GTEST_PROP(VectorTests, General, ()) {
     Model model;
     SutWrapper sut;
-    rc::state::check(model, sut, rc::state::gen::execOneOfWithArgs<Push, Push, Push, Write, Pop>());
+    rc::state::check(
+        model, sut,
+        rc::state::gen::execOneOfWithArgs<Push, Push, Push, Write, WriteAt, RemoveAt, Pop>());
 }
 
 TEST(VectorTests, CreateWithDefaults) {
@@ -215,5 +264,3 @@ TEST(VectorTests, ShallowClone) {
     Sut_delete(&sut);
     Sut_delete(&cloned_sut);
 }
-
-} // namespace vector

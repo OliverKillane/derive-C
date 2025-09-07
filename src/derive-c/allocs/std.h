@@ -28,8 +28,10 @@ static void* NS(stdalloc, malloc)(stdalloc* DEBUG_UNUSED(self), size_t size) {
 
 static void* NS(stdalloc, realloc)(stdalloc* DEBUG_UNUSED(self), void* ptr, size_t size) {
     DEBUG_ASSERT(self);
-    DEBUG_ASSERT(ptr);
-    return realloc(ptr, size);
+    if (ptr) {
+        return realloc(ptr, size);
+    }
+    return NS(stdalloc, malloc)(self, size);
 }
 
 static void* NS(stdalloc, calloc)(stdalloc* DEBUG_UNUSED(self), size_t count, size_t size) {

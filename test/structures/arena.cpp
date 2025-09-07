@@ -9,10 +9,8 @@
 #include "../utils.hpp"
 #include "rapidcheck/Assertions.h"
 
-namespace arena {
-
-using Value = size_t;
-using ModelIndex = StrongInteger<struct ModelIndexTag, size_t>;
+using Value = std::size_t;
+using ModelIndex = StrongInteger<struct ModelIndexTag, Value>;
 
 struct IndexHelper {
     ModelIndex next() {
@@ -44,17 +42,14 @@ inline bool operator==(const Sut_iv& a, const Sut_iv& b) {
 inline bool operator==(const Sut_iv_const& a, const Sut_iv_const& b) {
     return a.index == b.index && a.value == b.value;
 }
-} // namespace arena
 
 namespace std {
-template <> struct hash<arena::Sut_index> {
-    std::size_t operator()(const arena::Sut_index& s) const noexcept {
+template <> struct hash<Sut_index> {
+    std::size_t operator()(const Sut_index& s) const noexcept {
         return std::hash<uint8_t>{}(s.index);
     }
 };
 } // namespace std
-
-namespace arena {
 
 struct SutWrapper {
     // JUSTIFY: 3 items
@@ -328,5 +323,3 @@ TEST(ArenaTests, FailedRemoveDelete) {
 
     Sut_delete(&sut);
 }
-
-} // namespace arena

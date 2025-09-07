@@ -97,7 +97,10 @@ static void NS(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) {
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
     DEBUG_ASSERT(self);
-    DEBUG_ASSERT(ptr);
+
+    if (!ptr) {
+        return NS(SELF, malloc)(self, new_size);
+    }
 
     char* byte_ptr = (char*)ptr;
     USED* old_size = (USED*)(byte_ptr - sizeof(USED));

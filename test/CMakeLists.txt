@@ -29,24 +29,44 @@ FetchContent_MakeAvailable(rapidcheck)
 
 include(GoogleTest)
 
-file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS *.cpp *.hpp)
-add_executable(derivec_tests ${TEST_SOURCES})
-target_link_libraries(derivec_tests
-    PRIVATE
-        derivec
-        gtest
-        gtest_main
-        rapidcheck
-        rapidcheck_gtest
-)
+# Find all .cpp test files
+file(GLOB_RECURSE TEST_CPP_FILES CONFIGURE_DEPENDS *.cpp)
 
-gtest_discover_tests(derivec_tests
-    DISCOVERY_TIMEOUT 30
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    PROPERTIES
-    ENVIRONMENT
-      "RC_PARAMS=max_success=10000"
-)
+# Create a list to hold all test executables for coverage
+set(ALL_TEST_EXECUTABLES)
+
+# Create separate executable for each .cpp file
+foreach(TEST_FILE ${TEST_CPP_FILES})
+    # Get relative path and create executable name
+    file(RELATIVE_PATH REL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${TEST_FILE})
+    string(REPLACE "/" "_" TEST_NAME ${REL_PATH})
+    string(REPLACE ".cpp" "" TEST_NAME ${TEST_NAME})
+    
+    # Create executable
+    add_executable(${TEST_NAME} ${TEST_FILE})
+    
+    # Link libraries
+    target_link_libraries(${TEST_NAME}
+        PRIVATE
+            derivec
+            gtest
+            gtest_main
+            rapidcheck
+            rapidcheck_gtest
+    )
+    
+    # Discover tests for this executable
+    gtest_discover_tests(${TEST_NAME}
+        DISCOVERY_TIMEOUT 30
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        ENVIRONMENT
+          "RC_PARAMS=max_success=10000"
+    )
+    
+    # Add to list for coverage
+    list(APPEND ALL_TEST_EXECUTABLES ${TEST_NAME})
+endforeach()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
@@ -54,14 +74,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     find_program(GENHTML_EXECUTABLE NAMES genhtml)
     if(DEVELOP AND LLVM_COV_EXECUTABLE AND LLVM_PROFDATA_EXECUTABLE AND GENHTML_EXECUTABLE)    
         add_custom_target(coverage
-            DEPENDS derivec_tests
+            DEPENDS ${ALL_TEST_EXECUTABLES}
             COMMENT "🔍 Running llvm-cov → HTML coverage report (Clang/LLVM)"
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMAND LLVM_PROFILE_FILE=default.profraw ${CMAKE_BINARY_DIR}/test/derivec_tests
-            COMMAND pwd
-            COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse default.profraw -o coverage.profdata
+            COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=coverage_%p.profraw ctest
+            COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse coverage_*.profraw -o coverage.profdata
             COMMAND ${LLVM_COV_EXECUTABLE} show
-                    $<TARGET_FILE:derivec_tests>
+                    ${ALL_TEST_EXECUTABLES}
                     -instr-profile=coverage.profdata
                     -format=html
                     -output-dir=coverage_html

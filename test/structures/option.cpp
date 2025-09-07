@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-namespace option {
-
+namespace {
 void free_int(int** ptr) { delete *ptr; }
+} // namespace
 
 extern "C" {
 #define NAME optional_int
@@ -10,6 +10,10 @@ extern "C" {
 #define T_DELETE free_int
 #include <derive-c/structures/option/template.h>
 }
+
+#include <type_traits>
+
+static_assert(std::is_same_v<testing::TestProperty, testing::TestProperty>);
 
 TEST(Option, EmptyNotPresent) {
     optional_int opt = optional_int_empty();
@@ -57,5 +61,3 @@ TEST(Option, ReplaceEmpty) {
 
     optional_int_delete(&opt);
 }
-
-} // namespace option
