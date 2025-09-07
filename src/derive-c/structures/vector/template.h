@@ -19,13 +19,19 @@
 typedef struct {
     int x;
 } derive_c_parameter_t;
-    #define T derive_c_parameter_t // Allows independent debugging
+    #define T derive_c_parameter_t
 static void derive_c_parameter_t_delete(derive_c_parameter_t* UNUSED(t)) {}
     #define T_DELETE derive_c_parameter_t_delete
+static derive_c_parameter_t derive_c_parameter_t_clone(derive_c_parameter_t const* i) { return *i; }
+    #define T_CLONE derive_c_parameter_t_clone
 #endif
 
 #ifndef T_DELETE
     #define T_DELETE(value)
+#endif
+
+#if !defined T_CLONE
+    #define T_CLONE(value) (*(value))
 #endif
 
 typedef struct {
@@ -47,7 +53,10 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
-    DEBUG_ASSERT(capacity > 0);
+    if (capacity == 0) {
+        return NS(SELF, new)(alloc);
+    }
+
     T* data = (T*)NS(ALLOC, malloc)(alloc, capacity * sizeof(T));
     ASSERT(LIKELY(data));
     return (SELF){
@@ -82,11 +91,13 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
     }
 }
 
-static SELF NS(SELF, shallow_clone)(SELF const* self) {
+static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
     T* data = (T*)NS(ALLOC, malloc)(self->alloc, self->capacity * sizeof(T));
     ASSERT(data);
-    memcpy(data, self->data, self->size * sizeof(T));
+    for (size_t index = 0; index < self->size; index++) {
+        data[index] = T_CLONE(&self->data[index]);
+    }
     return (SELF){
         .size = self->size,
         .capacity = self->capacity,

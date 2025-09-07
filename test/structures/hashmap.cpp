@@ -32,16 +32,8 @@ Key key_hash(Key const* key) {
 
 struct SutWrapper {
     SutWrapper() : sut(Sut_new(stdalloc_get())) {}
+    SutWrapper(const SutWrapper& other) : sut(Sut_clone(other.getConst())) {}
     ~SutWrapper() { Sut_delete(&sut); }
-
-    SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
-    SutWrapper& operator=(const SutWrapper& other) {
-        if (this != &other) {
-            Sut_delete(&sut);
-            sut = Sut_shallow_clone(&other.sut);
-        }
-        return *this;
-    }
 
     [[nodiscard]] Sut* get() { return &sut; }
     [[nodiscard]] Sut const* getConst() const { return &sut; }

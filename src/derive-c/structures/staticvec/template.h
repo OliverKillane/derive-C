@@ -19,10 +19,16 @@ typedef struct {
     #define T derive_c_parameter_t // Allows independent debugging
 static void derive_c_parameter_t_delete(derive_c_parameter_t* UNUSED(self)) {}
     #define T_DELETE derive_c_parameter_t_delete
+static derive_c_parameter_t derive_c_parameter_t_clone(derive_c_parameter_t const* i) { return *i; }
+    #define T_CLONE derive_c_parameter_t_clone
 #endif
 
 #ifndef T_DELETE
     #define T_DELETE(value)
+#endif
+
+#if !defined T_CLONE
+    #define T_CLONE(value) (*(value))
 #endif
 
 #ifndef INPLACE_CAPACITY
@@ -49,14 +55,11 @@ typedef struct {
 
 static SELF NS(SELF, new)() { return (SELF){.size = 0}; }
 
-static SELF NS(SELF, shallow_clone)(SELF const* self) {
+static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
     new_self.size = self->size;
-    // TODO(oliverkillane): premature optimization, only copy the data needed.
-    // If this is already a very small vector, may be better to just
-    // `return *self` and copy the entire buffer
     for (INPLACE_TYPE i = 0; i < self->size; i++) {
-        new_self.data[i] = self->data[i];
+        new_self.data[i] = T_CLONE(&self->data[i]);
     }
     return new_self;
 }

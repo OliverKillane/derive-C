@@ -77,8 +77,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             DEPENDS ${ALL_TEST_EXECUTABLES}
             COMMENT "🔍 Running llvm-cov → HTML coverage report (Clang/LLVM)"
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=coverage_%p.profraw ctest
-            COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse coverage_*.profraw -o coverage.profdata
+            # COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=coverage_%p.profraw ctest
+            COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse test/coverage_*.profraw -o coverage.profdata
             COMMAND ${LLVM_COV_EXECUTABLE} show
                     ${ALL_TEST_EXECUTABLES}
                     -instr-profile=coverage.profdata

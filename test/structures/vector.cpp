@@ -16,25 +16,12 @@ extern "C" {
 #include <derive-c/structures/vector/template.h>
 }
 
-static const int MAX_SIZE = 100;
-Sut newSut(size_t size) {
-    if (size == 0) {
-        return Sut_new(stdalloc_get());
-    }
-    return Sut_new_with_capacity(size, stdalloc_get());
-}
-
 struct SutWrapper {
-    SutWrapper() : sut(newSut(*rc::gen::inRange(0, MAX_SIZE))) {}
+    static const int MAX_SIZE = 100;
+
+    SutWrapper() : sut(Sut_new_with_capacity(*rc::gen::inRange(0, MAX_SIZE), stdalloc_get())) {}
+    SutWrapper(const SutWrapper& other) : sut(Sut_clone(other.getConst())) {}
     ~SutWrapper() { Sut_delete(&sut); }
-    SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
-    SutWrapper& operator=(const SutWrapper& other) {
-        if (this != &other) {
-            Sut_delete(&sut);
-            sut = Sut_shallow_clone(&other.sut);
-        }
-        return *this;
-    }
 
     [[nodiscard]] Sut* get() { return &sut; }
     [[nodiscard]] Sut const* getConst() const { return &sut; }
@@ -51,7 +38,6 @@ struct Command : rc::state::Command<Model, SutWrapper> {
     }
 
     void checkInvariants(const Model& oldModel, const SutWrapper& s) const {
-        static_assert(std::is_same_v<unsigned long, unsigned long>);
         Model m = nextState(oldModel);
         RC_ASSERT(m.size() == Sut_size(s.getConst()));
         for (size_t i = 0; i < m.size(); ++i) {
@@ -254,7 +240,7 @@ TEST(VectorTests, ShallowClone) {
     Sut sut = Sut_new_with_defaults(100, 3, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 100);
 
-    Sut cloned_sut = Sut_shallow_clone(&sut);
+    Sut cloned_sut = Sut_clone(&sut);
     ASSERT_EQ(Sut_size(&cloned_sut), 100);
 
     for (size_t i = 0; i < Sut_size(&cloned_sut); ++i) {

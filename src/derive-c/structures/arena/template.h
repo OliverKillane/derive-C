@@ -27,12 +27,20 @@ typedef struct {
     int x;
 } derive_c_parameter_value;
     #define V derive_c_parameter_value
-void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
+static void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
     #define V_DELETE derive_c_parameter_value_delete
+static derive_c_parameter_value derive_c_parameter_value_clone(derive_c_parameter_value const* i) {
+    return *i;
+}
+    #define V_CLONE derive_c_parameter_value_clone
 #endif
 
 #if !defined V_DELETE
     #define V_DELETE(value) (void)value
+#endif
+
+#if !defined V_CLONE
+    #define V_CLONE(value) (*(value))
 #endif
 
 #if INDEX_BITS == 8
@@ -186,11 +194,21 @@ static V const* NS(SELF, read)(SELF const* self, INDEX index) {
     return value;
 }
 
-static SELF NS(SELF, shallow_clone)(SELF const* self) {
+static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(self->alloc, self->capacity, sizeof(SLOT));
     ASSERT(slots);
-    memcpy(slots, self->slots, self->exclusive_end * sizeof(SLOT));
+
+    for (INDEX_TYPE index = 0; index < self->exclusive_end; index++) {
+        if (self->slots[index].present) {
+            slots[index].present = true;
+            slots[index].value = V_CLONE(&self->slots[index].value);
+        } else {
+            slots[index].present = false;
+            slots[index].next_free = self->slots[index].next_free;
+        }
+    }
+
     return (SELF){
         .slots = slots,
         .capacity = self->capacity,

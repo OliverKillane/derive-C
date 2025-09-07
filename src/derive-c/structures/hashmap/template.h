@@ -22,6 +22,10 @@ typedef struct {
     #define K derive_c_parameter_key
 static void derive_c_parameter_key_delete(derive_c_parameter_key* UNUSED(key)) {}
     #define K_DELETE derive_c_parameter_key_delete
+static derive_c_parameter_key derive_c_parameter_key_clone(derive_c_parameter_key const* i) {
+    return *i;
+}
+    #define K_CLONE derive_c_parameter_key_clone
 #endif
 
 #if !defined V
@@ -34,6 +38,10 @@ typedef struct {
     #define V derive_c_parameter_value
 static void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
     #define V_DELETE derive_c_parameter_value_delete
+static derive_c_parameter_value derive_c_parameter_value_clone(derive_c_parameter_value const* i) {
+    return *i;
+}
+    #define V_CLONE derive_c_parameter_value_clone
 #endif
 
 #if !defined HASH
@@ -57,8 +65,16 @@ static bool derive_c_parameter_eq(derive_c_parameter_key const* key_1,
     #define K_DELETE(key)
 #endif
 
+#if !defined K_CLONE
+    #define K_CLONE(value) (*(value))
+#endif
+
 #if !defined V_DELETE
     #define V_DELETE(value)
+#endif
+
+#if !defined V_CLONE
+    #define V_CLONE(value) (*(value))
 #endif
 
 #define KEY_ENTRY NS(SELF, key_entry)
@@ -102,7 +118,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
     return NS(SELF, new_with_capacity_for)(INITIAL_CAPACITY, alloc);
 }
 
-static SELF NS(SELF, shallow_clone)(SELF const* self) {
+static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
 
     // JUSTIFY: Naive copy
@@ -117,8 +133,13 @@ static SELF NS(SELF, shallow_clone)(SELF const* self) {
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
-            keys[i] = self->keys[i];
-            values[i] = self->values[i];
+            KEY_ENTRY const* old_entry = &self->keys[i];
+            keys[i] = (KEY_ENTRY){
+                .present = true,
+                .distance_from_desired = old_entry->distance_from_desired,
+                .key = K_CLONE(&old_entry->key),
+            };
+            values[i] = V_CLONE(&self->values[i]);
         }
     }
 
@@ -160,7 +181,7 @@ static V* NS(SELF, try_insert)(SELF* self, K key, V value) {
 
     uint16_t distance_from_desired = 0;
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
     V* placed_entry = NULL;
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -190,7 +211,7 @@ static V* NS(SELF, try_insert)(SELF* self, K key, V value) {
             }
 
             distance_from_desired++;
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             entry->present = true;
             entry->distance_from_desired = distance_from_desired;
@@ -214,7 +235,7 @@ static V* NS(SELF, insert)(SELF* self, K key, V value) {
 static V* NS(SELF, try_write)(SELF* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -222,7 +243,7 @@ static V* NS(SELF, try_write)(SELF* self, K key) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
             }
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -238,7 +259,7 @@ static V* NS(SELF, write)(SELF* self, K key) {
 static V const* NS(SELF, try_read)(SELF const* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -246,7 +267,7 @@ static V const* NS(SELF, try_read)(SELF const* self, K key) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
             }
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -262,7 +283,7 @@ static V const* NS(SELF, read)(SELF const* self, K key) {
 static bool NS(SELF, try_remove)(SELF* self, K key, V* destination) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -282,7 +303,7 @@ static bool NS(SELF, try_remove)(SELF* self, K key, V* destination) {
                 size_t free_index = index;
                 KEY_ENTRY* free_entry = entry;
 
-                size_t check_index = modulus_capacity(free_index + 1, self->capacity);
+                size_t check_index = modulus_power_of_2_capacity(free_index + 1, self->capacity);
                 KEY_ENTRY* check_entry = &self->keys[check_index];
 
                 while (check_entry->present && (check_entry->distance_from_desired > 0)) {
@@ -293,7 +314,7 @@ static bool NS(SELF, try_remove)(SELF* self, K key, V* destination) {
                     free_index = check_index;
                     free_entry = check_entry;
 
-                    check_index = modulus_capacity(free_index + 1, self->capacity);
+                    check_index = modulus_power_of_2_capacity(free_index + 1, self->capacity);
                     check_entry = &self->keys[check_index];
                 }
 
@@ -307,7 +328,7 @@ static bool NS(SELF, try_remove)(SELF* self, K key, V* destination) {
 
                 return true;
             }
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return false;
         }

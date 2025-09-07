@@ -74,7 +74,7 @@ ninja format
 ninja lint-c
 ninja docs
 ninja coverage
-ctest
+ctest -j
 ```
 Then when opening vscode from the nix-shell, the correct clangd & library paths are used:
 ```bash

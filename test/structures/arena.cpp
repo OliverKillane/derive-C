@@ -56,16 +56,8 @@ struct SutWrapper {
     //          - Want to ensure tests have plenty of reallocations / extensions
     //          - odd number for hitting edge cases with capacity (set to power of 2)
     SutWrapper() : sut(Sut_new_with_capacity_for(1, stdalloc_get())) {}
+    SutWrapper(const SutWrapper& other) : sut(Sut_clone(other.getConst())) {}
     ~SutWrapper() { Sut_delete(&sut); }
-
-    SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
-    SutWrapper& operator=(const SutWrapper& other) {
-        if (this != &other) {
-            Sut_delete(&sut);
-            sut = Sut_shallow_clone(&other.sut);
-        }
-        return *this;
-    }
 
     [[nodiscard]] Sut* get() { return &sut; }
     [[nodiscard]] Sut const* getConst() const { return &sut; }
@@ -281,7 +273,7 @@ TEST(ArenaTests, ShallowClone) {
     }
     ASSERT_EQ(Sut_size(&sut), 128);
 
-    Sut cloned_sut = Sut_shallow_clone(&sut);
+    Sut cloned_sut = Sut_clone(&sut);
     ASSERT_EQ(Sut_size(&cloned_sut), 128);
 
     for (uint8_t i = 0; i < Sut_size(&cloned_sut); ++i) {

@@ -40,12 +40,12 @@ void id_to_name_example() {
     id_to_name_insert(&map, 23, "hello");
     id_to_name_insert(&map, 10, "bob");
     id_to_name_insert(&map, 42, "meaning");
-    ASSERT(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
+    assert(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
 
     print_map(&map);
 
     char const** entry = id_to_name_write(&map, 23);
-    ASSERT(entry);
+    assert(entry);
     *entry = "a different string!";
 
     print_map(&map);
