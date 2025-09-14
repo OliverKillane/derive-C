@@ -11,7 +11,7 @@ using Model = std::deque<Data>;
 
 extern "C" {
 #define NAME Sut
-#define I Data
+#define A Data
 #include <derive-c/structures/deque/template.h>
 }
 
