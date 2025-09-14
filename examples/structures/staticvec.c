@@ -9,7 +9,7 @@
 #define MAX_CAPACITY 8
 
 #define T unsigned char
-#define SELF staticvec_chars
+#define NAME staticvec_chars
 #define INPLACE_CAPACITY MAX_CAPACITY
 #include <derive-c/structures/staticvec/template.h>
 

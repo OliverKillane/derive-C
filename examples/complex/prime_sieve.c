@@ -14,10 +14,10 @@
 
 // to store values, plus room for realloc
 #define CAPACITY 300000
-#define SELF bump_alloc
+#define NAME bump_alloc
 #include <derive-c/allocs/staticbump/template.h>
 
-#define SELF sieve_vec
+#define NAME sieve_vec
 #define T bool
 #define ALLOC bump_alloc
 #include <derive-c/structures/vector/template.h>

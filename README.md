@@ -19,20 +19,20 @@ For example:
 #include <stdio.h>
 
 #define CAPACITY 2048
-#define SELF alloc_2048
+#define NAME alloc_2048
 #include <derive-c/allocs/staticbump/template.h>
 
 #define T char
 #define ALLOC alloc_2048
-#define SELF vec_char
+#define NAME vec_char
 #include <derive-c/structures/vector/template.h>
 
 int main() {
     alloc_2048 alloc = alloc_2048_new();
     vec_char vec = vec_char_new(&alloc);
 
-    for (char x = '1'; x <= '9'; x++) {
-        vec_char_push(&vec, x);
+    for (char x = 1; x <= 9; x++) {
+        vec_char_push(&vec, (char)('0' + x));
     }
 
     vec_char_iter_const iter = vec_char_get_iter_const(&vec);
@@ -74,7 +74,7 @@ ninja format
 ninja lint-c
 ninja docs
 ninja coverage
-ctest
+ctest -j
 ```
 Then when opening vscode from the nix-shell, the correct clangd & library paths are used:
 ```bash

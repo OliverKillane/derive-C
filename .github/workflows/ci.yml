@@ -22,7 +22,7 @@ jobs:
       - name: Build
         run: nix-shell --run 'ninja -C build'
       - name: Test
-        run: nix-shell --run 'ctest --test-dir build --output-on-failure'
+        run: nix-shell --run 'ctest --test-dir build -j --output-on-failure'
       - name: Test Coverage
         run: nix-shell --run 'ninja -C build coverage'
       - name: Upload all coverage artifacts

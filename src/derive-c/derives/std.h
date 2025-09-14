@@ -1,14 +1,14 @@
-#include <derive-c/core.h>
+#include <derive-c/core/helpers.h>
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #define DERIVE_STD_SIMPLE(t)                                                                       \
-    bool NAME(t, eq)(t const* self_1, t const* self_2) { return *self_1 == *self_2; }              \
-    t NAME(t, clone)(t const* self) { return *self; }                                              \
-    bool NAME(t, gt)(t const* self_1, t const* self_2) { return *self_1 > *self_2; }               \
-    bool NAME(t, lt)(t const* self_1, t const* self_2) { return *self_1 < *self_2; }
+    bool NS(t, eq)(t const* self_1, t const* self_2) { return *self_1 == *self_2; }                \
+    t NS(t, clone)(t const* self) { return *self; }                                                \
+    bool NS(t, gt)(t const* self_1, t const* self_2) { return *self_1 > *self_2; }                 \
+    bool NS(t, lt)(t const* self_1, t const* self_2) { return *self_1 < *self_2; }
 
 DERIVE_STD_SIMPLE(bool)
 DERIVE_STD_SIMPLE(char)

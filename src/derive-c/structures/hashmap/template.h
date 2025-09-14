@@ -5,66 +5,79 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <derive-c/core.h>
-#include <derive-c/panic.h>
-#include <derive-c/self.h>
+#include <derive-c/core/helpers.h>
+#include <derive-c/core/panic.h>
 #include <derive-c/structures/hashmap/utils.h>
 
-#ifndef ALLOC
-#include <derive-c/allocs/std.h>
-#define ALLOC stdalloc
-#endif
+#include <derive-c/core/alloc/def.h>
+#include <derive-c/core/self/def.h>
 
-#ifndef K
-#ifndef __clang_analyzer__
-#error "Key type must be defined to for a hashmap template"
-#endif
+#if !defined K
+    #if !defined __clang_analyzer__
+        #error "Key type must be defined to for a hashmap template"
+    #endif
 typedef struct {
     int x;
 } derive_c_parameter_key;
-#define K derive_c_parameter_key
+    #define K derive_c_parameter_key
 static void derive_c_parameter_key_delete(derive_c_parameter_key* UNUSED(key)) {}
-#define K_DELETE derive_c_parameter_key_delete
+    #define K_DELETE derive_c_parameter_key_delete
+static derive_c_parameter_key derive_c_parameter_key_clone(derive_c_parameter_key const* i) {
+    return *i;
+}
+    #define K_CLONE derive_c_parameter_key_clone
 #endif
 
-#ifndef V
-#ifndef __clang_analyzer__
-#error "Value type must be defined to for a hashmap template"
-#endif
+#if !defined V
+    #if !defined __clang_analyzer__
+        #error "Value type must be defined to for a hashmap template"
+    #endif
 typedef struct {
     int x;
 } derive_c_parameter_value;
-#define V derive_c_parameter_value
+    #define V derive_c_parameter_value
 static void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
-#define V_DELETE derive_c_parameter_value_delete
+    #define V_DELETE derive_c_parameter_value_delete
+static derive_c_parameter_value derive_c_parameter_value_clone(derive_c_parameter_value const* i) {
+    return *i;
+}
+    #define V_CLONE derive_c_parameter_value_clone
 #endif
 
-#ifndef HASH
-#ifndef __clang_analyzer__
-#error "The hash function for K must be defined"
-#endif
+#if !defined HASH
+    #if !defined __clang_analyzer__
+        #error "The hash function for K must be defined"
+    #endif
 static size_t derive_c_parameter_hash(derive_c_parameter_key const* key);
-#define HASH derive_c_parameter_hash
+    #define HASH derive_c_parameter_hash
 #endif
 
-#ifndef EQ
-#ifndef __clang_analyzer__
-#error "The equality function for K must be defined"
-#endif
+#if !defined EQ
+    #if !defined __clang_analyzer__
+        #error "The equality function for K must be defined"
+    #endif
 static bool derive_c_parameter_eq(derive_c_parameter_key const* key_1,
                                   derive_c_parameter_key const* key_2);
-#define EQ derive_c_parameter_eq
+    #define EQ derive_c_parameter_eq
 #endif
 
-#ifndef K_DELETE
-#define K_DELETE(key)
+#if !defined K_DELETE
+    #define K_DELETE(key)
 #endif
 
-#ifndef V_DELETE
-#define V_DELETE(value)
+#if !defined K_CLONE
+    #define K_CLONE(value) (*(value))
 #endif
 
-#define KEY_ENTRY NAME(SELF, key_entry)
+#if !defined V_DELETE
+    #define V_DELETE(value)
+#endif
+
+#if !defined V_CLONE
+    #define V_CLONE(value) (*(value))
+#endif
+
+#define KEY_ENTRY NS(SELF, key_entry)
 typedef struct {
     bool present;
     uint16_t distance_from_desired;
@@ -82,15 +95,15 @@ typedef struct {
     gdb_marker derive_c_hashmap;
 } SELF;
 
-static SELF NAME(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
+static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     ASSERT(capacity > 0);
     size_t real_capacity = apply_capacity_policy(capacity);
     ASSERT(real_capacity > 0);
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
-    KEY_ENTRY* keys = (KEY_ENTRY*)NAME(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
-    V* values = (V*)NAME(ALLOC, malloc)(alloc, sizeof(V) * real_capacity);
+    KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
+    V* values = (V*)NS(ALLOC, malloc)(alloc, sizeof(V) * real_capacity);
     ASSERT(keys && values);
     return (SELF){
         .capacity = real_capacity,
@@ -101,11 +114,11 @@ static SELF NAME(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     };
 }
 
-static SELF NAME(SELF, new)(ALLOC* alloc) {
-    return NAME(SELF, new_with_capacity_for)(INITIAL_CAPACITY, alloc);
+static SELF NS(SELF, new)(ALLOC* alloc) {
+    return NS(SELF, new_with_capacity_for)(INITIAL_CAPACITY, alloc);
 }
 
-static SELF NAME(SELF, shallow_clone)(SELF const* self) {
+static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
 
     // JUSTIFY: Naive copy
@@ -114,15 +127,19 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     // JUSTIFY: Individually copy keys
     //           - Many entries are zeroed, no need to copy uninit data
 
-    KEY_ENTRY* keys =
-        (KEY_ENTRY*)NAME(ALLOC, calloc)(self->alloc, sizeof(KEY_ENTRY), self->capacity);
-    V* values = (V*)NAME(ALLOC, malloc)(self->alloc, sizeof(V) * self->capacity);
+    KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(self->alloc, sizeof(KEY_ENTRY), self->capacity);
+    V* values = (V*)NS(ALLOC, malloc)(self->alloc, sizeof(V) * self->capacity);
     ASSERT(keys && values);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
-            keys[i] = self->keys[i];
-            values[i] = self->values[i];
+            KEY_ENTRY const* old_entry = &self->keys[i];
+            keys[i] = (KEY_ENTRY){
+                .present = true,
+                .distance_from_desired = old_entry->distance_from_desired,
+                .key = K_CLONE(&old_entry->key),
+            };
+            values[i] = V_CLONE(&self->values[i]);
         }
     }
 
@@ -135,36 +152,36 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     };
 }
 
-static void NAME(SELF, delete)(SELF* self);
+static void NS(SELF, delete)(SELF* self);
 
-static V* NAME(SELF, insert)(SELF* self, K key, V value);
+static V* NS(SELF, insert)(SELF* self, K key, V value);
 
-static void NAME(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     DEBUG_ASSERT(self);
     size_t target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
-        SELF new_map = NAME(SELF, new_with_capacity_for)(expected_items, self->alloc);
+        SELF new_map = NS(SELF, new_with_capacity_for)(expected_items, self->alloc);
         for (size_t index = 0; index < self->capacity; index++) {
             KEY_ENTRY* entry = &self->keys[index];
             if (entry->present) {
-                NAME(SELF, insert)(&new_map, entry->key, self->values[index]);
+                NS(SELF, insert)(&new_map, entry->key, self->values[index]);
             }
         }
-        NAME(ALLOC, free)(self->alloc, (void*)self->keys);
-        NAME(ALLOC, free)(self->alloc, (void*)self->values);
+        NS(ALLOC, free)(self->alloc, (void*)self->keys);
+        NS(ALLOC, free)(self->alloc, (void*)self->values);
         *self = new_map;
     }
 }
 
-static V* NAME(SELF, try_insert)(SELF* self, K key, V value) {
+static V* NS(SELF, try_insert)(SELF* self, K key, V value) {
     DEBUG_ASSERT(self);
     if (apply_capacity_policy(self->items) > self->capacity / 2) {
-        NAME(SELF, extend_capacity_for)(self, self->items * 2);
+        NS(SELF, extend_capacity_for)(self, self->items * 2);
     }
 
     uint16_t distance_from_desired = 0;
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
     V* placed_entry = NULL;
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -194,7 +211,7 @@ static V* NAME(SELF, try_insert)(SELF* self, K key, V value) {
             }
 
             distance_from_desired++;
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             entry->present = true;
             entry->distance_from_desired = distance_from_desired;
@@ -209,16 +226,16 @@ static V* NAME(SELF, try_insert)(SELF* self, K key, V value) {
     }
 }
 
-static V* NAME(SELF, insert)(SELF* self, K key, V value) {
-    V* value_ptr = NAME(SELF, try_insert)(self, key, value);
+static V* NS(SELF, insert)(SELF* self, K key, V value) {
+    V* value_ptr = NS(SELF, try_insert)(self, key, value);
     ASSERT(value_ptr);
     return value_ptr;
 }
 
-static V* NAME(SELF, try_write)(SELF* self, K key) {
+static V* NS(SELF, try_write)(SELF* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -226,23 +243,23 @@ static V* NAME(SELF, try_write)(SELF* self, K key) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
             }
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
     }
 }
 
-static V* NAME(SELF, write)(SELF* self, K key) {
-    V* value = NAME(SELF, try_write)(self, key);
+static V* NS(SELF, write)(SELF* self, K key) {
+    V* value = NS(SELF, try_write)(self, key);
     ASSERT(value);
     return value;
 }
 
-static V const* NAME(SELF, try_read)(SELF const* self, K key) {
+static V const* NS(SELF, try_read)(SELF const* self, K key) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -250,23 +267,23 @@ static V const* NAME(SELF, try_read)(SELF const* self, K key) {
             if (EQ(&entry->key, &key)) {
                 return &self->values[index];
             }
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
     }
 }
 
-static V const* NAME(SELF, read)(SELF const* self, K key) {
-    V const* value = NAME(SELF, try_read)(self, key);
+static V const* NS(SELF, read)(SELF const* self, K key) {
+    V const* value = NS(SELF, try_read)(self, key);
     ASSERT(value);
     return value;
 }
 
-static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
+static bool NS(SELF, try_remove)(SELF* self, K key, V* destination) {
     DEBUG_ASSERT(self);
     size_t hash = HASH(&key);
-    size_t index = modulus_capacity(hash, self->capacity);
+    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -286,7 +303,7 @@ static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
                 size_t free_index = index;
                 KEY_ENTRY* free_entry = entry;
 
-                size_t check_index = modulus_capacity(free_index + 1, self->capacity);
+                size_t check_index = modulus_power_of_2_capacity(free_index + 1, self->capacity);
                 KEY_ENTRY* check_entry = &self->keys[check_index];
 
                 while (check_entry->present && (check_entry->distance_from_desired > 0)) {
@@ -297,7 +314,7 @@ static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
                     free_index = check_index;
                     free_entry = check_entry;
 
-                    check_index = modulus_capacity(free_index + 1, self->capacity);
+                    check_index = modulus_power_of_2_capacity(free_index + 1, self->capacity);
                     check_entry = &self->keys[check_index];
                 }
 
@@ -311,51 +328,49 @@ static bool NAME(SELF, try_remove)(SELF* self, K key, V* destination) {
 
                 return true;
             }
-            index = modulus_capacity(index + 1, self->capacity);
+            index = modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return false;
         }
     }
 }
 
-static V NAME(SELF, remove)(SELF* self, K key) {
+static V NS(SELF, remove)(SELF* self, K key) {
     V value;
-    ASSERT(NAME(SELF, try_remove)(self, key, &value));
+    ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
-static void NAME(SELF, delete_entry)(SELF* self, K key) {
-    V value = NAME(SELF, remove)(self, key);
+static void NS(SELF, delete_entry)(SELF* self, K key) {
+    V value = NS(SELF, remove)(self, key);
     V_DELETE(&value);
 }
 
-static size_t NAME(SELF, size)(SELF const* self) {
+static size_t NS(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);
     return self->items;
 }
 
-#define KV_PAIR NAME(SELF, kv)
+#define KV_PAIR NS(SELF, kv)
 
 typedef struct {
     K const* key;
     V* value;
 } KV_PAIR;
 
-#define ITER NAME(SELF, iter)
+#define ITER NS(SELF, iter)
 
 typedef struct {
     SELF* map;
     size_t index;
-    size_t pos;
     KV_PAIR curr;
 } ITER;
 
-static KV_PAIR const* NAME(ITER, next)(ITER* iter) {
+static KV_PAIR const* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR){.key = &iter->map->keys[iter->index].key,
                                .value = &iter->map->values[iter->index]};
-        iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
@@ -365,17 +380,12 @@ static KV_PAIR const* NAME(ITER, next)(ITER* iter) {
     return NULL;
 }
 
-static size_t NAME(ITER, position)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
-}
-
-static bool NAME(ITER, empty)(ITER const* iter) {
+static bool NS(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->index >= iter->map->capacity;
 }
 
-static ITER NAME(SELF, get_iter)(SELF* self) {
+static ITER NS(SELF, get_iter)(SELF* self) {
     DEBUG_ASSERT(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
@@ -384,14 +394,13 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
     return (ITER){
         .map = self,
         .index = first_index,
-        .pos = 0,
         .curr = (KV_PAIR){.key = NULL, .value = NULL},
     };
 }
 
-static void NAME(SELF, delete)(SELF* self) {
+static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
-    ITER iter = NAME(SELF, get_iter)(self);
+    ITER iter = NS(SELF, get_iter)(self);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -400,35 +409,33 @@ static void NAME(SELF, delete)(SELF* self) {
         }
     }
 
-    NAME(ALLOC, free)(self->alloc, (void*)self->keys);
-    NAME(ALLOC, free)(self->alloc, (void*)self->values);
+    NS(ALLOC, free)(self->alloc, (void*)self->keys);
+    NS(ALLOC, free)(self->alloc, (void*)self->values);
 }
 
 #undef ITER
 #undef KV_PAIR
 
-#define KV_PAIR_CONST NAME(SELF, kv_const)
+#define KV_PAIR_CONST NS(SELF, kv_const)
 
 typedef struct {
     K const* key;
     V const* value;
 } KV_PAIR_CONST;
 
-#define ITER_CONST NAME(SELF, iter_const)
+#define ITER_CONST NS(SELF, iter_const)
 
 typedef struct {
     SELF const* map;
     size_t index;
-    size_t pos;
     KV_PAIR_CONST curr;
 } ITER_CONST;
 
-static KV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
+static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR_CONST){.key = &iter->map->keys[iter->index].key,
                                      .value = &iter->map->values[iter->index]};
-        iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
@@ -438,17 +445,12 @@ static KV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
     return NULL;
 }
 
-static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
-}
-
-static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->index >= iter->map->capacity;
 }
 
-static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     DEBUG_ASSERT(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
@@ -457,7 +459,6 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .map = self,
         .index = first_index,
-        .pos = 0,
         .curr = (KV_PAIR_CONST){.key = NULL, .value = NULL},
     };
 }
@@ -471,6 +472,8 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
 #undef V
 #undef HASH
 #undef EQ
-#undef SELF
 #undef V_DELETE
 #undef K_DELETE
+
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/self/undef.h>

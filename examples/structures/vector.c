@@ -12,7 +12,7 @@
 #include <derive-c/allocs/std.h>
 
 #define T int32_t
-#define SELF vec_ints
+#define NAME vec_ints
 #include <derive-c/structures/vector/template.h>
 
 void ints_example() {
@@ -50,7 +50,7 @@ void complex_data_delete(struct complex_data* self) { free(self->description); }
 
 #define T struct complex_data
 #define T_DELETE complex_data_delete
-#define SELF vec_complex_data
+#define NAME vec_complex_data
 #include <derive-c/structures/vector/template.h>
 
 void complex_data_example() {
@@ -76,7 +76,7 @@ void complex_data_example() {
 }
 
 #define T char
-#define SELF char_vec
+#define NAME char_vec
 #include <derive-c/structures/vector/template.h>
 
 void iterate_example() {

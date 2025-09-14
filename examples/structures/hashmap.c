@@ -18,7 +18,7 @@
 #define V char const*
 #define EQ uint32_t_eq
 #define HASH hash_id_uint32_t
-#define SELF id_to_name
+#define NAME id_to_name
 #include <derive-c/structures/hashmap/template.h>
 
 void print_map(id_to_name const* map) {
@@ -40,12 +40,12 @@ void id_to_name_example() {
     id_to_name_insert(&map, 23, "hello");
     id_to_name_insert(&map, 10, "bob");
     id_to_name_insert(&map, 42, "meaning");
-    ASSERT(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
+    assert(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
 
     print_map(&map);
 
     char const** entry = id_to_name_write(&map, 23);
-    ASSERT(entry);
+    assert(entry);
     *entry = "a different string!";
 
     print_map(&map);
@@ -82,7 +82,7 @@ void report_delete(struct report* self) { free(self->description); }
 #define HASH report_id_hash
 #define K_DELETE report_id_delete
 #define V_DELETE report_delete
-#define SELF report_map
+#define NAME report_map
 #include <derive-c/structures/hashmap/template.h>
 
 void report_map_example() {
@@ -132,7 +132,7 @@ size_t fixed_string_hash(struct fixed_string const* str) {
 #define V uint32_t
 #define EQ fixed_string_eq
 #define HASH fixed_string_hash
-#define SELF fixed_string_map
+#define NAME fixed_string_map
 #include <derive-c/structures/hashmap/template.h>
 
 void fixed_string_example() {

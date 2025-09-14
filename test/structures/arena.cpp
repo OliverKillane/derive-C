@@ -9,10 +9,8 @@
 #include "../utils.hpp"
 #include "rapidcheck/Assertions.h"
 
-namespace arena {
-
-using Value = size_t;
-using ModelIndex = StrongInteger<struct ModelIndexTag, size_t>;
+using Value = std::size_t;
+using ModelIndex = StrongInteger<struct ModelIndexTag, Value>;
 
 struct IndexHelper {
     ModelIndex next() {
@@ -31,7 +29,7 @@ struct Model {
 extern "C" {
 #include <derive-c/allocs/std.h>
 
-#define SELF Sut
+#define NAME Sut
 #define V Value
 #define INDEX_BITS 8
 #include <derive-c/structures/arena/template.h>
@@ -44,33 +42,22 @@ inline bool operator==(const Sut_iv& a, const Sut_iv& b) {
 inline bool operator==(const Sut_iv_const& a, const Sut_iv_const& b) {
     return a.index == b.index && a.value == b.value;
 }
-} // namespace arena
 
 namespace std {
-template <> struct hash<arena::Sut_index> {
-    std::size_t operator()(const arena::Sut_index& s) const noexcept {
+template <> struct hash<Sut_index> {
+    std::size_t operator()(const Sut_index& s) const noexcept {
         return std::hash<uint8_t>{}(s.index);
     }
 };
 } // namespace std
-
-namespace arena {
 
 struct SutWrapper {
     // JUSTIFY: 3 items
     //          - Want to ensure tests have plenty of reallocations / extensions
     //          - odd number for hitting edge cases with capacity (set to power of 2)
     SutWrapper() : sut(Sut_new_with_capacity_for(1, stdalloc_get())) {}
+    SutWrapper(const SutWrapper& other) : sut(Sut_clone(other.getConst())) {}
     ~SutWrapper() { Sut_delete(&sut); }
-
-    SutWrapper(const Sut& sut) : sut(Sut_shallow_clone(&sut)) {}
-    SutWrapper& operator=(const SutWrapper& other) {
-        if (this != &other) {
-            Sut_delete(&sut);
-            sut = Sut_shallow_clone(&other.sut);
-        }
-        return *this;
-    }
 
     [[nodiscard]] Sut* get() { return &sut; }
     [[nodiscard]] Sut const* getConst() const { return &sut; }
@@ -91,20 +78,50 @@ struct Command : rc::state::Command<Model, SutWrapper> {
 
     void checkInvariants(const Model& oldModel, const SutWrapper& s) const {
         Model m = nextState(oldModel);
-        RC_ASSERT(m.map.size() == Sut_size(s.getConst()));
 
-        for (const auto& [key, value] : m.map) {
-            Sut_index index = s.indexToSutIndex.at(key);
-            Value const* val = Sut_read(s.getConst(), index);
-            RC_ASSERT(*val == value);
+        {
+            RC_ASSERT(m.map.size() == Sut_size(s.getConst()));
+            SutWrapper wrapperCopy = s;
+            for (const auto& [key, value] : m.map) {
+                Sut_index index = s.indexToSutIndex.at(key);
+                RC_ASSERT(*Sut_read(s.getConst(), index) == value);
+                RC_ASSERT(*Sut_write(wrapperCopy.get(), index) == value);
+            }
         }
 
-        Sut_iter_const iter = Sut_get_iter_const(s.getConst());
-        while (!Sut_iter_const_empty(&iter)) {
-            Sut_iv_const const* item = Sut_iter_const_next(&iter);
-            RC_ASSERT(item->value != nullptr);
-            ModelIndex modelIndex = s.SutIndexToIndex.at(item->index);
-            RC_ASSERT(m.map.at(modelIndex) == *item->value);
+        {
+            SutWrapper wrapperCopy = s;
+            Sut_iter_const iter_const = Sut_get_iter_const(s.getConst());
+            Sut_iter iter = Sut_get_iter(wrapperCopy.get());
+            while (!Sut_iter_const_empty(&iter_const)) {
+                RC_ASSERT(!Sut_iter_empty(&iter));
+                Sut_iv_const const* item_const = Sut_iter_const_next(&iter_const);
+                Sut_iv const* item = Sut_iter_next(&iter);
+                RC_ASSERT(item_const->index == item->index);
+                ModelIndex modelIndex = s.SutIndexToIndex.at(item_const->index);
+                RC_ASSERT(m.map.at(modelIndex) == *item_const->value);
+                RC_ASSERT(*item->value == *item_const->value);
+            }
+            RC_ASSERT(Sut_iter_empty(&iter));
+            RC_ASSERT(Sut_iter_next(&iter) == nullptr);
+            RC_ASSERT(Sut_iter_const_next(&iter_const) == nullptr);
+        }
+
+        // JUSTIFY:
+        //  - We need to check the failure paths additionally
+        {
+            SutWrapper wrapperCopy = s;
+            Sut_index invalid_index{0};
+
+            while (s.SutIndexToIndex.contains(invalid_index)) {
+                invalid_index.index++;
+            }
+
+            RC_ASSERT(Sut_try_read(s.getConst(), invalid_index) == nullptr);
+            RC_ASSERT(Sut_try_write(wrapperCopy.get(), invalid_index) == nullptr);
+            Value removed;
+            RC_ASSERT(!Sut_try_remove(wrapperCopy.get(), invalid_index, &removed));
+            RC_ASSERT(!Sut_delete_entry(wrapperCopy.get(), invalid_index));
         }
     }
 };
@@ -247,86 +264,3 @@ TEST(ArenaTests, Full) {
 
     Sut_delete(&sut);
 }
-
-TEST(VectorTests, IteratorEdgeCases) {
-    Sut sut = Sut_new_with_capacity_for(128, stdalloc_get());
-
-    const size_t upto = 100;
-
-    for (size_t i = 0; i < upto; ++i) {
-        Sut_insert(&sut, i);
-    }
-
-    Sut_iter_const iter_const = Sut_get_iter_const(&sut);
-    while (!Sut_iter_const_empty(&iter_const)) {
-        size_t pos = Sut_iter_const_position(&iter_const);
-        Sut_iv_const const* pair = Sut_iter_const_next(&iter_const);
-        ASSERT_EQ(pos, *pair->value);
-    }
-    ASSERT_EQ(Sut_iter_const_next(&iter_const), nullptr);
-    ASSERT_EQ(Sut_iter_const_position(&iter_const), upto);
-
-    Sut_iter iter = Sut_get_iter(&sut);
-    while (!Sut_iter_empty(&iter)) {
-        size_t pos = Sut_iter_position(&iter);
-        Sut_iv const* pair = Sut_iter_next(&iter);
-        ASSERT_EQ(pos, *pair->value);
-    }
-    ASSERT_EQ(Sut_iter_next(&iter), nullptr);
-    ASSERT_EQ(Sut_iter_position(&iter), upto);
-    Sut_delete(&sut);
-}
-
-TEST(ArenaTests, ShallowClone) {
-    Sut sut = Sut_new_with_capacity_for(128, stdalloc_get());
-    ASSERT_EQ(Sut_size(&sut), 0);
-
-    for (size_t i = 0; i < 128; ++i) {
-        Sut_insert(&sut, i);
-    }
-    ASSERT_EQ(Sut_size(&sut), 128);
-
-    Sut cloned_sut = Sut_shallow_clone(&sut);
-    ASSERT_EQ(Sut_size(&cloned_sut), 128);
-
-    for (uint8_t i = 0; i < Sut_size(&cloned_sut); ++i) {
-        ASSERT_EQ(*Sut_read(&cloned_sut, Sut_index{.index = i}),
-                  *Sut_read(&sut, Sut_index{.index = i}));
-    }
-
-    Sut_delete(&sut);
-    Sut_delete(&cloned_sut);
-}
-
-TEST(ArenaTests, FailedReadWrite) {
-    Sut sut = Sut_new_with_capacity_for(64, stdalloc_get());
-
-    // Accessing out of the bounds of the arena
-    ASSERT_EQ(Sut_try_read(&sut, Sut_index{.index = 0}), nullptr);
-    ASSERT_EQ(Sut_try_write(&sut, Sut_index{.index = 0}), nullptr);
-
-    // Accessing in bounds, but the entry was deleted
-    Sut_remove(&sut, Sut_insert(&sut, 3));
-    ASSERT_EQ(Sut_try_read(&sut, Sut_index{.index = 0}), nullptr);
-    ASSERT_EQ(Sut_try_write(&sut, Sut_index{.index = 0}), nullptr);
-
-    Sut_delete(&sut);
-}
-
-TEST(ArenaTests, FailedRemoveDelete) {
-    Sut sut = Sut_new_with_capacity_for(64, stdalloc_get());
-
-    // Accessing out of the bounds of the arena
-    Value v;
-    ASSERT_FALSE(Sut_try_remove(&sut, Sut_index{.index = 0}, &v));
-    ASSERT_FALSE(Sut_delete_entry(&sut, Sut_index{.index = 0}));
-
-    // Accessing in bounds, but the entry was deleted
-    Sut_remove(&sut, Sut_insert(&sut, 3));
-    ASSERT_FALSE(Sut_try_remove(&sut, Sut_index{.index = 0}, &v));
-    ASSERT_FALSE(Sut_delete_entry(&sut, Sut_index{.index = 0}));
-
-    Sut_delete(&sut);
-}
-
-} // namespace arena

@@ -6,62 +6,67 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <derive-c/core.h>
-#include <derive-c/panic.h>
-#include <derive-c/self.h>
+#include <derive-c/core/helpers.h>
+#include <derive-c/core/panic.h>
 
-#ifndef ALLOC
-#include <derive-c/allocs/std.h>
-#define ALLOC stdalloc
-#endif
+#include <derive-c/core/alloc/def.h>
+#include <derive-c/core/self/def.h>
 
-#ifndef INDEX_BITS
-#ifndef __clang_analyzer__
-#error "The number of bits (8,16,32,64) to use for the arena's key"
-#endif
-#define INDEX_BITS 32
+#if !defined INDEX_BITS
+    #if !defined __clang_analyzer__
+        #error "The number of bits (8,16,32,64) to use for the arena's key"
+    #endif
+    #define INDEX_BITS 32
 #endif
 
-#ifndef V
-#ifndef __clang_analyzer__
-#error "The value type to place in the arena must be defined"
-#endif
+#if !defined V
+    #if !defined __clang_analyzer__
+        #error "The value type to place in the arena must be defined"
+    #endif
 typedef struct {
     int x;
 } derive_c_parameter_value;
-#define V derive_c_parameter_value
-void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
-#define V_DELETE derive_c_parameter_value_delete
+    #define V derive_c_parameter_value
+static void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
+    #define V_DELETE derive_c_parameter_value_delete
+static derive_c_parameter_value derive_c_parameter_value_clone(derive_c_parameter_value const* i) {
+    return *i;
+}
+    #define V_CLONE derive_c_parameter_value_clone
 #endif
 
-#ifndef V_DELETE
-#define V_DELETE(value) (void)value
+#if !defined V_DELETE
+    #define V_DELETE(value) (void)value
+#endif
+
+#if !defined V_CLONE
+    #define V_CLONE(value) (*(value))
 #endif
 
 #if INDEX_BITS == 8
-#define INDEX_TYPE uint8_t
-#define MAX_CAPACITY (UINT8_MAX + 1ULL)
-#define MAX_INDEX (UINT8_MAX - 1ULL)
-#define INDEX_NONE UINT8_MAX
+    #define INDEX_TYPE uint8_t
+    #define MAX_CAPACITY (UINT8_MAX + 1ULL)
+    #define MAX_INDEX (UINT8_MAX - 1ULL)
+    #define INDEX_NONE UINT8_MAX
 #elif INDEX_BITS == 16
-#define INDEX_TYPE uint16_t
-#define MAX_CAPACITY (UINT16_MAX + 1ULL)
-#define MAX_INDEX (UINT16_MAX - 1ULL)
-#define INDEX_NONE UINT16_MAX
+    #define INDEX_TYPE uint16_t
+    #define MAX_CAPACITY (UINT16_MAX + 1ULL)
+    #define MAX_INDEX (UINT16_MAX - 1ULL)
+    #define INDEX_NONE UINT16_MAX
 #elif INDEX_BITS == 32
-#define INDEX_TYPE uint32_t
-#define MAX_CAPACITY (UINT32_MAX + 1ULL)
-#define MAX_INDEX (UINT32_MAX - 1ULL)
-#define INDEX_NONE UINT32_MAX
+    #define INDEX_TYPE uint32_t
+    #define MAX_CAPACITY (UINT32_MAX + 1ULL)
+    #define MAX_INDEX (UINT32_MAX - 1ULL)
+    #define INDEX_NONE UINT32_MAX
 #elif INDEX_BITS == 64
-#define INDEX_TYPE uint64_t
-// JUSTIFY: Special case, we cannot store the max capacity as a size_t integer
-#define MAX_CAPACITY UINT64_MAX
-#define MAX_INDEX (UINT64_MAX - 1ULL)
-#define INDEX_NONE UINT64_MAX
+    #define INDEX_TYPE uint64_t
+    // JUSTIFY: Special case, we cannot store the max capacity as a size_t integer
+    #define MAX_CAPACITY UINT64_MAX
+    #define MAX_INDEX (UINT64_MAX - 1ULL)
+    #define INDEX_NONE UINT64_MAX
 #endif
 
-#define SLOT NAME(SELF, SLOT)
+#define SLOT NS(SELF, SLOT)
 
 #define CHECK_ACCESS_INDEX(self, index) ((index).index < (self)->exclusive_end)
 
@@ -70,7 +75,7 @@ void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
 #define RESIZE_FACTOR 2
 
 // INV: < MAX_CAPACITY
-#define INDEX NAME(SELF, index)
+#define INDEX NS(SELF, index)
 
 typedef struct {
     INDEX_TYPE index;
@@ -107,11 +112,11 @@ typedef struct {
     ALLOC* alloc;
 } SELF;
 
-static SELF NAME(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
+static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
     DEBUG_ASSERT(items > 0);
     size_t capacity = next_power_of_2(items);
     ASSERT(capacity <= MAX_CAPACITY);
-    SLOT* slots = (SLOT*)NAME(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
+    SLOT* slots = (SLOT*)NS(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
     ASSERT(slots);
     return (SELF){
         .slots = slots,
@@ -123,7 +128,7 @@ static SELF NAME(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
     };
 }
 
-static INDEX NAME(SELF, insert)(SELF* self, V value) {
+static INDEX NS(SELF, insert)(SELF* self, V value) {
     DEBUG_ASSERT(self);
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
@@ -153,7 +158,7 @@ static INDEX NAME(SELF, insert)(SELF* self, V value) {
     return (INDEX){.index = new_index};
 }
 
-static V* NAME(SELF, try_write)(SELF* self, INDEX index) {
+static V* NS(SELF, try_write)(SELF* self, INDEX index) {
     DEBUG_ASSERT(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
@@ -165,13 +170,13 @@ static V* NAME(SELF, try_write)(SELF* self, INDEX index) {
     return &slot->value;
 }
 
-static V* NAME(SELF, write)(SELF* self, INDEX index) {
-    V* value = NAME(SELF, try_write)(self, index);
+static V* NS(SELF, write)(SELF* self, INDEX index) {
+    V* value = NS(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
 }
 
-static V const* NAME(SELF, try_read)(SELF const* self, INDEX index) {
+static V const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     DEBUG_ASSERT(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
@@ -183,17 +188,27 @@ static V const* NAME(SELF, try_read)(SELF const* self, INDEX index) {
     return &slot->value;
 }
 
-static V const* NAME(SELF, read)(SELF const* self, INDEX index) {
-    V const* value = NAME(SELF, try_read)(self, index);
+static V const* NS(SELF, read)(SELF const* self, INDEX index) {
+    V const* value = NS(SELF, try_read)(self, index);
     ASSERT(value);
     return value;
 }
 
-static SELF NAME(SELF, shallow_clone)(SELF const* self) {
+static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
-    SLOT* slots = (SLOT*)NAME(ALLOC, calloc)(self->alloc, self->capacity, sizeof(SLOT));
+    SLOT* slots = (SLOT*)NS(ALLOC, calloc)(self->alloc, self->capacity, sizeof(SLOT));
     ASSERT(slots);
-    memcpy(slots, self->slots, self->exclusive_end * sizeof(SLOT));
+
+    for (INDEX_TYPE index = 0; index < self->exclusive_end; index++) {
+        if (self->slots[index].present) {
+            slots[index].present = true;
+            slots[index].value = V_CLONE(&self->slots[index].value);
+        } else {
+            slots[index].present = false;
+            slots[index].next_free = self->slots[index].next_free;
+        }
+    }
+
     return (SELF){
         .slots = slots,
         .capacity = self->capacity,
@@ -204,12 +219,12 @@ static SELF NAME(SELF, shallow_clone)(SELF const* self) {
     };
 }
 
-static INDEX_TYPE NAME(SELF, size)(SELF const* self) {
+static INDEX_TYPE NS(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);
     return self->count;
 }
 
-static bool NAME(SELF, full)(SELF const* self) {
+static bool NS(SELF, full)(SELF const* self) {
     DEBUG_ASSERT(self);
     if (self->capacity == MAX_CAPACITY) {
         if (self->free_list == INDEX_NONE) {
@@ -219,10 +234,10 @@ static bool NAME(SELF, full)(SELF const* self) {
     return false;
 }
 
-static size_t NAME(SELF, max_capacity) = MAX_CAPACITY;
-static size_t NAME(SELF, max_index) = MAX_INDEX;
+static size_t NS(SELF, max_capacity) = MAX_CAPACITY;
+static size_t NS(SELF, max_index) = MAX_INDEX;
 
-static bool NAME(SELF, try_remove)(SELF* self, INDEX index, V* destination) {
+static bool NS(SELF, try_remove)(SELF* self, INDEX index, V* destination) {
     DEBUG_ASSERT(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return false;
@@ -240,13 +255,13 @@ static bool NAME(SELF, try_remove)(SELF* self, INDEX index, V* destination) {
     return false;
 }
 
-static V NAME(SELF, remove)(SELF* self, INDEX index) {
+static V NS(SELF, remove)(SELF* self, INDEX index) {
     V value;
-    ASSERT(NAME(SELF, try_remove)(self, index, &value));
+    ASSERT(NS(SELF, try_remove)(self, index, &value));
     return value;
 }
 
-static bool NAME(SELF, delete_entry)(SELF* self, INDEX index) {
+static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
     DEBUG_ASSERT(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return false;
@@ -264,21 +279,20 @@ static bool NAME(SELF, delete_entry)(SELF* self, INDEX index) {
     return false;
 }
 
-#define IV_PAIR NAME(SELF, iv)
+#define IV_PAIR NS(SELF, iv)
 typedef struct {
     INDEX index;
     V* value;
 } IV_PAIR;
 
-#define ITER NAME(SELF, iter)
+#define ITER NS(SELF, iter)
 typedef struct {
     SELF* arena;
     INDEX_TYPE next_index;
-    size_t pos;
     IV_PAIR curr;
 } ITER;
 
-static bool NAME(ITER, empty)(ITER const* iter) {
+static bool NS(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     // JUSTIFY: If no entries are left, then the previous '.._next' call moved
     //          the index to the exclusive end
@@ -286,10 +300,10 @@ static bool NAME(ITER, empty)(ITER const* iter) {
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-static IV_PAIR const* NAME(ITER, next)(ITER* iter) {
+static IV_PAIR const* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
 
-    if (NAME(ITER, empty)(iter)) {
+    if (NS(ITER, empty)(iter)) {
         return NULL;
     }
     iter->curr = (IV_PAIR){.index = (INDEX){.index = iter->next_index},
@@ -300,16 +314,10 @@ static IV_PAIR const* NAME(ITER, next)(ITER* iter) {
         iter->next_index++;
     }
 
-    iter->pos++;
     return &iter->curr;
 }
 
-static size_t NAME(ITER, position)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
-}
-
-static ITER NAME(SELF, get_iter)(SELF* self) {
+static ITER NS(SELF, get_iter)(SELF* self) {
     DEBUG_ASSERT(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
@@ -319,53 +327,51 @@ static ITER NAME(SELF, get_iter)(SELF* self) {
     return (ITER){
         .arena = self,
         .next_index = index,
-        .pos = 0,
         .curr = (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
     };
 }
 
-static void NAME(SELF, delete)(SELF* self) {
+static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
-    ITER iter = NAME(SELF, get_iter)(self);
+    ITER iter = NS(SELF, get_iter)(self);
     IV_PAIR const* entry;
-    while ((entry = NAME(ITER, next)(&iter))) {
+    while ((entry = NS(ITER, next)(&iter))) {
         V_DELETE(entry->value);
     }
 
-    NAME(ALLOC, free)(self->alloc, self->slots);
+    NS(ALLOC, free)(self->alloc, self->slots);
 }
 
 #undef ITER
 #undef IV_PAIR
 
-#define IV_PAIR_CONST NAME(SELF, iv_const)
+#define IV_PAIR_CONST NS(SELF, iv_const)
 typedef struct {
     INDEX index;
     V const* value;
 } IV_PAIR_CONST;
 
-static IV_PAIR_CONST NAME(SELF, iv_const_empty) = {
+static IV_PAIR_CONST NS(SELF, iv_const_empty) = {
     .index = {.index = INDEX_NONE},
     .value = NULL,
 };
 
-#define ITER_CONST NAME(SELF, iter_const)
+#define ITER_CONST NS(SELF, iter_const)
 typedef struct {
     SELF const* arena;
     INDEX_TYPE next_index;
-    size_t pos;
     IV_PAIR_CONST curr;
 } ITER_CONST;
 
-static bool NAME(ITER_CONST, empty)(ITER_CONST const* iter) {
+static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-static IV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
+static IV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
 
-    if (NAME(ITER_CONST, empty)(iter)) {
+    if (NS(ITER_CONST, empty)(iter)) {
         return NULL;
     }
 
@@ -377,16 +383,10 @@ static IV_PAIR_CONST const* NAME(ITER_CONST, next)(ITER_CONST* iter) {
         iter->next_index++;
     }
 
-    iter->pos++;
     return &iter->curr;
 }
 
-static size_t NAME(ITER_CONST, position)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
-}
-
-static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
+static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     DEBUG_ASSERT(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
@@ -396,7 +396,6 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .arena = self,
         .next_index = index,
-        .pos = 0,
         .curr = (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
     };
 }
@@ -404,16 +403,20 @@ static ITER_CONST NAME(SELF, get_iter_const)(SELF const* self) {
 #undef ITER_CONST
 #undef IV_PAIR_CONST
 
+#undef ALLOC
 #undef INDEX_BITS
+#undef V
+#undef V_DELETE
+
 #undef INDEX_TYPE
 #undef MAX_CAPACITY
 #undef MAX_INDEX
 #undef INDEX_NONE
+
 #undef SLOT
 #undef CHECK_ACCESS_INDEX
 #undef RESIZE_FACTOR
 #undef INDEX
 
-#undef V
-#undef V_DELETE
-#undef SELF
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/self/undef.h>

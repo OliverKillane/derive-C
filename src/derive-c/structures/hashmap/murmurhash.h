@@ -1,7 +1,7 @@
 /// @brief MurmurHash3 implementation, copied (with love) from [Austin Appleby's
 /// implementation](https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.h)
 
-#include <derive-c/core.h>
+#include <derive-c/core/helpers.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -360,6 +360,6 @@ size_t derive_c_murmurhash(const void* key, int32_t len, uint32_t seed) {
     MurmurHash3_x86_32(key, len, seed, &out32);
     return (size_t)out32;
 #else
-#error "Unsupported size_t width"
+    #error "Unsupported size_t width"
 #endif
 }

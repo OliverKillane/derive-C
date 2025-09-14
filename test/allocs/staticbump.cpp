@@ -4,7 +4,7 @@ namespace staticbumpalloc {
 
 extern "C" {
 #define CAPACITY 1024
-#define SELF staticbumpalloc
+#define NAME staticbumpalloc
 #include <derive-c/allocs/staticbump/template.h>
 }
 

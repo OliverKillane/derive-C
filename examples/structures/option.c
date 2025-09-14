@@ -16,7 +16,7 @@ void complex_data_delete(struct complex_data* self) { free(self->description); }
 
 #define T struct complex_data
 #define T_DELETE complex_data_delete
-#define SELF complex_data_option
+#define NAME complex_data_option
 #include <derive-c/structures/option/template.h>
 
 void option_example() {

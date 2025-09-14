@@ -4,24 +4,25 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include <derive-c/core.h>
-#include <derive-c/panic.h>
-#include <derive-c/self.h>
+#include <derive-c/core/helpers.h>
+#include <derive-c/core/panic.h>
+
+#include <derive-c/core/self/def.h>
 
 #ifndef T
-#ifndef __clang_analyzer__
-#error "The contained type must be defined"
-#endif
+    #ifndef __clang_analyzer__
+        #error "The contained type must be defined"
+    #endif
 typedef struct {
     int x;
 } derive_c_parameter_t;
-#define T derive_c_parameter_t
+    #define T derive_c_parameter_t
 static void derive_c_parameter_t_delete(derive_c_parameter_t* UNUSED(self)) {}
-#define T_DELETE derive_c_parameter_t_delete
+    #define T_DELETE derive_c_parameter_t_delete
 #endif
 
 #ifndef T_DELETE
-#define T_DELETE(value)
+    #define T_DELETE(value)
 #endif
 
 typedef struct {
@@ -32,11 +33,11 @@ typedef struct {
     gdb_marker derive_c_option;
 } SELF;
 
-static SELF NAME(SELF, from)(T value) { return (SELF){.value = value, .present = true}; }
+static SELF NS(SELF, from)(T value) { return (SELF){.value = value, .present = true}; }
 
-static SELF NAME(SELF, empty)() { return (SELF){.present = false}; }
+static SELF NS(SELF, empty)() { return (SELF){.present = false}; }
 
-static T* NAME(SELF, get)(SELF* self) {
+static T* NS(SELF, get)(SELF* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
         return &self->value;
@@ -44,7 +45,7 @@ static T* NAME(SELF, get)(SELF* self) {
     return NULL;
 }
 
-static T const* NAME(SELF, get_const)(SELF const* self) {
+static T const* NS(SELF, get_const)(SELF const* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
         return &self->value;
@@ -52,19 +53,19 @@ static T const* NAME(SELF, get_const)(SELF const* self) {
     return NULL;
 }
 
-static bool NAME(SELF, is_present)(SELF const* self) {
+static bool NS(SELF, is_present)(SELF const* self) {
     DEBUG_ASSERT(self);
     return self->present;
 }
 
-static void NAME(SELF, delete)(SELF* self) {
+static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
         T_DELETE(&self->value);
     }
 }
 
-static bool NAME(SELF, replace)(SELF* self, T value) {
+static bool NS(SELF, replace)(SELF* self, T value) {
     DEBUG_ASSERT(self);
     bool was_present;
     if (self->present) {
@@ -78,6 +79,7 @@ static bool NAME(SELF, replace)(SELF* self, T value) {
     return was_present;
 }
 
-#undef SELF
 #undef T
 #undef T_DELETE
+
+#include <derive-c/core/self/undef.h>

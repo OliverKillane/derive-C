@@ -9,7 +9,7 @@ extern "C" {
 
 #define ALLOC stdalloc
 #define ENTRIES allocs
-#define SELF stdtestalloc
+#define NAME stdtestalloc
 #include <derive-c/allocs/test/template.h>
 
 void allocate_and_throw(stdtestalloc* alloc) {
