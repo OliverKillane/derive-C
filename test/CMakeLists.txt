@@ -89,6 +89,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
           LLVM_PROFILE_FILE=${COVERAGE_DIR}/coverage_%p_%m.profraw 
         ${CMAKE_CTEST_COMMAND} 
           -L correctness 
+          -j
           --output-on-failure
       
       # JUSTIFY: Shell scripting from cmake
