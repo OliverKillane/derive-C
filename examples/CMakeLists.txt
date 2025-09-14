@@ -11,7 +11,7 @@ function(add_example file)
     target_link_libraries(${example_name} PRIVATE derivec)
 
     add_test(NAME example-${example_name} COMMAND $<TARGET_FILE:${example_name}>)
-    set_tests_properties(example-${example_name} PROPERTIES DEPENDS ${example_name})
+    set_tests_properties(example-${example_name} PROPERTIES DEPENDS ${example_name} LABELS "examples")
 endfunction()
 
 foreach(EXAMPLE_FILE ${EXAMPLES})

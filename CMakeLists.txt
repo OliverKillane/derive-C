@@ -55,9 +55,15 @@ if(CLANG_FORMAT)
         ${CMAKE_SOURCE_DIR}/test/*.hpp
     )
 
+    file(GLOB_RECURSE CMAKE_FILES
+        ${CMAKE_SOURCE_DIR}/CMakeLists.txt
+        ${CMAKE_SOURCE_DIR}/*.cmake
+    )
+
     add_custom_target(
         format
         COMMAND ${CLANG_FORMAT} -i ${SOURCE_FILES}
+        COMMAND ${CMAKE_COMMAND} --format ${CMAKE_FILES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Reformatting all source files"
     )
@@ -68,11 +74,13 @@ if(CLANG_FORMAT)
                 --dry-run
                 --Werror
                 ${SOURCE_FILES}
+        COMMAND ${CMAKE_COMMAND} --format --check ${CMAKE_FILES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Verifying clang-format compliance (fails if any file needs reformatting)"
     )
 
     add_test(NAME format-check COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target format-check)
+    set_tests_properties(format-check PROPERTIES LABELS "linting")
 endif()
 
 find_program(CLANG_TIDY NAMES clang-tidy)
@@ -82,8 +90,8 @@ if(CLANG_TIDY)
   file(GLOB_RECURSE TIDY_C_SRC  "${CMAKE_SOURCE_DIR}/examples/*.c")
   file(GLOB_RECURSE TIDY_C_HDRS "${CMAKE_SOURCE_DIR}/src/*.h" "${CMAKE_SOURCE_DIR}/examples/*.h")
   file(GLOB_RECURSE TIDY_CPP "${CMAKE_SOURCE_DIR}/test/*.cpp")
-
-  # Get the resource directory from the compiler
+  
+  # Need to get the resource dir from the compiler
   execute_process(
     COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
     OUTPUT_VARIABLE CLANG_RESOURCE_DIR
@@ -92,7 +100,6 @@ if(CLANG_TIDY)
   
   message(STATUS "Clang resource directory: ${CLANG_RESOURCE_DIR}")
 
-  # Create separate targets for sources and headers
   if(TIDY_C_SRC)
     add_custom_target(lint-c-src
       COMMAND ${CLANG_TIDY} -p ${CMAKE_BINARY_DIR} --quiet --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} ${TIDY_C_SRC}
@@ -110,4 +117,5 @@ if(CLANG_TIDY)
   endif()
 
   add_test(NAME lint-c COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target lint-c)
+  set_tests_properties(lint-c PROPERTIES LABELS "linting")
 endif()

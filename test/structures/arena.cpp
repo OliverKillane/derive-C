@@ -264,7 +264,7 @@ TEST(VectorTests, IteratorEdgeCases) {
     Sut_delete(&sut);
 }
 
-TEST(ArenaTests, ShallowClone) {
+TEST(ArenaTests, Clone) {
     Sut sut = Sut_new_with_capacity_for(128, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 0);
 
