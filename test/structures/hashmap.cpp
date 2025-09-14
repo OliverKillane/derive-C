@@ -51,7 +51,7 @@ struct Command : rc::state::Command<Model, SutWrapper> {
 
     void checkInvariants(const Model& oldModel, const SutWrapper& s) const {
         Model m = nextState(oldModel);
-        
+
         // Basic check of present values
         {
             RC_ASSERT(m.size() == Sut_size(s.getConst()));
@@ -209,5 +209,6 @@ RC_GTEST_PROP(HashMapTests, General, ()) {
     Model model;
     SutWrapper sutWrapper;
     rc::state::check(model, sutWrapper,
-                     rc::state::gen::execOneOfWithArgs<Insert, Insert, Insert, Insert, Write, Remove, DeleteEntry>());
+                     rc::state::gen::execOneOfWithArgs<Insert, Insert, Insert, Insert, Write,
+                                                       Remove, DeleteEntry>());
 }
