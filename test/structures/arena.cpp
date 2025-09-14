@@ -7,7 +7,6 @@
 #include <unordered_map>
 
 #include "../utils.hpp"
-#include "rapidcheck/Assertions.h"
 
 using Value = std::size_t;
 using ModelIndex = StrongInteger<struct ModelIndexTag, Value>;
@@ -30,7 +29,7 @@ extern "C" {
 #include <derive-c/allocs/std.h>
 
 #define NAME Sut
-#define V Value
+#define VALUE Value
 #define INDEX_BITS 8
 #include <derive-c/structures/arena/template.h>
 }

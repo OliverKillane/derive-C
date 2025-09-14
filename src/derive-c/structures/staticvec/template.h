@@ -10,30 +10,30 @@
 
 #include <derive-c/core/self/def.h>
 
-#ifndef T
-    #ifndef __clang_analyzer__
-        #error "The contained type must be defined for a vector template"
+#if !defined ITEM
+    #if !defined __clang_analyzer__
+        #error "ITEM must be defined"
     #endif
 typedef struct {
     int x;
-} derive_c_parameter_t;
-    #define T derive_c_parameter_t // Allows independent debugging
-static void derive_c_parameter_t_delete(derive_c_parameter_t* UNUSED(self)) {}
-    #define T_DELETE derive_c_parameter_t_delete
-static derive_c_parameter_t derive_c_parameter_t_clone(derive_c_parameter_t const* i) { return *i; }
-    #define T_CLONE derive_c_parameter_t_clone
+} item_t;
+    #define ITEM item_t
+static void item_delete(item_t* UNUSED(self)) {}
+    #define ITEM_DELETE item_delete
+static item_t item_clone(item_t const* self) { return *self; }
+    #define ITEM_CLONE item_clone
 #endif
 
-#ifndef T_DELETE
-    #define T_DELETE(value)
+#if !defined ITEM_DELETE
+    #define ITEM_DELETE(value)
 #endif
 
-#if !defined T_CLONE
-    #define T_CLONE(value) (*(value))
+#if !defined ITEM_CLONE
+    #define ITEM_CLONE(value) (*(value))
 #endif
 
-#ifndef INPLACE_CAPACITY
-    #ifndef __clang_analyzer__
+#if !defined INPLACE_CAPACITY
+    #if !defined __clang_analyzer__
         #error "The number of elements to store in-place must be defined"
     #endif
     #define INPLACE_CAPACITY 8
@@ -50,7 +50,7 @@ static derive_c_parameter_t derive_c_parameter_t_clone(derive_c_parameter_t cons
 
 typedef struct {
     INPLACE_TYPE size;
-    T data[INPLACE_CAPACITY];
+    ITEM data[INPLACE_CAPACITY];
     gdb_marker derive_c_staticvec;
 } SELF;
 
@@ -62,12 +62,12 @@ static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
     new_self.size = self->size;
     for (INPLACE_TYPE i = 0; i < self->size; i++) {
-        new_self.data[i] = T_CLONE(&self->data[i]);
+        new_self.data[i] = ITEM_CLONE(&self->data[i]);
     }
     return new_self;
 }
 
-static T const* NS(SELF, try_read)(SELF const* self, INPLACE_TYPE index) {
+static ITEM const* NS(SELF, try_read)(SELF const* self, INPLACE_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -75,13 +75,13 @@ static T const* NS(SELF, try_read)(SELF const* self, INPLACE_TYPE index) {
     return NULL;
 }
 
-static T const* NS(SELF, read)(SELF const* self, INPLACE_TYPE index) {
-    T const* value = NS(SELF, try_read)(self, index);
+static ITEM const* NS(SELF, read)(SELF const* self, INPLACE_TYPE index) {
+    ITEM const* value = NS(SELF, try_read)(self, index);
     ASSERT(value);
     return value;
 }
 
-static T* NS(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
+static ITEM* NS(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -89,61 +89,61 @@ static T* NS(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
     return NULL;
 }
 
-static T* NS(SELF, write)(SELF* self, INPLACE_TYPE index) {
-    T* value = NS(SELF, try_write)(self, index);
+static ITEM* NS(SELF, write)(SELF* self, INPLACE_TYPE index) {
+    ITEM* value = NS(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
 }
 
-static T* NS(SELF, try_push)(SELF* self, T value) {
+static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
     if (self->size < INPLACE_CAPACITY) {
-        T* slot = &self->data[self->size];
-        *slot = value;
+        ITEM* slot = &self->data[self->size];
+        *slot = item;
         self->size++;
         return slot;
     }
     return NULL;
 }
 
-static bool NS(SELF, try_insert_at)(SELF* self, size_t at, T const* data, size_t items) {
+static bool NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const* items, size_t count) {
     DEBUG_ASSERT(self);
-    DEBUG_ASSERT(data);
+    DEBUG_ASSERT(items);
     ASSERT(at <= self->size);
 
-    if (self->size + items > INPLACE_CAPACITY) {
+    if (self->size + count > INPLACE_CAPACITY) {
         return false;
     }
 
-    memmove(&self->data[at + items], &self->data[at], (self->size - at) * sizeof(T));
-    memcpy(&self->data[at], data, items * sizeof(T));
-    self->size += items;
+    memmove(&self->data[at + count], &self->data[at], (self->size - at) * sizeof(ITEM));
+    memcpy(&self->data[at], items, count * sizeof(ITEM));
+    self->size += count;
     return true;
 }
 
-static void NS(SELF, remove_at)(SELF* self, size_t at, size_t items) {
+static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
     DEBUG_ASSERT(self);
-    ASSERT(at + items <= self->size);
+    ASSERT(at + count <= self->size);
 
-    if (items == 0) {
+    if (count == 0) {
         return;
     }
 
-    for (size_t i = at; i < at + items; i++) {
-        T_DELETE(&self->data[i]);
+    for (size_t i = at; i < at + count; i++) {
+        ITEM_DELETE(&self->data[i]);
     }
 
-    memmove(&self->data[at], &self->data[at + items], (self->size - (at + items)) * sizeof(T));
-    self->size -= items;
+    memmove(&self->data[at], &self->data[at + count], (self->size - (at + count)) * sizeof(ITEM));
+    self->size -= count;
 }
 
-static T* NS(SELF, push)(SELF* self, T value) {
-    T* slot = NS(SELF, try_push)(self, value);
+static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
+    ITEM* slot = NS(SELF, try_push)(self, item);
     ASSERT(slot);
     return slot;
 }
 
-static bool NS(SELF, try_pop)(SELF* self, T* destination) {
+static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     DEBUG_ASSERT(self);
     if (LIKELY(self->size > 0)) {
         self->size--;
@@ -153,8 +153,8 @@ static bool NS(SELF, try_pop)(SELF* self, T* destination) {
     return false;
 }
 
-static T NS(SELF, pop)(SELF* self) {
-    T entry;
+static ITEM NS(SELF, pop)(SELF* self) {
+    ITEM entry;
     ASSERT(NS(SELF, try_pop)(self, &entry));
     return entry;
 }
@@ -167,7 +167,7 @@ static size_t NS(SELF, size)(SELF const* self) {
 static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     for (INPLACE_TYPE i = 0; i < self->size; i++) {
-        T_DELETE(&self->data[i]);
+        ITEM_DELETE(&self->data[i]);
     }
 }
 
@@ -178,10 +178,10 @@ typedef struct {
     size_t pos;
 } ITER;
 
-static T* NS(ITER, next)(ITER* iter) {
+static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->pos < iter->vec->size) {
-        T* item = &iter->vec->data[iter->pos];
+        ITEM* item = &iter->vec->data[iter->pos];
         iter->pos++;
         return item;
     }
@@ -215,10 +215,10 @@ typedef struct {
     size_t pos;
 } ITER_CONST;
 
-static T const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->pos < iter->vec->size) {
-        T const* item = &iter->vec->data[iter->pos];
+        ITEM const* item = &iter->vec->data[iter->pos];
         iter->pos++;
         return item;
     }
@@ -244,10 +244,12 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 #undef ITER_CONST
-#undef INPLACE_TYPE
 
-#undef T
-#undef T_DELETE
+#undef INPLACE_TYPE
 #undef INPLACE_CAPACITY
+
+#undef ITEM
+#undef ITEM_DELETE
+#undef ITEM_CLONE
 
 #include <derive-c/core/self/undef.h>

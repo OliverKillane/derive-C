@@ -8,9 +8,9 @@
 
 #define MAX_CAPACITY 8
 
-#define T unsigned char
-#define NAME staticvec_chars
+#define ITEM unsigned char
 #define INPLACE_CAPACITY MAX_CAPACITY
+#define NAME staticvec_chars
 #include <derive-c/structures/staticvec/template.h>
 
 void push_example() {

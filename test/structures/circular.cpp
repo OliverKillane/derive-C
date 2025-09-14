@@ -11,7 +11,7 @@ using Model = std::deque<Data>;
 
 extern "C" {
 #define NAME Sut
-#define D Data
+#define ITEM Data
 #include <derive-c/structures/circular/template.h>
 }
 

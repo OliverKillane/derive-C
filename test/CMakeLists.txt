@@ -41,10 +41,12 @@ foreach(TEST_FILE ${TEST_CPP_FILES})
   string(REPLACE ".cpp" "" TEST_NAME ${TEST_NAME})
   
   add_executable(${TEST_NAME} ${TEST_FILE})
+  target_compile_definitions(${TEST_NAME} PRIVATE ENABLE_MOCKING)
   target_link_libraries(${TEST_NAME}
     PRIVATE
       derivec
       gtest
+      gmock
       gtest_main
       rapidcheck
       rapidcheck_gtest

@@ -11,9 +11,9 @@ using Data = std::size_t;
 using Model = std::vector<Data>;
 
 extern "C" {
-#define NAME Sut
-#define T Data
+#define ITEM Data
 #define INPLACE_CAPACITY 10
+#define NAME Sut
 #include <derive-c/structures/staticvec/template.h>
 }
 

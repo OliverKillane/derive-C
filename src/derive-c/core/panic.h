@@ -2,7 +2,7 @@
 //           - allows overriding panic, differently for each template instantiation
 #include <assert.h>
 
-#ifndef PANIC
+#if !defined PANIC
     #include <stdio.h> // NOLINT(misc-include-cleaner) (for default panic implementation)
     #define PANIC(...)                                                                             \
         do {                                                                                       \
@@ -11,26 +11,26 @@
         } while (0);
 #endif
 
-#ifndef ASSERT
+#if !defined ASSERT
     #define ASSERT(expr, ...)                                                                      \
         if (!(expr)) {                                                                             \
             PANIC("assertion " #expr " failed: " __VA_ARGS__ "\n");                                \
         }
 #endif
 
-#ifndef UNREACHABLE
+#if !defined UNREACHABLE
     #define UNREACHABLE(...) PANIC("unreachable: " __VA_ARGS__ "\n");
 #endif
 
-#ifndef DEBUG_UNREACHABLE
-    #ifndef NDEBUG
+#if !defined DEBUG_UNREACHABLE
+    #if !defined NDEBUG
         #define DEBUG_UNREACHABLE(...) UNREACHABLE(__VA_ARGS__)
     #else
         #define DEBUG_UNREACHABLE(...) __builtin_unreachable()
     #endif
 #endif
 
-#ifndef NDEBUG
+#if !defined NDEBUG
     #define DEBUG_ASSERT(expr) ASSERT(expr)
 #else
     #define DEBUG_ASSERT(expr)

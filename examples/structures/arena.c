@@ -9,7 +9,7 @@
 #include <derive-c/allocs/std.h>
 
 #define INDEX_BITS 32
-#define V uint32_t
+#define VALUE uint32_t
 #define NAME ints
 #include <derive-c/structures/arena/template.h>
 
@@ -51,8 +51,8 @@ struct foo {
 void my_foo_delete(struct foo* self) { free(self->owned_data); }
 
 #define INDEX_BITS 8
-#define V struct foo
-#define V_DELETE my_foo_delete
+#define VALUE struct foo
+#define VALUE_DELETE my_foo_delete
 #define NAME foo_arena
 #include <derive-c/structures/arena/template.h>
 

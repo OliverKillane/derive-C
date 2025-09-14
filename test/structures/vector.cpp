@@ -12,7 +12,7 @@ using Model = std::vector<Data>;
 
 extern "C" {
 #define NAME Sut
-#define T Data
+#define ITEM Data
 #include <derive-c/structures/vector/template.h>
 }
 

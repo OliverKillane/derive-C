@@ -2,12 +2,14 @@
 
 namespace {
 void free_int(int** ptr) { delete *ptr; }
+int* clone_int(int* const* self) { return new int(**self); }
 } // namespace
 
 extern "C" {
 #define NAME optional_int
-#define T int*
-#define T_DELETE free_int
+#define ITEM int*
+#define ITEM_CLONE clone_int
+#define ITEM_DELETE free_int
 #include <derive-c/structures/option/template.h>
 }
 

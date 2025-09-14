@@ -17,9 +17,9 @@
 #define NAME bump_alloc
 #include <derive-c/allocs/staticbump/template.h>
 
-#define NAME sieve_vec
-#define T bool
+#define ITEM bool
 #define ALLOC bump_alloc
+#define NAME sieve_vec
 #include <derive-c/structures/vector/template.h>
 
 size_t sqrt_size_t(size_t n) {

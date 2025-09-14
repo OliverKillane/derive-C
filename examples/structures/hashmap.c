@@ -14,10 +14,10 @@
 #include <derive-c/derives/std.h>
 #include <derive-c/structures/hashmap/hashers.h>
 
-#define K uint32_t
-#define V char const*
-#define EQ uint32_t_eq
-#define HASH hash_id_uint32_t
+#define KEY uint32_t
+#define KEY_EQ uint32_t_eq
+#define KEY_HASH hash_id_uint32_t
+#define VALUE char const*
 #define NAME id_to_name
 #include <derive-c/structures/hashmap/template.h>
 
@@ -76,12 +76,12 @@ struct report {
 
 void report_delete(struct report* self) { free(self->description); }
 
-#define K struct report_id
-#define V struct report
-#define EQ report_id_equality
-#define HASH report_id_hash
-#define K_DELETE report_id_delete
-#define V_DELETE report_delete
+#define KEY struct report_id
+#define KEY_EQ report_id_equality
+#define KEY_HASH report_id_hash
+#define KEY_DELETE report_id_delete
+#define VALUE struct report
+#define VALUE_DELETE report_delete
 #define NAME report_map
 #include <derive-c/structures/hashmap/template.h>
 
@@ -128,10 +128,10 @@ size_t fixed_string_hash(struct fixed_string const* str) {
     return hash_murmurhash_string_4(str->value);
 }
 
-#define K struct fixed_string
-#define V uint32_t
-#define EQ fixed_string_eq
-#define HASH fixed_string_hash
+#define KEY struct fixed_string
+#define KEY_EQ fixed_string_eq
+#define KEY_HASH fixed_string_hash
+#define VALUE uint32_t
 #define NAME fixed_string_map
 #include <derive-c/structures/hashmap/template.h>
 

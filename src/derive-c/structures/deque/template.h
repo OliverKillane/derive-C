@@ -13,41 +13,45 @@
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
 
-#if !defined A
+#if !defined ITEM
     #if !defined __clang_analyzer__
         #error "The contained type must be defined for a deque template"
     #endif
 
 typedef struct {
     int x;
-} derive_c_parameter_a;
-    #define A derive_c_parameter_a
+} item_t;
+    #define ITEM item_t
 
-static void derive_c_parameter_t_delete(derive_c_parameter_a* UNUSED(a)) {}
-    #define A_DELETE derive_c_parameter_t_delete
-static derive_c_parameter_a derive_c_parameter_a_clone(derive_c_parameter_a const* a) { return *a; }
-    #define A_CLONE derive_c_parameter_a_clone
+static void item_delete(item_t* UNUSED(a)) {}
+    #define ITEM_DELETE item_delete
+static item_t item_clone(item_t const* a) { return *a; }
+    #define ITEM_CLONE item_clone
 #endif
 
-#if !defined A_DELETE
-    #define A_DELETE(value)
+#if !defined ITEM_DELETE
+    #define ITEM_DELETE(value)
 #endif
 
-#if !defined A_CLONE
-    #define A_CLONE(value) (*(value))
+#if !defined ITEM_CLONE
+    #define ITEM_CLONE(value) (*(value))
 #endif
 
 #define ITEM_VECTORS NS(NAME, item_vectors)
 
 #pragma push_macro("ALLOC")
+#pragma push_macro("ITEM")
+#pragma push_macro("ITEM_CLONE")
+#pragma push_macro("ITEM_DELETE")
 
-#define T A
-#define T_DELETE A_DELETE
-#define T_CLONE A_CLONE
+// ITEM is already defined
 #define INTERNAL_NAME ITEM_VECTORS
 #include <derive-c/structures/vector/template.h>
 
 #pragma pop_macro("ALLOC")
+#pragma pop_macro("ITEM")
+#pragma pop_macro("ITEM_CLONE")
+#pragma pop_macro("ITEM_DELETE")
 
 typedef struct {
     ITEM_VECTORS front;
@@ -111,22 +115,22 @@ static void NS(SELF, rebalance)(SELF* self) {
 
     NS(ITEM_VECTORS, reserve)(target, target_size + to_move);
 
-    A* source_data = NS(ITEM_VECTORS, data)(source);
-    A* target_data = NS(ITEM_VECTORS, data)(target);
+    ITEM* source_data = NS(ITEM_VECTORS, data)(source);
+    ITEM* target_data = NS(ITEM_VECTORS, data)(target);
 
-    memmove(&target_data[to_move], target_data, target_size * sizeof(A));
+    memmove(&target_data[to_move], target_data, target_size * sizeof(ITEM));
 
     for (size_t i = 0; i < to_move; i++) {
         target_data[to_move - 1 - i] = source_data[i];
     }
 
-    memmove(source_data, &source_data[to_move], (source_size - to_move) * sizeof(A));
+    memmove(source_data, &source_data[to_move], (source_size - to_move) * sizeof(ITEM));
 
     target->size += to_move;
     source->size -= to_move;
 }
 
-static A const* NS(SELF, peek_front_read)(SELF const* self) {
+static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {
     DEBUG_ASSERT(self);
 
     size_t front_size = NS(ITEM_VECTORS, size)(&self->front);
@@ -137,7 +141,7 @@ static A const* NS(SELF, peek_front_read)(SELF const* self) {
     return NS(ITEM_VECTORS, try_read)(&self->back, 0);
 }
 
-static A* NS(SELF, peek_front_write)(SELF* self) {
+static ITEM* NS(SELF, peek_front_write)(SELF* self) {
     DEBUG_ASSERT(self);
 
     size_t front_size = NS(ITEM_VECTORS, size)(&self->front);
@@ -148,7 +152,7 @@ static A* NS(SELF, peek_front_write)(SELF* self) {
     return NS(ITEM_VECTORS, try_write)(&self->back, 0);
 }
 
-static A const* NS(SELF, peek_back_read)(SELF const* self) {
+static ITEM const* NS(SELF, peek_back_read)(SELF const* self) {
     DEBUG_ASSERT(self);
 
     size_t back_size = NS(ITEM_VECTORS, size)(&self->back);
@@ -159,7 +163,7 @@ static A const* NS(SELF, peek_back_read)(SELF const* self) {
     return NS(ITEM_VECTORS, try_read)(&self->front, 0);
 }
 
-static A* NS(SELF, peek_back_write)(SELF* self) {
+static ITEM* NS(SELF, peek_back_write)(SELF* self) {
     DEBUG_ASSERT(self);
 
     size_t back_size = NS(ITEM_VECTORS, size)(&self->back);
@@ -170,40 +174,40 @@ static A* NS(SELF, peek_back_write)(SELF* self) {
     return NS(ITEM_VECTORS, try_write)(&self->front, 0);
 }
 
-static void NS(SELF, push_front)(SELF* self, A item) {
+static void NS(SELF, push_front)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
     NS(ITEM_VECTORS, push)(&self->front, item);
     NS(SELF, rebalance)(self);
 }
 
-static void NS(SELF, push_back)(SELF* self, A item) {
+static void NS(SELF, push_back)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
     NS(ITEM_VECTORS, push)(&self->back, item);
     NS(SELF, rebalance)(self);
 }
 
-static A NS(SELF, pop_front)(SELF* self) {
+static ITEM NS(SELF, pop_front)(SELF* self) {
     DEBUG_ASSERT(self);
     if (NS(ITEM_VECTORS, size)(&self->front) > 0) {
-        A result = NS(ITEM_VECTORS, pop)(&self->front);
+        ITEM result = NS(ITEM_VECTORS, pop)(&self->front);
         NS(SELF, rebalance)(self);
         return result;
     }
 
-    A result = NS(ITEM_VECTORS, pop_front)(&self->back);
+    ITEM result = NS(ITEM_VECTORS, pop_front)(&self->back);
     NS(SELF, rebalance)(self);
     return result;
 }
 
-static A NS(SELF, pop_back)(SELF* self) {
+static ITEM NS(SELF, pop_back)(SELF* self) {
     DEBUG_ASSERT(self);
     if (NS(ITEM_VECTORS, size)(&self->back) > 0) {
-        A result = NS(ITEM_VECTORS, pop)(&self->back);
+        ITEM result = NS(ITEM_VECTORS, pop)(&self->back);
         NS(SELF, rebalance)(self);
         return result;
     }
 
-    A result = NS(ITEM_VECTORS, pop_front)(&self->front);
+    ITEM result = NS(ITEM_VECTORS, pop_front)(&self->front);
     NS(SELF, rebalance)(self);
     return result;
 }
@@ -225,14 +229,14 @@ typedef struct {
     size_t pos;
 } ITER;
 
-static A* NS(ITER, next)(ITER* iter) {
+static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     size_t front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
     size_t total_size = front_size + back_size;
 
     if (iter->pos < total_size) {
-        A* item;
+        ITEM* item;
         if (iter->pos < front_size) {
             item = NS(ITEM_VECTORS, write)(&iter->deque->front, front_size - 1 - iter->pos);
         } else {
@@ -267,14 +271,14 @@ typedef struct {
     size_t pos;
 } ITER_CONST;
 
-static A const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     size_t front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
     size_t total_size = front_size + back_size;
 
     if (iter->pos < total_size) {
-        A const* item;
+        ITEM const* item;
         if (iter->pos < front_size) {
             item = NS(ITEM_VECTORS, read)(&iter->deque->front, front_size - 1 - iter->pos);
         } else {

@@ -22,7 +22,7 @@ For example:
 #define NAME alloc_2048
 #include <derive-c/allocs/staticbump/template.h>
 
-#define T char
+#define ITEM char
 #define ALLOC alloc_2048
 #define NAME vec_char
 #include <derive-c/structures/vector/template.h>
@@ -70,11 +70,11 @@ cmake -S . -B build -GNinja
 ```bash
 cd build
 ninja
+ctest -j
 ninja format
-ninja lint-c
+ninja lint
 ninja docs
 ninja coverage
-ctest -j
 ```
 Then when opening vscode from the nix-shell, the correct clangd & library paths are used:
 ```bash
