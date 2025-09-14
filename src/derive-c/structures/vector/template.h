@@ -12,32 +12,32 @@
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
 
-#ifndef T
-    #ifndef __clang_analyzer__
+#if !defined ITEM
+    #if !defined __clang_analyzer__
         #error "The contained type must be defined for a vector template"
     #endif
 typedef struct {
     int x;
-} derive_c_parameter_t;
-    #define T derive_c_parameter_t
-static void derive_c_parameter_t_delete(derive_c_parameter_t* UNUSED(t)) {}
-    #define T_DELETE derive_c_parameter_t_delete
-static derive_c_parameter_t derive_c_parameter_t_clone(derive_c_parameter_t const* i) { return *i; }
-    #define T_CLONE derive_c_parameter_t_clone
+} item_t;
+    #define ITEM item_t
+static void item_delete(item_t* UNUSED(t)) {}
+    #define ITEM_DELETE item_delete
+static item_t item_clone(item_t const* i) { return *i; }
+    #define ITEM_CLONE item_clone
 #endif
 
-#ifndef T_DELETE
-    #define T_DELETE(value)
+#if !defined ITEM_DELETE
+    #define ITEM_DELETE(value)
 #endif
 
-#if !defined T_CLONE
-    #define T_CLONE(value) (*(value))
+#if !defined ITEM_CLONE
+    #define ITEM_CLONE(value) (*(value))
 #endif
 
 typedef struct {
     size_t size;
     size_t capacity;
-    T* data;
+    ITEM* data;
     ALLOC* alloc;
     gdb_marker derive_c_vector;
 } SELF;
@@ -57,7 +57,7 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
         return NS(SELF, new)(alloc);
     }
 
-    T* data = (T*)NS(ALLOC, malloc)(alloc, capacity * sizeof(T));
+    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
     ASSERT(LIKELY(data));
     return (SELF){
         .size = 0,
@@ -67,10 +67,14 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
     };
 }
 
-static SELF NS(SELF, new_with_defaults)(size_t size, T default_value, ALLOC* alloc) {
-    T* data = (T*)NS(ALLOC, malloc)(alloc, size * sizeof(T));
-    for (size_t i = 0; i < size; i++) {
-        data[i] = default_value;
+static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* alloc) {
+    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, size * sizeof(ITEM));
+    if (size > 0) {
+        // JUSTIFY: We only need to copy size-1 entries - can move the first as default.
+        data[0] = default_item;
+        for (size_t i = 1; i < size; i++) {
+            data[i] = ITEM_CLONE(&default_item);
+        }
     }
     ASSERT(LIKELY(data));
     return (SELF){
@@ -84,7 +88,8 @@ static SELF NS(SELF, new_with_defaults)(size_t size, T default_value, ALLOC* all
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
     DEBUG_ASSERT(self);
     if (new_capacity > self->capacity) {
-        T* new_data = (T*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(T));
+        ITEM* new_data =
+            (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
         ASSERT(new_data);
         self->data = new_data;
         self->capacity = new_capacity;
@@ -93,10 +98,10 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 
 static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
-    T* data = (T*)NS(ALLOC, malloc)(self->alloc, self->capacity * sizeof(T));
+    ITEM* data = (ITEM*)NS(ALLOC, malloc)(self->alloc, self->capacity * sizeof(ITEM));
     ASSERT(data);
     for (size_t index = 0; index < self->size; index++) {
-        data[index] = T_CLONE(&self->data[index]);
+        data[index] = ITEM_CLONE(&self->data[index]);
     }
     return (SELF){
         .size = self->size,
@@ -106,7 +111,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     };
 }
 
-static T const* NS(SELF, try_read)(SELF const* self, size_t index) {
+static ITEM const* NS(SELF, try_read)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -114,13 +119,13 @@ static T const* NS(SELF, try_read)(SELF const* self, size_t index) {
     return NULL;
 }
 
-static T const* NS(SELF, read)(SELF const* self, size_t index) {
-    T const* value = NS(SELF, try_read)(self, index);
-    ASSERT(value);
-    return value;
+static ITEM const* NS(SELF, read)(SELF const* self, size_t index) {
+    ITEM const* item = NS(SELF, try_read)(self, index);
+    ASSERT(item);
+    return item;
 }
 
-static T* NS(SELF, try_write)(SELF* self, size_t index) {
+static ITEM* NS(SELF, try_write)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -128,48 +133,48 @@ static T* NS(SELF, try_write)(SELF* self, size_t index) {
     return NULL;
 }
 
-static T* NS(SELF, write)(SELF* self, size_t index) {
-    T* value = NS(SELF, try_write)(self, index);
-    ASSERT(value);
-    return value;
+static ITEM* NS(SELF, write)(SELF* self, size_t index) {
+    ITEM* item = NS(SELF, try_write)(self, index);
+    ASSERT(item);
+    return item;
 }
 
-static void NS(SELF, insert_at)(SELF* self, size_t at, T const* data, size_t items) {
+static void NS(SELF, insert_at)(SELF* self, size_t at, ITEM const* items, size_t count) {
     DEBUG_ASSERT(self);
-    DEBUG_ASSERT(data);
+    DEBUG_ASSERT(items);
     ASSERT(at <= self->size);
 
-    if (items == 0) {
+    if (count == 0) {
         return;
     }
 
-    NS(SELF, reserve)(self, self->size + items);
+    NS(SELF, reserve)(self, self->size + count);
 
-    memmove(&self->data[at + items], &self->data[at], (self->size - at) * sizeof(T));
-    memcpy(&self->data[at], data, items * sizeof(T));
-    self->size += items;
+    memmove(&self->data[at + count], &self->data[at], (self->size - at) * sizeof(ITEM));
+    memcpy(&self->data[at], items, count * sizeof(ITEM));
+    self->size += count;
 }
 
-static void NS(SELF, remove_at)(SELF* self, size_t at, size_t items) {
+static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
     DEBUG_ASSERT(self);
-    ASSERT(at + items <= self->size);
+    ASSERT(at + count <= self->size);
 
-    if (items == 0) {
+    if (count == 0) {
         return;
     }
 
-    for (size_t i = at; i < at + items; i++) {
-        T_DELETE(&self->data[i]);
+    for (size_t i = at; i < at + count; i++) {
+        ITEM_DELETE(&self->data[i]);
     }
 
-    memmove(&self->data[at], &self->data[at + items], (self->size - (at + items)) * sizeof(T));
-    self->size -= items;
+    memmove(&self->data[at], &self->data[at + count], (self->size - (at + count)) * sizeof(ITEM));
+    self->size -= count;
 }
 
-static T* NS(SELF, push)(SELF* self, T value) {
+static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
     if (self->size == self->capacity) {
-        T* new_data;
+        ITEM* new_data;
         size_t new_capacity;
         if (self->data == NULL) {
             DEBUG_ASSERT(self->capacity == 0);
@@ -178,25 +183,26 @@ static T* NS(SELF, push)(SELF* self, T value) {
             //             size sero (from new)
             //           Otherwise an arbitrary choice (given we do not know the size of T)
             new_capacity = 8;
-            new_data = (T*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(T));
+            new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
         } else {
             // JUSTIFY: Growth factor of 2
             //           - Simple arithmetic (for debugging)
             //           - Same as used by GCC's std::vector implementation
             new_capacity = self->capacity * 2;
-            new_data = (T*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(T));
+            new_data =
+                (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
         }
         ASSERT(new_data);
         self->capacity = new_capacity;
         self->data = new_data;
     }
-    T* entry = &self->data[self->size];
-    *entry = value;
+    ITEM* entry = &self->data[self->size];
+    *entry = item;
     self->size++;
     return entry;
 }
 
-static bool NS(SELF, try_pop)(SELF* self, T* destination) {
+static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     DEBUG_ASSERT(self);
     if (LIKELY(self->size > 0)) {
         self->size--;
@@ -206,22 +212,22 @@ static bool NS(SELF, try_pop)(SELF* self, T* destination) {
     return false;
 }
 
-static T* NS(SELF, data)(SELF* self) {
+static ITEM* NS(SELF, data)(SELF* self) {
     DEBUG_ASSERT(self);
     return self->data;
 }
 
-static T NS(SELF, pop)(SELF* self) {
-    T entry;
+static ITEM NS(SELF, pop)(SELF* self) {
+    ITEM entry;
     ASSERT(NS(SELF, try_pop)(self, &entry));
     return entry;
 }
 
-static T NS(SELF, pop_front)(SELF* self) {
+static ITEM NS(SELF, pop_front)(SELF* self) {
     DEBUG_ASSERT(self);
     ASSERT(self->size > 0);
-    T entry = self->data[0];
-    memmove(&self->data[0], &self->data[1], (self->size - 1) * sizeof(T));
+    ITEM entry = self->data[0];
+    memmove(&self->data[0], &self->data[1], (self->size - 1) * sizeof(ITEM));
     self->size--;
     return entry;
 }
@@ -235,7 +241,7 @@ static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     if (self->data) {
         for (size_t i = 0; i < self->size; i++) {
-            T_DELETE(&self->data[i]);
+            ITEM_DELETE(&self->data[i]);
         }
         NS(ALLOC, free)(self->alloc, self->data);
     }
@@ -248,10 +254,10 @@ typedef struct {
     size_t pos;
 } ITER;
 
-static T* NS(ITER, next)(ITER* iter) {
+static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->pos < iter->vec->size) {
-        T* item = &iter->vec->data[iter->pos];
+        ITEM* item = &iter->vec->data[iter->pos];
         iter->pos++;
         return item;
     }
@@ -284,10 +290,10 @@ typedef struct {
     size_t pos;
 } ITER_CONST;
 
-static T const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->pos < iter->vec->size) {
-        T const* item = &iter->vec->data[iter->pos];
+        ITEM const* item = &iter->vec->data[iter->pos];
         iter->pos++;
         return item;
     }
@@ -314,8 +320,9 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 
 #undef ITER_CONST
 
-#undef T
-#undef T_DELETE
+#undef ITEM
+#undef ITEM_DELETE
+#undef ITEM_CLONE
 
 #include <derive-c/core/alloc/undef.h>
 #include <derive-c/core/self/undef.h>

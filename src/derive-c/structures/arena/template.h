@@ -19,28 +19,26 @@
     #define INDEX_BITS 32
 #endif
 
-#if !defined V
+#if !defined VALUE
     #if !defined __clang_analyzer__
         #error "The value type to place in the arena must be defined"
     #endif
 typedef struct {
     int x;
-} derive_c_parameter_value;
-    #define V derive_c_parameter_value
-static void derive_c_parameter_value_delete(derive_c_parameter_value* UNUSED(key)) {}
-    #define V_DELETE derive_c_parameter_value_delete
-static derive_c_parameter_value derive_c_parameter_value_clone(derive_c_parameter_value const* i) {
-    return *i;
-}
-    #define V_CLONE derive_c_parameter_value_clone
+} value_t;
+    #define VALUE value_t
+static void value_delete(value_t* UNUSED(self)) {}
+    #define VALUE_DELETE value_delete
+static value_t value_clone(value_t const* self) { return *self; }
+    #define VALUE_CLONE value_clone
 #endif
 
-#if !defined V_DELETE
-    #define V_DELETE(value) (void)value
+#if !defined VALUE_DELETE
+    #define VALUE_DELETE(value) (void)value
 #endif
 
-#if !defined V_CLONE
-    #define V_CLONE(value) (*(value))
+#if !defined VALUE_CLONE
+    #define VALUE_CLONE(value) (*(value))
 #endif
 
 #if INDEX_BITS == 8
@@ -66,7 +64,7 @@ static derive_c_parameter_value derive_c_parameter_value_clone(derive_c_paramete
     #define INDEX_NONE UINT64_MAX
 #endif
 
-#define SLOT NS(SELF, SLOT)
+#define SLOT NS(SELF, slot)
 
 #define CHECK_ACCESS_INDEX(self, index) ((index).index < (self)->exclusive_end)
 
@@ -74,7 +72,7 @@ static derive_c_parameter_value derive_c_parameter_value_clone(derive_c_paramete
 //           - Avoids the need to cast to the INDEX_TYPE
 #define RESIZE_FACTOR 2
 
-// INV: < MAX_CAPACITY
+// INVARIANT: < MAX_CAPACITY
 #define INDEX NS(SELF, index)
 
 typedef struct {
@@ -83,7 +81,7 @@ typedef struct {
 
 typedef struct {
     union {
-        V value;
+        VALUE value;
         INDEX_TYPE next_free;
     };
 
@@ -128,7 +126,7 @@ static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
     };
 }
 
-static INDEX NS(SELF, insert)(SELF* self, V value) {
+static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     DEBUG_ASSERT(self);
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
@@ -158,7 +156,7 @@ static INDEX NS(SELF, insert)(SELF* self, V value) {
     return (INDEX){.index = new_index};
 }
 
-static V* NS(SELF, try_write)(SELF* self, INDEX index) {
+static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
     DEBUG_ASSERT(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
@@ -170,13 +168,13 @@ static V* NS(SELF, try_write)(SELF* self, INDEX index) {
     return &slot->value;
 }
 
-static V* NS(SELF, write)(SELF* self, INDEX index) {
-    V* value = NS(SELF, try_write)(self, index);
+static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
+    VALUE* value = NS(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
 }
 
-static V const* NS(SELF, try_read)(SELF const* self, INDEX index) {
+static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     DEBUG_ASSERT(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
@@ -188,8 +186,8 @@ static V const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     return &slot->value;
 }
 
-static V const* NS(SELF, read)(SELF const* self, INDEX index) {
-    V const* value = NS(SELF, try_read)(self, index);
+static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
+    VALUE const* value = NS(SELF, try_read)(self, index);
     ASSERT(value);
     return value;
 }
@@ -202,7 +200,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     for (INDEX_TYPE index = 0; index < self->exclusive_end; index++) {
         if (self->slots[index].present) {
             slots[index].present = true;
-            slots[index].value = V_CLONE(&self->slots[index].value);
+            slots[index].value = VALUE_CLONE(&self->slots[index].value);
         } else {
             slots[index].present = false;
             slots[index].next_free = self->slots[index].next_free;
@@ -237,7 +235,7 @@ static bool NS(SELF, full)(SELF const* self) {
 static size_t NS(SELF, max_capacity) = MAX_CAPACITY;
 static size_t NS(SELF, max_index) = MAX_INDEX;
 
-static bool NS(SELF, try_remove)(SELF* self, INDEX index, V* destination) {
+static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     DEBUG_ASSERT(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return false;
@@ -255,8 +253,8 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, V* destination) {
     return false;
 }
 
-static V NS(SELF, remove)(SELF* self, INDEX index) {
-    V value;
+static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
+    VALUE value;
     ASSERT(NS(SELF, try_remove)(self, index, &value));
     return value;
 }
@@ -269,7 +267,7 @@ static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
 
     SLOT* entry = &self->slots[index.index];
     if (entry->present) {
-        V_DELETE(&entry->value);
+        VALUE_DELETE(&entry->value);
         entry->present = false;
         entry->next_free = self->free_list;
         self->free_list = index.index;
@@ -282,7 +280,7 @@ static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
 #define IV_PAIR NS(SELF, iv)
 typedef struct {
     INDEX index;
-    V* value;
+    VALUE* value;
 } IV_PAIR;
 
 #define ITER NS(SELF, iter)
@@ -336,7 +334,7 @@ static void NS(SELF, delete)(SELF* self) {
     ITER iter = NS(SELF, get_iter)(self);
     IV_PAIR const* entry;
     while ((entry = NS(ITER, next)(&iter))) {
-        V_DELETE(entry->value);
+        VALUE_DELETE(entry->value);
     }
 
     NS(ALLOC, free)(self->alloc, self->slots);
@@ -348,7 +346,7 @@ static void NS(SELF, delete)(SELF* self) {
 #define IV_PAIR_CONST NS(SELF, iv_const)
 typedef struct {
     INDEX index;
-    V const* value;
+    VALUE const* value;
 } IV_PAIR_CONST;
 
 static IV_PAIR_CONST NS(SELF, iv_const_empty) = {
@@ -405,8 +403,9 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 
 #undef ALLOC
 #undef INDEX_BITS
-#undef V
-#undef V_DELETE
+#undef VALUE
+#undef VALUE_DELETE
+#undef VALUE_CLONE
 
 #undef INDEX_TYPE
 #undef MAX_CAPACITY

@@ -10,8 +10,8 @@ using Data = int;
 using Model = std::deque<Data>;
 
 extern "C" {
+#define ITEM Data
 #define NAME Sut
-#define A Data
 #include <derive-c/structures/deque/template.h>
 }
 

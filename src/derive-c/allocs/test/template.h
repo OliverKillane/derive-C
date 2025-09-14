@@ -52,7 +52,7 @@ typedef struct {
     //           - Much easier to explore a vector, than a hashmap in gdb.
     // JUSTIFY: Always use the std allocator for test book keeping
     //          - keeps the observed behaviour (e.g. allocator usage) the same as in release
-    #define T TRACKED_ENTRY
+    #define ITEM TRACKED_ENTRY
     #define ALLOC stdalloc
     #define INTERNAL_NAME ENTRIES_VECTOR
     #include <derive-c/structures/vector/template.h>

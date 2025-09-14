@@ -42,18 +42,18 @@ bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->
 size_t age_hash(age const* age) { return age->value; }
 
 #define INDEX_BITS 16
-#define V employee
+#define VALUE employee
 #define NAME employees
 #include <derive-c/structures/arena/template.h>
 
-#define T employees_index
+#define ITEM employees_index
 #define NAME same_age_employees
 #include <derive-c/structures/vector/template.h>
 
-#define K age
-#define V same_age_employees
-#define EQ age_eq
-#define HASH age_hash
+#define KEY age
+#define KEY_EQ age_eq
+#define KEY_HASH age_hash
+#define VALUE same_age_employees
 #define NAME employees_by_age
 #include <derive-c/structures/hashmap/template.h>
 

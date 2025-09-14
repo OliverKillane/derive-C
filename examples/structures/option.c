@@ -13,9 +13,17 @@ struct complex_data {
 };
 
 void complex_data_delete(struct complex_data* self) { free(self->description); }
+struct complex_data complex_data_clone(struct complex_data const* self) {
+    return (struct complex_data){
+        .x = self->x,
+        .y = self->y,
+        .description = strdup(self->description),
+    };
+}
 
-#define T struct complex_data
-#define T_DELETE complex_data_delete
+#define ITEM struct complex_data
+#define ITEM_DELETE complex_data_delete
+#define ITEM_CLONE complex_data_clone
 #define NAME complex_data_option
 #include <derive-c/structures/option/template.h>
 

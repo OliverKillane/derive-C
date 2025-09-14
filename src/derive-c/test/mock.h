@@ -1,7 +1,7 @@
 /// @brief Free function mocking support.
 #pragma once
 
-#if defined MOCKING_ENABLED
+#if defined ENABLE_MOCKING
 
     #define MOCK_REAL(name) __real_##name
     #define MOCK_SET(name) __mock_set_##name

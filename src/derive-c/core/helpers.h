@@ -7,7 +7,7 @@
 
 #define PRIVATE(name) NS(__private, name)
 
-#ifndef NDEBUG
+#if !defined NDEBUG
     #define DEBUG_UNUSED(ident) ident __attribute__((unused))
 #else
     #define DEBUG_UNUSED(ident)

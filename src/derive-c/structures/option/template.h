@@ -9,48 +9,72 @@
 
 #include <derive-c/core/self/def.h>
 
-#ifndef T
-    #ifndef __clang_analyzer__
+#if !defined ITEM
+    #if !defined __clang_analyzer__
         #error "The contained type must be defined"
     #endif
 typedef struct {
     int x;
-} derive_c_parameter_t;
-    #define T derive_c_parameter_t
-static void derive_c_parameter_t_delete(derive_c_parameter_t* UNUSED(self)) {}
-    #define T_DELETE derive_c_parameter_t_delete
+} item_t;
+    #define ITEM item_t
+static void item_delete(item_t* UNUSED(self)) {}
+    #define ITEM_DELETE item_delete
+static item_t item_clone(item_t const* self) { return *self; }
+    #define ITEM_CLONE item_clone
+static bool item_eq(item_t const* a, item_t const* b) { return a->x == b->x; }
+    #define ITEM_EQ item_eq
 #endif
 
-#ifndef T_DELETE
-    #define T_DELETE(value)
+#if !defined ITEM_DELETE
+    #define ITEM_DELETE(value)
+#endif
+
+#if !defined ITEM_CLONE
+    #define ITEM_CLONE(value) (*(value))
 #endif
 
 typedef struct {
     union {
-        T value;
+        ITEM item;
     };
     bool present;
     gdb_marker derive_c_option;
 } SELF;
 
-static SELF NS(SELF, from)(T value) { return (SELF){.value = value, .present = true}; }
+static SELF NS(SELF, from)(ITEM value) { return (SELF){.item = value, .present = true}; }
 
 static SELF NS(SELF, empty)() { return (SELF){.present = false}; }
 
-static T* NS(SELF, get)(SELF* self) {
+static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
-        return &self->value;
+        return NS(SELF, from)(ITEM_CLONE(&self->item));
+    }
+    return NS(SELF, empty)();
+}
+
+static ITEM* NS(SELF, get)(SELF* self) {
+    DEBUG_ASSERT(self);
+    if (self->present) {
+        return &self->item;
     }
     return NULL;
 }
 
-static T const* NS(SELF, get_const)(SELF const* self) {
+static ITEM const* NS(SELF, get_const)(SELF const* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
-        return &self->value;
+        return &self->item;
     }
     return NULL;
+}
+
+static ITEM const* NS(SELF, get_const_or)(SELF const* self, ITEM const* default_value) {
+    DEBUG_ASSERT(self);
+    if (self->present) {
+        return &self->item;
+    }
+    return default_value;
 }
 
 static bool NS(SELF, is_present)(SELF const* self) {
@@ -61,25 +85,26 @@ static bool NS(SELF, is_present)(SELF const* self) {
 static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     if (self->present) {
-        T_DELETE(&self->value);
+        ITEM_DELETE(&self->item);
     }
 }
 
-static bool NS(SELF, replace)(SELF* self, T value) {
+static bool NS(SELF, replace)(SELF* self, ITEM value) {
     DEBUG_ASSERT(self);
     bool was_present;
     if (self->present) {
-        T_DELETE(&self->value);
+        ITEM_DELETE(&self->item);
         was_present = true;
     } else {
         was_present = false;
     }
-    self->value = value;
+    self->item = value;
     self->present = true;
     return was_present;
 }
 
-#undef T
-#undef T_DELETE
+#undef ITEM
+#undef ITEM_DELETE
+#undef ITEM_CLONE
 
 #include <derive-c/core/self/undef.h>

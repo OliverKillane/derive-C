@@ -11,32 +11,31 @@
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
 
-#if !defined D
+#if !defined ITEM
     #if !defined __clang_analyzer__
         #error "The contained type must be defined for a queue template"
     #endif
 
 typedef struct {
     int x;
-} derive_c_parameter_d;
-    #define D derive_c_parameter_d
-
-static void derive_c_parameter_d_delete(derive_c_parameter_d* UNUSED(i)) {}
-    #define D_DELETE derive_c_parameter_d_delete
-static derive_c_parameter_d derive_c_parameter_d_clone(derive_c_parameter_d const* i) { return *i; }
-    #define D_CLONE derive_c_parameter_d_clone
+} item_t;
+    #define ITEM item_t
+static void item_delete(item_t* UNUSED(self)) {}
+    #define ITEM_DELETE item_delete
+static item_t item_clone(item_t const* self) { return *self; }
+    #define ITEM_CLONE item_clone
 #endif
 
-#if !defined D_DELETE
-    #define D_DELETE(value)
+#if !defined ITEM_DELETE
+    #define ITEM_DELETE(value)
 #endif
 
-#if !defined D_CLONE
-    #define D_CLONE(value) (*(value))
+#if !defined ITEM_CLONE
+    #define ITEM_CLONE(value) (*(value))
 #endif
 
 typedef struct {
-    D* data;
+    ITEM* data;
     size_t capacity;
     size_t head; /* Index of the first element */
     size_t tail; /* Index of the last element */
@@ -60,7 +59,7 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
     }
     size_t capacity = next_power_of_2(capacity_for);
     ASSERT(is_power_of_2(capacity));
-    D* data = (D*)NS(ALLOC, malloc)(alloc, capacity * sizeof(D));
+    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
     ASSERT(data);
 
     return (SELF){
@@ -100,7 +99,8 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 
     if (new_capacity_for > self->capacity) {
         size_t new_capacity = next_power_of_2(new_capacity_for * 2);
-        D* new_data = (D*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(D));
+        ITEM* new_data =
+            (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
         ASSERT(new_data);
         if (self->head > self->tail) {
             // The queue wraps at the old end, so we need to either:
@@ -114,7 +114,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 
             if (front_tail_items > back_head_items) {
                 size_t new_head = self->head + additional_capacity;
-                memmove(&new_data[new_head], &new_data[self->head], back_head_items * sizeof(D));
+                memmove(&new_data[new_head], &new_data[self->head], back_head_items * sizeof(ITEM));
                 self->head = new_head;
             } else {
                 // as we go to the next power of 2 each time, the additional capacity is always >=
@@ -123,7 +123,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
                 // - Shifting some of the front items to the start of the buffer
                 DEBUG_ASSERT(front_tail_items <= additional_capacity);
 
-                memcpy(&new_data[old_capacity], &new_data[0], front_tail_items * sizeof(D));
+                memcpy(&new_data[old_capacity], &new_data[0], front_tail_items * sizeof(ITEM));
                 self->tail = old_capacity + front_tail_items - 1;
             }
         }
@@ -132,18 +132,18 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
     }
 }
 
-static void NS(SELF, push_back)(SELF* self, D value) {
+static void NS(SELF, push_back)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
     if (!self->empty) {
         self->tail = modulus_power_of_2_capacity(self->tail + 1, self->capacity);
     }
-    self->data[self->tail] = value;
+    self->data[self->tail] = item;
     self->empty = false;
 }
 
-static void NS(SELF, push_front)(SELF* self, D value) {
+static void NS(SELF, push_front)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
@@ -154,15 +154,15 @@ static void NS(SELF, push_front)(SELF* self, D value) {
             self->head--;
         }
     }
-    self->data[self->head] = value;
+    self->data[self->head] = item;
     self->empty = false;
 }
 
-static D NS(SELF, pop_front)(SELF* self) {
+static ITEM NS(SELF, pop_front)(SELF* self) {
     DEBUG_ASSERT(self);
     ASSERT(!NS(SELF, empty)(self));
 
-    D value = self->data[self->head];
+    ITEM value = self->data[self->head];
     if (self->head == self->tail) {
         self->empty = true;
     } else {
@@ -171,11 +171,11 @@ static D NS(SELF, pop_front)(SELF* self) {
     return value;
 }
 
-static D NS(SELF, pop_back)(SELF* self) {
+static ITEM NS(SELF, pop_back)(SELF* self) {
     DEBUG_ASSERT(self);
     ASSERT(!NS(SELF, empty)(self));
 
-    D value = self->data[self->tail];
+    ITEM value = self->data[self->tail];
     if (self->head == self->tail) {
         self->empty = true;
     } else {
@@ -188,7 +188,7 @@ static D NS(SELF, pop_back)(SELF* self) {
     return value;
 }
 
-static D const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
+static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
     if (index < NS(SELF, size)(self)) {
         size_t real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
@@ -197,14 +197,14 @@ static D const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     return NULL;
 }
 
-static D const* NS(SELF, read_from_front)(SELF const* self, size_t index) {
+static ITEM const* NS(SELF, read_from_front)(SELF const* self, size_t index) {
     DEBUG_ASSERT(self);
-    D const* value = NS(SELF, try_read_from_front)(self, index);
-    ASSERT(value);
-    return value;
+    ITEM const* item = NS(SELF, try_read_from_front)(self, index);
+    ASSERT(item);
+    return item;
 }
 
-static D* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
+static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
     if (index < NS(SELF, size)(self)) {
         size_t real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
@@ -213,9 +213,9 @@ static D* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
     return NULL;
 }
 
-static D* NS(SELF, write_from_front)(SELF* self, size_t index) {
+static ITEM* NS(SELF, write_from_front)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
-    D* value = NS(SELF, try_write_from_front)(self, index);
+    ITEM* value = NS(SELF, try_write_from_front)(self, index);
     ASSERT(value);
     return value;
 }
@@ -231,14 +231,14 @@ static bool NS(ITER, empty)(ITER const* iter) {
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
-static D* NS(ITER, next)(ITER* iter) {
+static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
-    D* value = NS(SELF, try_write_from_front)(iter->circular, iter->position);
-    if (!value) {
+    ITEM* item = NS(SELF, try_write_from_front)(iter->circular, iter->position);
+    if (!item) {
         return NULL;
     }
     iter->position++;
-    return value;
+    return item;
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
@@ -253,9 +253,9 @@ static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
     if (self->data) {
         ITER iter = NS(SELF, get_iter)(self);
-        D* entry;
-        while ((entry = NS(ITER, next)(&iter))) {
-            D_DELETE(entry);
+        ITEM* item;
+        while ((item = NS(ITER, next)(&iter))) {
+            ITEM_DELETE(item);
         }
         NS(ALLOC, free)(self->alloc, self->data);
     }
@@ -274,14 +274,14 @@ static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
-static D const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
-    D const* value = NS(SELF, try_read_from_front)(iter->circular, iter->position);
-    if (!value) {
+    ITEM const* item = NS(SELF, try_read_from_front)(iter->circular, iter->position);
+    if (!item) {
         return NULL;
     }
     iter->position++;
-    return value;
+    return item;
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
@@ -294,20 +294,20 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 
 static SELF NS(SELF, clone)(SELF const* self) {
     DEBUG_ASSERT(self);
-    D* new_data = NULL;
+    ITEM* new_data = NULL;
     size_t tail = 0;
     size_t new_capacity = 0;
     size_t old_size = NS(SELF, size)(self);
 
     if (old_size > 0) {
         new_capacity = next_power_of_2(old_size);
-        new_data = (D*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(D));
+        new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
         ASSERT(new_data);
 
         ITER_CONST iter = NS(SELF, get_iter_const)(self);
-        D const* item;
+        ITEM const* item;
         while ((item = NS(ITER_CONST, next)(&iter))) {
-            new_data[tail] = D_CLONE(item);
+            new_data[tail] = ITEM_CLONE(item);
             tail++;
         }
         tail--;
@@ -325,9 +325,9 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
 #undef ITER_CONST
 
-#undef D
-#undef D_DELETE
-#undef D_CLONE
+#undef ITEM
+#undef ITEM_DELETE
+#undef ITEM_CLONE
 
 #include <derive-c/core/alloc/undef.h>
 #include <derive-c/core/self/undef.h>

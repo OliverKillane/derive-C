@@ -22,10 +22,10 @@ Key key_hash(Key const* key) {
     return 0;
 }
 
-#define K Key
-#define V Value
-#define EQ key_equality
-#define HASH key_hash
+#define KEY Key
+#define KEY_EQ key_equality
+#define KEY_HASH key_hash
+#define VALUE Value
 #define NAME Sut
 #include <derive-c/structures/hashmap/template.h>
 }

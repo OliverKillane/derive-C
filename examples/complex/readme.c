@@ -4,7 +4,7 @@
 #define NAME alloc_2048
 #include <derive-c/allocs/staticbump/template.h>
 
-#define T char
+#define ITEM char
 #define ALLOC alloc_2048
 #define NAME vec_char
 #include <derive-c/structures/vector/template.h>

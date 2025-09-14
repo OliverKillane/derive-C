@@ -52,7 +52,7 @@ static SELF NS(SELF, new)() {
 static void NS(SELF, clear)(SELF* self) {
     DEBUG_ASSERT(self);
 
-#ifndef NDEBUG
+#if !defined NDEBUG
     // JUSTIFY: Allocations & sizes zeroed on free in debug, we check all data has been freed.
     for (size_t i = 0; i < self->used; i++) {
         if (self->buffer[i] != 0) {
@@ -85,7 +85,7 @@ static void NS(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) {
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(ptr);
 
-#ifndef NDEBUG
+#if !defined NDEBUG
     // JUSTIFY: Zero memory in debug.
     //           - Expensive for release, but helpful when debugging
     // NOTE: This means that users should free, before they clear and reuse the buffer.

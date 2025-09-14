@@ -11,7 +11,7 @@
 
 #include <derive-c/allocs/std.h>
 
-#define T int32_t
+#define ITEM int32_t
 #define NAME vec_ints
 #include <derive-c/structures/vector/template.h>
 
@@ -48,8 +48,8 @@ struct complex_data {
 
 void complex_data_delete(struct complex_data* self) { free(self->description); }
 
-#define T struct complex_data
-#define T_DELETE complex_data_delete
+#define ITEM struct complex_data
+#define ITEM_DELETE complex_data_delete
 #define NAME vec_complex_data
 #include <derive-c/structures/vector/template.h>
 
@@ -75,7 +75,7 @@ void complex_data_example() {
     complex_data_delete(&popped);
 }
 
-#define T char
+#define ITEM char
 #define NAME char_vec
 #include <derive-c/structures/vector/template.h>
 
