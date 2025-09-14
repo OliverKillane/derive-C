@@ -38,31 +38,37 @@ struct Command : rc::state::Command<Model, SutWrapper> {
 
     void checkInvariants(const Model& oldModel, const SutWrapper& s) const {
         Model m = nextState(oldModel);
-        RC_ASSERT(m.size() == Sut_size(s.getConst()));
+        {
+            RC_ASSERT(m.size() == Sut_size(s.getConst()));
 
-        SutWrapper wrapperCopy = s;
-        Sut_iter iter = Sut_get_iter(wrapperCopy.get());
-        Sut_iter_const iter_const = Sut_get_iter_const(s.getConst());
+            SutWrapper wrapperCopy = s;
+            Sut_iter iter = Sut_get_iter(wrapperCopy.get());
+            Sut_iter_const iter_const = Sut_get_iter_const(s.getConst());
 
-        size_t index = 0;
-        for (const auto& item : m) {
-            RC_ASSERT(!Sut_iter_const_empty(&iter_const));
-            RC_ASSERT(!Sut_iter_empty(&iter));
-            const auto* sut_item_const = Sut_iter_const_next(&iter_const);
-            auto* sut_item = Sut_iter_next(&iter);
-            RC_ASSERT(*sut_item_const == item);
-            RC_ASSERT(*sut_item == item);
-            RC_ASSERT(*Sut_try_read_from_front(s.getConst(), index) == item);
-            RC_ASSERT(*Sut_try_write_from_front(wrapperCopy.get(), index) == item);
-            index++;
+            size_t index = 0;
+            for (const auto& item : m) {
+                RC_ASSERT(!Sut_iter_const_empty(&iter_const));
+                RC_ASSERT(!Sut_iter_empty(&iter));
+                const auto* sut_item_const = Sut_iter_const_next(&iter_const);
+                auto* sut_item = Sut_iter_next(&iter);
+                RC_ASSERT(*sut_item_const == item);
+                RC_ASSERT(*sut_item == item);
+                RC_ASSERT(*Sut_read_from_front(s.getConst(), index) == item);
+                RC_ASSERT(*Sut_write_from_front(wrapperCopy.get(), index) == item);
+                index++;
+            }
+            RC_ASSERT(Sut_iter_const_empty(&iter_const));
+            RC_ASSERT(Sut_iter_empty(&iter));
+            RC_ASSERT(Sut_try_read_from_front(s.getConst(), index) == nullptr);
+            RC_ASSERT(Sut_try_write_from_front(wrapperCopy.get(), index) == nullptr);
         }
-        RC_ASSERT(Sut_iter_const_empty(&iter_const));
-        RC_ASSERT(Sut_iter_empty(&iter));
 
-        if (!m.empty()) {
-            RC_ASSERT(!Sut_empty(s.getConst()));
-        } else {
-            RC_ASSERT(Sut_empty(s.getConst()));
+        {
+            if (!m.empty()) {
+                RC_ASSERT(!Sut_empty(s.getConst()));
+            } else {
+                RC_ASSERT(Sut_empty(s.getConst()));
+            }
         }
     }
 };

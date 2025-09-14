@@ -18,6 +18,18 @@
         }
 #endif
 
+#ifndef UNREACHABLE
+    #define UNREACHABLE(...) PANIC("unreachable: " __VA_ARGS__ "\n");
+#endif
+
+#ifndef DEBUG_UNREACHABLE
+    #ifndef NDEBUG
+        #define DEBUG_UNREACHABLE(...) UNREACHABLE(__VA_ARGS__)
+    #else
+        #define DEBUG_UNREACHABLE(...) __builtin_unreachable()
+    #endif
+#endif
+
 #ifndef NDEBUG
     #define DEBUG_ASSERT(expr) ASSERT(expr)
 #else

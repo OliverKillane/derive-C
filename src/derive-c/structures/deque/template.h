@@ -99,13 +99,12 @@ static void NS(SELF, rebalance)(SELF* self) {
         target = &self->back;
         source_size = front_size;
         target_size = back_size;
-    } else if (back_size > front_size + 1) {
+    } else {
+        DEBUG_ASSERT(back_size > front_size + 1)
         source = &self->back;
         target = &self->front;
         source_size = back_size;
         target_size = front_size;
-    } else {
-        return;
     }
 
     size_t to_move = (source_size - target_size) / 2;
@@ -146,7 +145,7 @@ static A* NS(SELF, peek_front_write)(SELF* self) {
         return NS(ITEM_VECTORS, write)(&self->front, front_size - 1);
     }
 
-    return NS(ITEM_VECTORS, write)(&self->back, 0);
+    return NS(ITEM_VECTORS, try_write)(&self->back, 0);
 }
 
 static A const* NS(SELF, peek_back_read)(SELF const* self) {

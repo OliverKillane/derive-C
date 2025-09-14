@@ -94,8 +94,7 @@ if(CLANG_TIDY)
   if(TIDY_C_SRC)
     add_custom_target(lint-c-src
       COMMAND ${CLANG_TIDY} 
-          -p ${CMAKE_BINARY_DIR} 
-          --quiet 
+          -p ${CMAKE_BINARY_DIR}
           --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} 
           ${TIDY_C_SRC}
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} 
@@ -105,8 +104,7 @@ if(CLANG_TIDY)
 
   add_custom_target(lint-c-hdrs
     COMMAND ${CLANG_TIDY} 
-      -p ${CMAKE_BINARY_DIR} 
-      --quiet 
+      -p ${CMAKE_BINARY_DIR}
       --extra-arg-before=-xc 
       --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} 
       --extra-arg=-I${CMAKE_SOURCE_DIR}/src 
@@ -117,16 +115,16 @@ if(CLANG_TIDY)
   )
 
   if(TIDY_C_SRC)
-    add_custom_target(lint-c DEPENDS lint-c-src lint-c-hdrs)
+    add_custom_target(lint DEPENDS lint-c-src lint-c-hdrs)
   else()
-    add_custom_target(lint-c DEPENDS lint-c-hdrs)
+    add_custom_target(lint DEPENDS lint-c-hdrs)
   endif()
 
   add_test(
-    NAME lint-c 
+    NAME lint 
     COMMAND ${CMAKE_COMMAND} 
         --build ${CMAKE_BINARY_DIR} 
-        --target lint-c
+        --target lint
   )
-  set_tests_properties(lint-c PROPERTIES LABELS "linting")
+  set_tests_properties(lint PROPERTIES LABELS "linting")
 endif()

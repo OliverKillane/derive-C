@@ -289,7 +289,6 @@ typedef struct {
 typedef struct {
     SELF* arena;
     INDEX_TYPE next_index;
-    size_t pos;
     IV_PAIR curr;
 } ITER;
 
@@ -315,13 +314,7 @@ static IV_PAIR const* NS(ITER, next)(ITER* iter) {
         iter->next_index++;
     }
 
-    iter->pos++;
     return &iter->curr;
-}
-
-static size_t NS(ITER, position)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
@@ -334,7 +327,6 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     return (ITER){
         .arena = self,
         .next_index = index,
-        .pos = 0,
         .curr = (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
     };
 }
@@ -368,7 +360,6 @@ static IV_PAIR_CONST NS(SELF, iv_const_empty) = {
 typedef struct {
     SELF const* arena;
     INDEX_TYPE next_index;
-    size_t pos;
     IV_PAIR_CONST curr;
 } ITER_CONST;
 
@@ -392,13 +383,7 @@ static IV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
         iter->next_index++;
     }
 
-    iter->pos++;
     return &iter->curr;
-}
-
-static size_t NS(ITER_CONST, position)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
@@ -411,7 +396,6 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .arena = self,
         .next_index = index,
-        .pos = 0,
         .curr = (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
     };
 }

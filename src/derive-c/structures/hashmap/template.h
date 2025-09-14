@@ -363,7 +363,6 @@ typedef struct {
 typedef struct {
     SELF* map;
     size_t index;
-    size_t pos;
     KV_PAIR curr;
 } ITER;
 
@@ -372,7 +371,6 @@ static KV_PAIR const* NS(ITER, next)(ITER* iter) {
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR){.key = &iter->map->keys[iter->index].key,
                                .value = &iter->map->values[iter->index]};
-        iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
@@ -380,11 +378,6 @@ static KV_PAIR const* NS(ITER, next)(ITER* iter) {
         return &iter->curr;
     }
     return NULL;
-}
-
-static size_t NS(ITER, position)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
@@ -401,7 +394,6 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     return (ITER){
         .map = self,
         .index = first_index,
-        .pos = 0,
         .curr = (KV_PAIR){.key = NULL, .value = NULL},
     };
 }
@@ -436,7 +428,6 @@ typedef struct {
 typedef struct {
     SELF const* map;
     size_t index;
-    size_t pos;
     KV_PAIR_CONST curr;
 } ITER_CONST;
 
@@ -445,7 +436,6 @@ static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR_CONST){.key = &iter->map->keys[iter->index].key,
                                      .value = &iter->map->values[iter->index]};
-        iter->pos++;
         iter->index++;
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
@@ -453,11 +443,6 @@ static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
         return &iter->curr;
     }
     return NULL;
-}
-
-static size_t NS(ITER_CONST, position)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
-    return iter->pos;
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
@@ -474,7 +459,6 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .map = self,
         .index = first_index,
-        .pos = 0,
         .curr = (KV_PAIR_CONST){.key = NULL, .value = NULL},
     };
 }

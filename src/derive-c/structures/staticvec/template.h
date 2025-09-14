@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
@@ -55,6 +56,8 @@ typedef struct {
 
 static SELF NS(SELF, new)() { return (SELF){.size = 0}; }
 
+static const INPLACE_TYPE NS(SELF, max_size) = INPLACE_CAPACITY;
+
 static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
     new_self.size = self->size;
@@ -101,6 +104,37 @@ static T* NS(SELF, try_push)(SELF* self, T value) {
         return slot;
     }
     return NULL;
+}
+
+static bool NS(SELF, try_insert_at)(SELF* self, size_t at, T const* data, size_t items) {
+    DEBUG_ASSERT(self);
+    DEBUG_ASSERT(data);
+    ASSERT(at <= self->size);
+
+    if (self->size + items > INPLACE_CAPACITY) {
+        return false;
+    }
+
+    memmove(&self->data[at + items], &self->data[at], (self->size - at) * sizeof(T));
+    memcpy(&self->data[at], data, items * sizeof(T));
+    self->size += items;
+    return true;
+}
+
+static void NS(SELF, remove_at)(SELF* self, size_t at, size_t items) {
+    DEBUG_ASSERT(self);
+    ASSERT(at + items <= self->size);
+
+    if (items == 0) {
+        return;
+    }
+
+    for (size_t i = at; i < at + items; i++) {
+        T_DELETE(&self->data[i]);
+    }
+
+    memmove(&self->data[at], &self->data[at + items], (self->size - (at + items)) * sizeof(T));
+    self->size -= items;
 }
 
 static T* NS(SELF, push)(SELF* self, T value) {

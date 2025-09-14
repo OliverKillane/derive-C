@@ -78,6 +78,10 @@ struct Command : rc::state::Command<Model, SutWrapper> {
                 RC_ASSERT(m[*item_const->key] == *item_const->value);
                 RC_ASSERT(m[*item->key] == *item->value);
             }
+
+            RC_ASSERT(Sut_iter_empty(&iter));
+            RC_ASSERT(Sut_iter_next(&iter) == nullptr);
+            RC_ASSERT(Sut_iter_const_next(&iter_const) == nullptr);
         }
 
         // JUSTIFY:
@@ -141,6 +145,64 @@ struct Write : Command {
     }
 };
 
+struct ExtendCapacity : Command {
+    static const size_t MAX_FACTOR = 5;
+    size_t oldCapacity;
+    size_t newCapacity;
+
+    explicit ExtendCapacity(const Model& m)
+        : oldCapacity(m.size()),
+          newCapacity(*rc::gen::inRange(oldCapacity, oldCapacity * MAX_FACTOR)) {}
+
+    void checkPreconditions(const Model& m) const override {}
+
+    void apply(Model& m) const override {
+        // No-op, just extending the capacity
+    }
+
+    void runAndCheck(const Model& m, SutWrapper& s) const override {
+        Sut_extend_capacity_for(s.get(), newCapacity);
+    }
+
+    void show(std::ostream& os) const override {
+        os << "ExtendCapacity(" << oldCapacity << " -> " << newCapacity << ")";
+    }
+};
+
+struct DuplicateInsert : Command {
+    std::optional<Key> key = std::nullopt;
+    Value value =
+        *rc::gen::inRange(std::numeric_limits<size_t>::min(), std::numeric_limits<Value>::max());
+
+    explicit DuplicateInsert(const Model& m) {
+        if (!m.empty()) {
+            std::vector<Key> keys;
+            keys.reserve(m.size());
+            for (const auto& [k, _] : m) {
+                keys.push_back(k);
+            }
+            key = *rc::gen::elementOf(keys);
+        }
+    }
+
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(key.has_value());
+        RC_PRE(m.find(key.value()) != m.end());
+    }
+
+    void apply(Model& m) const override {
+        // No-op, our hashmap does not replace on duplicate insert
+    }
+
+    void runAndCheck(const Model& m, SutWrapper& s) const override {
+        RC_ASSERT(!Sut_try_insert(s.get(), key.value(), value));
+    }
+
+    void show(std::ostream& os) const override {
+        os << "DuplicateInsert(" << key.value() << ", " << value << ")";
+    }
+};
+
 struct Remove : Command {
     std::optional<Key> key = std::nullopt;
 
@@ -160,15 +222,9 @@ struct Remove : Command {
         RC_PRE(m.find(key.value()) != m.end());
     }
 
-    void apply(Model& m) const override {
-        if (key.has_value()) {
-            RC_ASSERT(m.erase(key.value()));
-        }
-    }
+    void apply(Model& m) const override { RC_ASSERT(m.erase(key.value())); }
     void runAndCheck(const Model& m, SutWrapper& s) const override {
-        if (key.has_value()) {
-            Sut_remove(s.get(), key.value());
-        }
+        Sut_remove(s.get(), key.value());
     }
     void show(std::ostream& os) const override { os << "Remove(" << key.value() << ")"; }
 };
@@ -208,7 +264,8 @@ struct DeleteEntry : Command {
 RC_GTEST_PROP(HashMapTests, General, ()) {
     Model model;
     SutWrapper sutWrapper;
-    rc::state::check(model, sutWrapper,
-                     rc::state::gen::execOneOfWithArgs<Insert, Insert, Insert, Insert, Write,
-                                                       Remove, DeleteEntry>());
+    rc::state::check(
+        model, sutWrapper,
+        rc::state::gen::execOneOfWithArgs<Insert, Insert, Insert, Insert, ExtendCapacity, Write,
+                                          Remove, DeleteEntry, DuplicateInsert>());
 }

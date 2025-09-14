@@ -55,8 +55,8 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
-    return NS(SELF, new)(alloc);
     if (capacity_for == 0) {
+        return NS(SELF, new)(alloc);
     }
     size_t capacity = next_power_of_2(capacity_for);
     ASSERT(is_power_of_2(capacity));
@@ -117,16 +117,14 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
                 memmove(&new_data[new_head], &new_data[self->head], back_head_items * sizeof(D));
                 self->head = new_head;
             } else {
-                // may need to leave excess items at the front.
-                if (front_tail_items > additional_capacity) {
-                    memcpy(&new_data[old_capacity], &new_data[0], additional_capacity * sizeof(D));
-                    memcpy(&new_data[0], &new_data[additional_capacity],
-                           (front_tail_items - additional_capacity) * sizeof(D));
-                    self->tail = front_tail_items - additional_capacity - 1;
-                } else {
-                    memcpy(&new_data[old_capacity], &new_data[0], front_tail_items * sizeof(D));
-                    self->tail = old_capacity + front_tail_items - 1;
-                }
+                // as we go to the next power of 2 each time, the additional capacity is always >=
+                // the number of items at the front. As a result, we never need to consider:
+                // - Only copying the first n from the front
+                // - Shifting some of the front items to the start of the buffer
+                DEBUG_ASSERT(front_tail_items <= additional_capacity);
+
+                memcpy(&new_data[old_capacity], &new_data[0], front_tail_items * sizeof(D));
+                self->tail = old_capacity + front_tail_items - 1;
             }
         }
         self->capacity = new_capacity;

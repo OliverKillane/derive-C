@@ -38,32 +38,50 @@ struct Command : rc::state::Command<Model, SutWrapper> {
 
     void checkInvariants(const Model& oldModel, const SutWrapper& s) const {
         Model m = nextState(oldModel);
-        RC_ASSERT(m.size() == Sut_size(s.getConst()));
 
-        SutWrapper wrapperCopy = s;
-        Sut_iter iter = Sut_get_iter(wrapperCopy.get());
-        Sut_iter_const iter_const = Sut_get_iter_const(s.getConst());
-
-        for (const auto& item : m) {
-            RC_ASSERT(!Sut_iter_const_empty(&iter_const));
-            RC_ASSERT(!Sut_iter_empty(&iter));
-            const auto* sut_item_const = Sut_iter_const_next(&iter_const);
-            auto* sut_item = Sut_iter_next(&iter);
-            RC_ASSERT(*sut_item_const == item);
-            RC_ASSERT(*sut_item == item);
+        {
+            RC_ASSERT(m.size() == Sut_size(s.getConst()));
         }
-        RC_ASSERT(Sut_iter_const_empty(&iter_const));
-        RC_ASSERT(Sut_iter_empty(&iter));
 
-        if (!m.empty()) {
-            RC_ASSERT(!Sut_empty(s.getConst()));
+        {
+            SutWrapper wrapperCopy = s;
+            Sut_iter iter = Sut_get_iter(wrapperCopy.get());
+            Sut_iter_const iter_const = Sut_get_iter_const(s.getConst());
 
-            RC_ASSERT(*Sut_peek_back_read(s.getConst()) == m.back());
-            RC_ASSERT(*Sut_peek_back_write(wrapperCopy.get()) == m.back());
-            RC_ASSERT(*Sut_peek_front_read(s.getConst()) == m.front());
-            RC_ASSERT(*Sut_peek_front_write(wrapperCopy.get()) == m.front());
-        } else {
-            RC_ASSERT(Sut_empty(s.getConst()));
+            for (const auto& item : m) {
+                RC_ASSERT(!Sut_iter_const_empty(&iter_const));
+                RC_ASSERT(!Sut_iter_empty(&iter));
+                const auto* sut_item_const = Sut_iter_const_next(&iter_const);
+                auto* sut_item = Sut_iter_next(&iter);
+                RC_ASSERT(*sut_item_const == item);
+                RC_ASSERT(*sut_item == item);
+            }
+            RC_ASSERT(Sut_iter_const_empty(&iter_const));
+            RC_ASSERT(Sut_iter_empty(&iter));
+
+            RC_ASSERT(Sut_iter_const_next(&iter_const) == nullptr);
+            RC_ASSERT(Sut_iter_next(&iter) == nullptr);
+        }
+
+        {
+            SutWrapper wrapperCopy = s;
+            if (!m.empty()) {
+                RC_ASSERT(!Sut_empty(s.getConst()));
+                RC_ASSERT(!Sut_empty(wrapperCopy.getConst()));
+
+                RC_ASSERT(*Sut_peek_back_read(s.getConst()) == m.back());
+                RC_ASSERT(*Sut_peek_back_write(wrapperCopy.get()) == m.back());
+                RC_ASSERT(*Sut_peek_front_read(s.getConst()) == m.front());
+                RC_ASSERT(*Sut_peek_front_write(wrapperCopy.get()) == m.front());
+            } else {
+                RC_ASSERT(Sut_empty(s.getConst()));
+                RC_ASSERT(Sut_empty(wrapperCopy.getConst()));
+
+                RC_ASSERT(Sut_peek_back_read(s.getConst()) == nullptr);
+                RC_ASSERT(Sut_peek_back_write(wrapperCopy.get()) == nullptr);
+                RC_ASSERT(Sut_peek_front_read(s.getConst()) == nullptr);
+                RC_ASSERT(Sut_peek_front_write(wrapperCopy.get()) == nullptr);
+            }
         }
     }
 };

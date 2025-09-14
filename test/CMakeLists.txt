@@ -55,7 +55,7 @@ foreach(TEST_FILE ${TEST_CPP_FILES})
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES LABELS "correctness"
     ENVIRONMENT
-      "RC_PARAMS=max_success=10000"
+      "RC_PARAMS=max_success=20000"
   )
   
   list(APPEND ALL_TEST_EXECUTABLES ${TEST_NAME})
@@ -110,9 +110,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         ${COVERAGE_OBJECTS}
         ${COVERAGE_ARGS}
         --format=html
+        --show-branches=count
+        --show-line-counts
+        --show-regions
         --output-dir=coverage_html
       COMMENT "Running tests and generating coverage report (clang)"
       VERBATIM
+      USES_TERMINAL
     )
   endif()
 endif()
