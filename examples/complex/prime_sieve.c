@@ -15,12 +15,12 @@
 // to store values, plus room for realloc
 #define CAPACITY 300000
 #define NAME bump_alloc
-#include <derive-c/allocs/staticbump/template.h>
+#include <derive-c/alloc/staticbump/template.h>
 
 #define ITEM bool
 #define ALLOC bump_alloc
 #define NAME sieve_vec
-#include <derive-c/structures/vector/template.h>
+#include <derive-c/container/vector/dynamic/template.h>
 
 size_t sqrt_size_t(size_t n) {
     if (n == 0 || n == 1) {

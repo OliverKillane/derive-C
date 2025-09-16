@@ -20,12 +20,12 @@ For example:
 
 #define CAPACITY 2048
 #define NAME alloc_2048
-#include <derive-c/allocs/staticbump/template.h>
+#include <derive-c/alloc/staticbump/template.h>
 
 #define ITEM char
 #define ALLOC alloc_2048
 #define NAME vec_char
-#include <derive-c/structures/vector/template.h>
+#include <derive-c/container/vector/dynamic/template.h>
 
 int main() {
     alloc_2048 alloc = alloc_2048_new();
@@ -98,5 +98,64 @@ In development, remaining tasks:
  - Regression benchmarks
  - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
 
+1. We can make maps generic by:
+```cpp
+template<typename D>
+struct Foo {
+    extern "C" {
+        #define ITEM D
+        #define NAME foo
+        #include <derive-c/structures/d/template.h>
+    }
+}
+```
+
+container
+    vector 
+        static  // current staticvec
+        dynamic // normal vector
+    map
+        linear     // linear search map
+        decomposed // current hashmap
+        ankerl     // new ankerl hashmap
+        btree      // btreemap
+    queue
+        circular // current: circular buffer
+        deque    // current: double ended queue
+    arena
+        basic // current implementation
+        generational
+utils
+    option // current option
+    result
+    string
+        short
+        intern
+    ptr
+        count
+        observe // notified 
+        span
+    closure
+        dynamic
+        small
+algorithms
+    sort
+        binarysort
+    search
+        binarysearch
+    hash
+        murmur
+        integer
+allocs
+    std
+    staticbump
+    test
+    alloc
+test
+    mock
+
+
 ## References
 - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)
+
+

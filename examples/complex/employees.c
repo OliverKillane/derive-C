@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <derive-c/allocs/std.h>
+#include <derive-c/alloc/std.h>
 
 typedef struct {
     char const* forename;
@@ -44,18 +44,18 @@ size_t age_hash(age const* age) { return age->value; }
 #define INDEX_BITS 16
 #define VALUE employee
 #define NAME employees
-#include <derive-c/structures/arena/template.h>
+#include <derive-c/container/arena/basic/template.h>
 
 #define ITEM employees_index
 #define NAME same_age_employees
-#include <derive-c/structures/vector/template.h>
+#include <derive-c/container/vector/dynamic/template.h>
 
 #define KEY age
 #define KEY_EQ age_eq
 #define KEY_HASH age_hash
 #define VALUE same_age_employees
 #define NAME employees_by_age
-#include <derive-c/structures/hashmap/template.h>
+#include <derive-c/container/map/decomposed/template.h>
 
 typedef struct {
     employees data;

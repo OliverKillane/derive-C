@@ -2,12 +2,12 @@
 
 #define CAPACITY 2048
 #define NAME alloc_2048
-#include <derive-c/allocs/staticbump/template.h>
+#include <derive-c/alloc/staticbump/template.h>
 
 #define ITEM char
 #define ALLOC alloc_2048
 #define NAME vec_char
-#include <derive-c/structures/vector/template.h>
+#include <derive-c/container/vector/dynamic/template.h>
 
 int main() {
     alloc_2048 alloc = alloc_2048_new();

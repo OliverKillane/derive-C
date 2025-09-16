@@ -30,37 +30,41 @@ FetchContent_MakeAvailable(rapidcheck)
 
 include(GoogleTest)
 
-file(GLOB_RECURSE TEST_CPP_FILES CONFIGURE_DEPENDS *.cpp)
+file(GLOB_RECURSE TEST_CPP_FILES CONFIGURE_DEPENDS tests.cpp)
 set(ALL_TEST_EXECUTABLES)
 
 # JUSTIFY: Test per cpp executable
 #  - To be able to run all tests in parallel, so a binary per structure/test suite.
 foreach(TEST_FILE ${TEST_CPP_FILES})
   file(RELATIVE_PATH REL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${TEST_FILE})
-  string(REPLACE "/" "_" TEST_NAME ${REL_PATH})
-  string(REPLACE ".cpp" "" TEST_NAME ${TEST_NAME})
-  
-  add_executable(${TEST_NAME} ${TEST_FILE})
-  target_compile_definitions(${TEST_NAME} PRIVATE ENABLE_MOCKING)
-  target_link_libraries(${TEST_NAME}
+  string(REPLACE "/" "_" TEST_TARGET_SAFE ${REL_PATH})
+
+  add_executable(${TEST_TARGET_SAFE} ${TEST_FILE})
+  set_target_properties(${TEST_TARGET_SAFE} PROPERTIES 
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    OUTPUT_NAME "${TEST_TARGET_SAFE}"
+  )
+  target_compile_definitions(${TEST_TARGET_SAFE} PRIVATE ENABLE_MOCKING)
+  target_link_libraries(${TEST_TARGET_SAFE}
     PRIVATE
       derivec
+      derivecpp
       gtest
       gmock
       gtest_main
       rapidcheck
       rapidcheck_gtest
   )
-  
-  gtest_discover_tests(${TEST_NAME}
+
+  gtest_discover_tests(${TEST_TARGET_SAFE}
     DISCOVERY_TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES LABELS "correctness"
     ENVIRONMENT
       "RC_PARAMS=max_success=20000"
   )
-  
-  list(APPEND ALL_TEST_EXECUTABLES ${TEST_NAME})
+
+  list(APPEND ALL_TEST_EXECUTABLES ${TEST_TARGET_SAFE})
 endforeach()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

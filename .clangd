@@ -1,0 +1,4 @@
+If:
+  PathMatch: [src/.*]   # regex or glob
+CompileFlags:
+  Add: [-D__clang_daemon__]

@@ -1,4 +1,4 @@
 #if !defined ALLOC
-    #include <derive-c/allocs/std.h> // NOLINT(misc-include-cleaner)
+    #include <derive-c/alloc/std.h> // NOLINT(misc-include-cleaner)
     #define ALLOC stdalloc
 #endif

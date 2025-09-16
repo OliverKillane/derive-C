@@ -1,18 +1,23 @@
 function(add_example file)
   file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}" "${file}")
-  
-  string(REPLACE "/" "-" example_name "${rel_path}")
-  string(REPLACE ".c" "" example_name "${example_name}")
+  get_filename_component(example_name_we "${rel_path}" NAME_WE)
+  get_filename_component(example_dir "${rel_path}" DIRECTORY)
+  set(example_target "${example_dir}/${example_name_we}")
+  string(REPLACE "/" "_" example_target_safe "${example_target}")
 
-  add_executable(${example_name} ${file})
-  set_property(TARGET ${example_name} PROPERTY LINKER_LANGUAGE C)
-  set_property(TARGET ${example_name} PROPERTY C_STANDARD 23)
-  target_link_libraries(${example_name} PRIVATE derivec)
+  add_executable(${example_target_safe} ${file})
+  set_target_properties(${example_target_safe} PROPERTIES 
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${example_dir}"
+    OUTPUT_NAME "${example_name_we}"
+  )
+  set_property(TARGET ${example_target_safe} PROPERTY LINKER_LANGUAGE C)
+  set_property(TARGET ${example_target_safe} PROPERTY C_STANDARD 23)
+  target_link_libraries(${example_target_safe} PRIVATE derivec)
 
-  add_test(NAME example-${example_name} COMMAND $<TARGET_FILE:${example_name}>)
-  set_tests_properties(example-${example_name} 
+  add_test(NAME example-${example_target_safe} COMMAND $<TARGET_FILE:${example_target_safe}>)
+  set_tests_properties(example-${example_target_safe} 
     PROPERTIES
-      DEPENDS ${example_name} 
+      DEPENDS ${example_target_safe} 
       LABELS "examples"
   )
 endfunction()
