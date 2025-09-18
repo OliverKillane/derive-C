@@ -1,4 +1,14 @@
 If:
-  PathMatch: [src/.*]   # regex or glob
+  PathMatch: [src/.*]
 CompileFlags:
   Add: [-D__clang_daemon__]
+---
+# Apply to C++ sources/headers
+If:
+  PathMatch:
+    - '.*\.(cpp|hpp|ipp)$'
+CompileFlags:
+  Add:
+    - -nostdinc++
+    - -isystem
+    - /nix/store/hgdk5y6mgdjsq6hzacjq6npry7dprj0z-libcxx-20.1.0-rc3-dev/include/c++/v1

@@ -2,18 +2,12 @@
 #include <type_traits>
 #include <stdexcept>
 
-template<typename T>
-struct member_pointer_class;
+#include <derive-cpp/meta/member_ptr_class.hpp>
 
-template<typename C, typename M>
-struct member_pointer_class<M C::*> {
-    using type = C;
-};
-
-template<typename T>
-using member_pointer_class_t = typename member_pointer_class<T>::type;
+namespace derivecpp {
 
 /// A utility that 'bounces' calls to a free function, to a member function of a given instance.
+/// Enabled by default.
 /// - Runtime checks ensure only one trampoline is active at once.
 /// - Not thread safe.
 /// - Allows for bouncing calls to google mock methods. 
@@ -69,3 +63,4 @@ private:
     static_assert(std::is_member_function_pointer_v<MockFunctionType>);
     static_assert(std::is_function_v<std::remove_pointer_t<FunctionPtrType>>);
 };
+}

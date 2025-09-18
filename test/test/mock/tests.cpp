@@ -17,16 +17,16 @@ using namespace testing;
 
 struct MockTests : Test {
     MOCK_METHOD(void, none_mock, (), ());
-    Trampoline<&none, &MockTests::none_mock> none_tramp{this};
+    derivecpp::Trampoline<&none, &MockTests::none_mock> none_tramp{this};
 
     MOCK_METHOD(int, foo_mock, (int a), ());
-    Trampoline<&foo, &MockTests::foo_mock> foo_tramp{this};
+    derivecpp::Trampoline<&foo, &MockTests::foo_mock> foo_tramp{this};
 
     MOCK_METHOD(void, array_mock, (int a[6]), ());
-    Trampoline<&array, &MockTests::array_mock> array_tramp{this};
+    derivecpp::Trampoline<&array, &MockTests::array_mock> array_tramp{this};
 
     MOCK_METHOD(void, fn_ptr_mock, (void (*fn)(int)), ());
-    Trampoline<&fn_ptr, &MockTests::fn_ptr_mock> fn_ptr_tramp{this};
+    derivecpp::Trampoline<&fn_ptr, &MockTests::fn_ptr_mock> fn_ptr_tramp{this};
 };
 
 TEST_F(MockTests, arg_types) {

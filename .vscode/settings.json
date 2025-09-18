@@ -3,6 +3,9 @@
   "clangd.arguments": [
     "--query-driver=/nix/store/*-clang-wrapper-*/bin/clang*",
     "--compile-commands-dir=build",
-    "--resource-dir=/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root"
-  ]
+    "--resource-dir=/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root",
+    "--log=verbose",
+     "--pch-storage=memory"
+  ],
+  "cmake.ctest.testSuiteDelimiter": "/"
 }

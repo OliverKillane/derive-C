@@ -15,7 +15,6 @@ myStdenv.mkDerivation {
       ninja
       doxygen
       graphviz
-      lcov
     ])
     ++ (with llvm20; [
       clang-tools  # clang-format & clang-tidy for 20

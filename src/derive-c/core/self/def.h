@@ -48,6 +48,6 @@
     #if !defined PLACEHOLDERS
         #error "The `SELF` type for a data structure must be defined (by `NAME` or `INTERNAL_NAME`)"
     #endif
-    #define NAME derive_c_parameter_self
+    #define NAME self_t
     #define SELF NAME
 #endif

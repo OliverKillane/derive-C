@@ -38,6 +38,7 @@ set(ALL_TEST_EXECUTABLES)
 foreach(TEST_FILE ${TEST_CPP_FILES})
   file(RELATIVE_PATH REL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${TEST_FILE})
   string(REPLACE "/" "_" TEST_TARGET_SAFE ${REL_PATH})
+  get_filename_component(test_hierarchy "${REL_PATH}" DIRECTORY)
 
   add_executable(${TEST_TARGET_SAFE} ${TEST_FILE})
   set_target_properties(${TEST_TARGET_SAFE} PROPERTIES 
@@ -57,6 +58,7 @@ foreach(TEST_FILE ${TEST_CPP_FILES})
   )
 
   gtest_discover_tests(${TEST_TARGET_SAFE}
+    TEST_PREFIX "tests/${test_hierarchy}/"
     DISCOVERY_TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES LABELS "correctness"

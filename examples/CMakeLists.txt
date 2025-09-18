@@ -14,8 +14,8 @@ function(add_example file)
   set_property(TARGET ${example_target_safe} PROPERTY C_STANDARD 23)
   target_link_libraries(${example_target_safe} PRIVATE derivec)
 
-  add_test(NAME example-${example_target_safe} COMMAND $<TARGET_FILE:${example_target_safe}>)
-  set_tests_properties(example-${example_target_safe} 
+  add_test(NAME examples/${example_target} COMMAND $<TARGET_FILE:${example_target_safe}>)
+  set_tests_properties(examples/${example_target} 
     PROPERTIES
       DEPENDS ${example_target_safe} 
       LABELS "examples"

@@ -4,4 +4,4 @@ ColumnLimit: 100
 UseTab: Never
 BreakBeforeBraces: Attach
 PointerAlignment: Left
-IndentPPDirectives: BeforeHash   # indent directives with the block
+IndentPPDirectives: BeforeHash

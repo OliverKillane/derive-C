@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 using Value = std::size_t;
-using ModelIndex = StrongInteger<struct ModelIndexTag, Value>;
+using ModelIndex = derivecpp::StrongInteger<struct ModelIndexTag, Value>;
 
 struct IndexHelper {
     ModelIndex next() {

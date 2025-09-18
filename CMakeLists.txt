@@ -71,9 +71,9 @@ if(CLANG_FORMAT)
     )
 
     add_test(
-      NAME format-check 
+      NAME lint/format-check 
       COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target format-check)
-    set_tests_properties(format-check PROPERTIES LABELS "linting")
+    set_tests_properties(lint/format-check PROPERTIES LABELS "linting")
 endif()
 
 find_program(CLANG_TIDY NAMES clang-tidy)
@@ -121,10 +121,10 @@ if(CLANG_TIDY)
   endif()
 
   add_test(
-    NAME lint 
+    NAME lint/lint 
     COMMAND ${CMAKE_COMMAND} 
         --build ${CMAKE_BINARY_DIR} 
         --target lint
   )
-  set_tests_properties(lint PROPERTIES LABELS "linting")
+  set_tests_properties(lint/lint PROPERTIES LABELS "linting")
 endif()
