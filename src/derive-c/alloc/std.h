@@ -3,9 +3,11 @@
 
 #pragma once
 
+#include <stdlib.h>
+
+#include <derive-c/alloc/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
-#include <stdlib.h>
 
 #if defined __cplusplus
 struct stdalloc {
@@ -44,3 +46,5 @@ static void NS(stdalloc, free)(stdalloc* DEBUG_UNUSED(self), void* ptr) {
     DEBUG_ASSERT(ptr);
     free(ptr);
 }
+
+TRAIT_ALLOC(stdalloc);

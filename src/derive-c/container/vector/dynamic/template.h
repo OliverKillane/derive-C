@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <derive-c/container/vector/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -34,6 +35,9 @@ static item_t item_clone(item_t const* i) { return *i; }
 #if !defined ITEM_CLONE
     #define ITEM_CLONE(value) (*(value))
 #endif
+
+typedef size_t NS(SELF, index_t);
+typedef ITEM NS(SELF, item_t);
 
 typedef struct {
     size_t size;
@@ -249,6 +253,7 @@ static void NS(SELF, delete)(SELF* self) {
 }
 
 #define ITER NS(SELF, iter)
+typedef ITEM* NS(ITER, item);
 
 typedef struct {
     SELF* vec;
@@ -285,6 +290,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #define ITER_CONST NS(SELF, iter_const)
+typedef ITEM const* NS(ITER_CONST, item);
 
 typedef struct {
     SELF const* vec;
@@ -326,4 +332,6 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef ITEM_CLONE
 
 #include <derive-c/core/alloc/undef.h>
+TRAIT_VECTOR(SELF);
+
 #include <derive-c/core/self/undef.h>

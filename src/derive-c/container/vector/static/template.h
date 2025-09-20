@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <derive-c/container/vector/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -41,34 +42,37 @@ static item_t item_clone(item_t const* self) { return *self; }
 #endif
 
 #if INPLACE_CAPACITY <= 255
-    #define INPLACE_TYPE uint8_t
+    #define INDEX_TYPE uint8_t
 #elif INPLACE_CAPACITY <= 65535
-    #define INPLACE_TYPE uint16_t
+    #define INDEX_TYPE uint16_t
 #else
     #error "INPLACE_CAPACITY must be less than or equal to 65535"
-    #define INPLACE_TYPE size_t
+    #define INDEX_TYPE size_t
 #endif
 
+typedef INDEX_TYPE NS(SELF, index_t);
+typedef ITEM NS(SELF, item_t);
+
 typedef struct {
-    INPLACE_TYPE size;
+    INDEX_TYPE size;
     ITEM data[INPLACE_CAPACITY];
     gdb_marker derive_c_staticvec;
 } SELF;
 
 static SELF NS(SELF, new)() { return (SELF){.size = 0}; }
 
-static const INPLACE_TYPE NS(SELF, max_size) = INPLACE_CAPACITY;
+static const INDEX_TYPE NS(SELF, max_size) = INPLACE_CAPACITY;
 
 static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
     new_self.size = self->size;
-    for (INPLACE_TYPE i = 0; i < self->size; i++) {
+    for (INDEX_TYPE i = 0; i < self->size; i++) {
         new_self.data[i] = ITEM_CLONE(&self->data[i]);
     }
     return new_self;
 }
 
-static ITEM const* NS(SELF, try_read)(SELF const* self, INPLACE_TYPE index) {
+static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -76,13 +80,13 @@ static ITEM const* NS(SELF, try_read)(SELF const* self, INPLACE_TYPE index) {
     return NULL;
 }
 
-static ITEM const* NS(SELF, read)(SELF const* self, INPLACE_TYPE index) {
+static ITEM const* NS(SELF, read)(SELF const* self, INDEX_TYPE index) {
     ITEM const* value = NS(SELF, try_read)(self, index);
     ASSERT(value);
     return value;
 }
 
-static ITEM* NS(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
+static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
     DEBUG_ASSERT(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
@@ -90,7 +94,7 @@ static ITEM* NS(SELF, try_write)(SELF* self, INPLACE_TYPE index) {
     return NULL;
 }
 
-static ITEM* NS(SELF, write)(SELF* self, INPLACE_TYPE index) {
+static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
     ITEM* value = NS(SELF, try_write)(self, index);
     ASSERT(value);
     return value;
@@ -107,7 +111,8 @@ static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     return NULL;
 }
 
-static bool NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const* items, size_t count) {
+static bool NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
+                                    INDEX_TYPE count) {
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(items);
     ASSERT(at <= self->size);
@@ -122,7 +127,7 @@ static bool NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const* items, si
     return true;
 }
 
-static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
+static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
     DEBUG_ASSERT(self);
     ASSERT(at + count <= self->size);
 
@@ -130,7 +135,7 @@ static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
         return;
     }
 
-    for (size_t i = at; i < at + count; i++) {
+    for (INDEX_TYPE i = at; i < at + count; i++) {
         ITEM_DELETE(&self->data[i]);
     }
 
@@ -160,23 +165,24 @@ static ITEM NS(SELF, pop)(SELF* self) {
     return entry;
 }
 
-static size_t NS(SELF, size)(SELF const* self) {
+static INDEX_TYPE NS(SELF, size)(SELF const* self) {
     DEBUG_ASSERT(self);
     return self->size;
 }
 
 static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
-    for (INPLACE_TYPE i = 0; i < self->size; i++) {
+    for (INDEX_TYPE i = 0; i < self->size; i++) {
         ITEM_DELETE(&self->data[i]);
     }
 }
 
 #define ITER NS(SELF, iter)
+typedef ITEM* NS(ITER, item);
 
 typedef struct {
     SELF* vec;
-    size_t pos;
+    INDEX_TYPE pos;
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
@@ -189,7 +195,7 @@ static ITEM* NS(ITER, next)(ITER* iter) {
     return NULL;
 }
 
-static size_t NS(ITER, position)(ITER const* iter) {
+static INDEX_TYPE NS(ITER, position)(ITER const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
@@ -210,10 +216,11 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #define ITER_CONST NS(SELF, iter_const)
+typedef ITEM const* NS(ITER_CONST, item);
 
 typedef struct {
     SELF const* vec;
-    size_t pos;
+    INDEX_TYPE pos;
 } ITER_CONST;
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
@@ -226,7 +233,7 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NULL;
 }
 
-static size_t NS(ITER_CONST, position)(ITER_CONST const* iter) {
+static INDEX_TYPE NS(ITER_CONST, position)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
     return iter->pos;
 }
@@ -246,11 +253,12 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 
 #undef ITER_CONST
 
-#undef INPLACE_TYPE
+#undef INDEX_TYPE
 #undef INPLACE_CAPACITY
 
 #undef ITEM
 #undef ITEM_DELETE
 #undef ITEM_CLONE
 
+TRAIT_VECTOR(SELF);
 #include <derive-c/core/self/undef.h>

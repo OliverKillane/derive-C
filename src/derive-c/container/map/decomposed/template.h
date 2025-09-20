@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "derive-c/core/require.h"
 #include "utils.h"
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
@@ -17,16 +18,8 @@
     #if !defined PLACEHOLDERS
         #error "KEY must be defined"
     #endif
-typedef struct {
-    int x;
-} map_key_t;
     #define KEY map_key_t
-static void key_delete(map_key_t* UNUSED(self)) {}
-    #define KEY_DELETE key_delete
-static map_key_t key_clone(map_key_t const* self) { return *self; }
-    #define KEY_CLONE key_clone
-static bool key_eq(map_key_t const* key_1, map_key_t const* key_2) { return key_1->x == key_2->x; }
-    #define KEY_EQ key_eq
+typedef int KEY;
 #endif
 
 #if defined MY_FLAG
@@ -37,20 +30,24 @@ static bool key_eq(map_key_t const* key_1, map_key_t const* key_2) { return key_
     #if !defined PLACEHOLDERS
         #error "KEY_HASH must be defined"
     #endif
-static size_t key_hash(map_key_t const* key);
+
     #define KEY_HASH key_hash
+static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined KEY_EQ
-    #define KEY_EQ(key_1, key_2) (*(key_1) == *(key_2))
+    #define KEY_EQ NS(SELF, key_eq_default)
+static bool KEY_EQ(KEY const* key_1, KEY const* key_2) { return *key_1 == *key_2; }
 #endif
 
 #if !defined KEY_DELETE
-    #define KEY_DELETE(key)
+    #define KEY_DELETE NS(SELF, key_delete_default)
+static void KEY_DELETE(KEY* UNUSED(key)) {}
 #endif
 
 #if !defined KEY_CLONE
-    #define KEY_CLONE(value) (*(value))
+    #define KEY_CLONE NS(SELF, key_clone_default)
+static KEY KEY_CLONE(KEY const* key) { return *key; }
 #endif
 
 #if !defined VALUE
@@ -61,19 +58,21 @@ typedef struct {
     int x;
 } value_t;
     #define VALUE value_t
-static void value_delete(value_t* UNUSED(self)) {}
-    #define VALUE_DELETE value_delete
-static value_t value_clone(value_t const* self) { return *self; }
-    #define VALUE_CLONE value_clone
 #endif
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE(value)
+    #define VALUE_DELETE NS(SELF, value_delete_default)
+static void VALUE_DELETE(VALUE* UNUSED(value)) {}
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE(value) (*(value))
+    #define VALUE_CLONE NS(SELF, value_clone_default)
+static VALUE VALUE_CLONE(VALUE const* value) { return *value; }
 #endif
+
+typedef KEY NS(SELF, key_t);
+typedef VALUE NS(SELF, value_t);
+typedef ALLOC NS(SELF, alloc_t);
 
 #define KEY_ENTRY NS(SELF, key_entry)
 typedef struct {
@@ -364,6 +363,8 @@ typedef struct {
     KV_PAIR curr;
 } ITER;
 
+typedef KV_PAIR const* NS(ITER, item);
+
 static KV_PAIR const* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
@@ -429,6 +430,8 @@ typedef struct {
     KV_PAIR_CONST curr;
 } ITER_CONST;
 
+typedef KV_PAIR_CONST const* NS(ITER_CONST, item);
+
 static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
     if (iter->index < iter->map->capacity) {
@@ -476,4 +479,8 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef VALUE_CLONE
 
 #include <derive-c/core/alloc/undef.h>
+
+#include <derive-c/container/map/trait.h>
+TRAIT_MAP(SELF);
+
 #include <derive-c/core/self/undef.h>

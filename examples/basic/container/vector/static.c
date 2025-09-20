@@ -1,5 +1,5 @@
 /// @file
-/// @example structures/staticvec.c
+/// @example container/vector/static.c
 /// @brief Examples for using static vectors (in-place storage, up to a fixed size).
 
 #include <assert.h>

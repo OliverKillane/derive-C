@@ -1,5 +1,5 @@
 /// @file
-/// @example structures/option.c
+/// @example utils/option.c
 /// @brief Examples for using the optional type.
 
 #include <assert.h>

@@ -98,18 +98,6 @@ In development, remaining tasks:
  - Regression benchmarks
  - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
 
-1. We can make maps generic by:
-```cpp
-template<typename D>
-struct Foo {
-    extern "C" {
-        #define ITEM D
-        #define NAME foo
-        #include <derive-c/structures/d/template.h>
-    }
-}
-```
-
 container
     vector 
         static  // current staticvec

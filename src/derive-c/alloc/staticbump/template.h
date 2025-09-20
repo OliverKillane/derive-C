@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <derive-c/alloc/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -145,4 +146,5 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 #undef CAPACITY
 #undef USED
 
+TRAIT_ALLOC(SELF);
 #include <derive-c/core/self/undef.h>

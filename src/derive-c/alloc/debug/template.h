@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 
+#include <derive-c/alloc/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 
@@ -60,4 +61,6 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
 }
 
 #include <derive-c/core/alloc/undef.h>
+
+TRAIT_ALLOC(SELF);
 #include <derive-c/core/self/undef.h>

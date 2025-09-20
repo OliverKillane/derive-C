@@ -1,5 +1,5 @@
 /// @file
-/// @example structures/hashmap.c
+/// @example container/map/decomposed.c
 /// @brief Examples for inserting, iterating, and deleting hashmaps.
 
 #include <assert.h>

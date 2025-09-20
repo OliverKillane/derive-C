@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <derive-c/container/queue/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -34,6 +35,9 @@ static item_t item_clone(item_t const* self) { return *self; }
 #if !defined ITEM_CLONE
     #define ITEM_CLONE(value) (*(value))
 #endif
+
+typedef ITEM NS(SELF, item_t);
+typedef ALLOC NS(SELF, alloc_t);
 
 typedef struct {
     ITEM* data;
@@ -222,6 +226,8 @@ static ITEM* NS(SELF, write_from_front)(SELF* self, size_t index) {
 }
 
 #define ITER NS(SELF, iter)
+typedef ITEM* NS(ITER, item);
+
 typedef struct {
     SELF* circular;
     size_t position;
@@ -265,6 +271,8 @@ static void NS(SELF, delete)(SELF* self) {
 #undef ITER
 
 #define ITER_CONST NS(SELF, iter_const)
+typedef ITEM const* NS(ITER_CONST, item);
+
 typedef struct {
     SELF const* circular;
     size_t position;
@@ -331,4 +339,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
 #undef ITEM_CLONE
 
 #include <derive-c/core/alloc/undef.h>
+TRAIT_QUEUE(SELF);
+
 #include <derive-c/core/self/undef.h>

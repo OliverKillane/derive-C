@@ -1,5 +1,5 @@
 /// @file
-/// @example structures/arena.c
+/// @example container/arena/basic.c
 /// @brief Examples using arenas with different index sizes.
 
 #include <assert.h>

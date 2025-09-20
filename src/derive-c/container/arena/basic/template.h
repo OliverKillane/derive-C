@@ -1,5 +1,6 @@
 /// @brief A vector-backed arena, with support for small indices.
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -33,6 +34,8 @@ static void value_delete(value_t* UNUSED(self)) {}
 static value_t value_clone(value_t const* self) { return *self; }
     #define VALUE_CLONE value_clone
 #endif
+
+_Static_assert(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #if !defined VALUE_DELETE
     #define VALUE_DELETE(value) (void)value

@@ -3,9 +3,11 @@
 
 #pragma once
 
+#include <stdlib.h>
+
+#include <derive-c/alloc/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
-#include <stdlib.h>
 
 #if defined __cplusplus
 struct nullalloc {
@@ -40,3 +42,5 @@ static void NS(nullalloc, free)(nullalloc* DEBUG_UNUSED(self), void* UNUSED(ptr)
     DEBUG_ASSERT(self);
     PANIC("Not possible to free memory from the null allocator, as it allocates nothing")
 }
+
+TRAIT_ALLOC(nullalloc);

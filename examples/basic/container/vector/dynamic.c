@@ -1,5 +1,5 @@
 /// @file
-/// @example structures/vector.c
+/// @example container/vector/dynamic.c
 /// @brief Examples for inserting, iterating, and deleting from vectors.
 
 #include <assert.h>
