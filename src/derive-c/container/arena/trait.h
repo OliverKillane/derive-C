@@ -2,6 +2,7 @@
 
 #include <derive-c/core/object/trait.h>
 #include <derive-c/core/require.h>
+#include <derive-c/core/helpers.h>
 #include <derive-c/utils/iterator/trait.h>
 
 #define TRAIT_ARENA(SELF)                                                                          \
