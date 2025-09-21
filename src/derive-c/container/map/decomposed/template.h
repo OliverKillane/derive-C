@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "derive-c/core/require.h"
 #include "utils.h"
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
@@ -20,10 +19,6 @@
     #endif
     #define KEY map_key_t
 typedef int KEY;
-#endif
-
-#if defined MY_FLAG
-    #error "foo"
 #endif
 
 #if !defined KEY_HASH
@@ -358,16 +353,13 @@ typedef struct {
 #define ITER NS(SELF, iter)
 typedef KV_PAIR const* NS(ITER, item);
 
-static bool NS(ITER, empty_item)(KV_PAIR const* const* item) {
-    return *item == NULL;
-}
+static bool NS(ITER, empty_item)(KV_PAIR const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF* map;
     size_t index;
     KV_PAIR curr;
 } ITER;
-
 
 static KV_PAIR const* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
@@ -429,16 +421,13 @@ typedef struct {
 #define ITER_CONST NS(SELF, iter_const)
 typedef KV_PAIR_CONST const* NS(ITER_CONST, item);
 
-static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* const* item) {
-    return *item == NULL;
-}
+static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF const* map;
     size_t index;
     KV_PAIR_CONST curr;
 } ITER_CONST;
-
 
 static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);

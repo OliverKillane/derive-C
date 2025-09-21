@@ -228,10 +228,7 @@ static ITEM* NS(SELF, write_from_front)(SELF* self, size_t index) {
 #define ITER NS(SELF, iter)
 typedef ITEM* NS(ITER, item);
 
-static bool NS(ITER, empty_item)(ITEM* const* item) {
-    return *item == NULL;
-}
-
+static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF* circular;
@@ -278,9 +275,7 @@ static void NS(SELF, delete)(SELF* self) {
 #define ITER_CONST NS(SELF, iter_const)
 typedef ITEM const* NS(ITER_CONST, item);
 
-static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) {
-    return *item == NULL;
-}
+static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF const* circular;

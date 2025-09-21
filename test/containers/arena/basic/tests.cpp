@@ -33,7 +33,7 @@ extern "C" {
 #include <derive-c/container/arena/basic/template.h>
 }
 
-inline bool operator==(const Sut_index& a, const Sut_index& b) { return a.index == b.index; }
+inline bool operator==(const Sut_index_t& a, const Sut_index_t& b) { return a.index == b.index; }
 inline bool operator==(const Sut_iv& a, const Sut_iv& b) {
     return a.index == b.index && a.value == b.value;
 }
@@ -42,8 +42,8 @@ inline bool operator==(const Sut_iv_const& a, const Sut_iv_const& b) {
 }
 
 namespace std {
-template <> struct hash<Sut_index> {
-    std::size_t operator()(const Sut_index& s) const noexcept {
+template <> struct hash<Sut_index_t> {
+    std::size_t operator()(const Sut_index_t& s) const noexcept {
         return std::hash<uint8_t>{}(s.index);
     }
 };
@@ -61,8 +61,8 @@ struct SutWrapper {
     [[nodiscard]] Sut const* getConst() const { return &sut; }
 
     Sut sut;
-    std::unordered_map<ModelIndex, Sut_index> indexToSutIndex;
-    std::unordered_map<Sut_index, ModelIndex> SutIndexToIndex;
+    std::unordered_map<ModelIndex, Sut_index_t> indexToSutIndex;
+    std::unordered_map<Sut_index_t, ModelIndex> SutIndexToIndex;
     IndexHelper indexHelper;
 };
 
@@ -81,7 +81,7 @@ struct Command : rc::state::Command<Model, SutWrapper> {
             RC_ASSERT(m.map.size() == Sut_size(s.getConst()));
             SutWrapper wrapperCopy = s;
             for (const auto& [key, value] : m.map) {
-                Sut_index index = s.indexToSutIndex.at(key);
+                Sut_index_t index = s.indexToSutIndex.at(key);
                 RC_ASSERT(*Sut_read(s.getConst(), index) == value);
                 RC_ASSERT(*Sut_write(wrapperCopy.get(), index) == value);
             }
@@ -109,7 +109,7 @@ struct Command : rc::state::Command<Model, SutWrapper> {
         //  - We need to check the failure paths additionally
         {
             SutWrapper wrapperCopy = s;
-            Sut_index invalid_index{0};
+            Sut_index_t invalid_index{0};
 
             while (s.SutIndexToIndex.contains(invalid_index)) {
                 invalid_index.index++;
@@ -138,7 +138,7 @@ struct Insert : Command {
     }
 
     void runAndCheck(const Model& m, SutWrapper& s) const override {
-        Sut_index sut_index = Sut_insert(s.get(), value);
+        Sut_index_t sut_index = Sut_insert(s.get(), value);
         ModelIndex model_index = s.indexHelper.next();
 
         s.indexToSutIndex[model_index] = sut_index;
@@ -172,7 +172,7 @@ struct Write : Command {
     void apply(Model& m) const override { m.map[index.value()] = value; }
 
     void runAndCheck(const Model& m, SutWrapper& s) const override {
-        Sut_index sut_index = s.indexToSutIndex.at(index.value());
+        Sut_index_t sut_index = s.indexToSutIndex.at(index.value());
         Value* foundValue = Sut_write(s.get(), sut_index);
         *foundValue = value;
     }
@@ -203,7 +203,7 @@ struct Remove : Command {
     void apply(Model& m) const override { m.map.erase(index.value()); }
 
     void runAndCheck(const Model& m, SutWrapper& s) const override {
-        Sut_index sut_index = s.indexToSutIndex.at(index.value());
+        Sut_index_t sut_index = s.indexToSutIndex.at(index.value());
         s.indexToSutIndex.erase(index.value());
         s.SutIndexToIndex.erase(sut_index);
 
@@ -234,7 +234,7 @@ struct Delete : Command {
     void apply(Model& m) const override { m.map.erase(index.value()); }
 
     void runAndCheck(const Model& m, SutWrapper& s) const override {
-        Sut_index sut_index = s.indexToSutIndex.at(index.value());
+        Sut_index_t sut_index = s.indexToSutIndex.at(index.value());
         s.indexToSutIndex.erase(index.value());
         s.SutIndexToIndex.erase(sut_index);
 

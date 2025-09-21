@@ -46,7 +46,7 @@ size_t age_hash(age const* age) { return age->value; }
 #define NAME employees
 #include <derive-c/container/arena/basic/template.h>
 
-#define ITEM employees_index
+#define ITEM employees_index_t
 #define NAME same_age_employees
 #include <derive-c/container/vector/dynamic/template.h>
 
@@ -71,7 +71,7 @@ hr_system hr_system_new() {
 
 void hr_system_new_employee(hr_system* self, employee emp) {
     printf("Adding employee %s %s\n", emp.name.forename, emp.name.surname);
-    employees_index idx = employees_insert(&self->data, emp);
+    employees_index_t idx = employees_insert(&self->data, emp);
     same_age_employees* idxes = employees_by_age_try_write(&self->by_age, emp.age);
     if (!idxes) {
         idxes =
@@ -88,7 +88,8 @@ employee const* hr_system_newest_of_age(hr_system const* self, age age) {
     if (same_age_employees_size(idxes) == 0) {
         return NULL;
     }
-    employees_index const* idx = same_age_employees_read(idxes, same_age_employees_size(idxes) - 1);
+    employees_index_t const* idx =
+        same_age_employees_read(idxes, same_age_employees_size(idxes) - 1);
     return employees_read(&self->data, *idx);
 }
 

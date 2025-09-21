@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <derive-c/container/arena/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -77,7 +78,10 @@ _Static_assert(sizeof(VALUE), "VALUE must be a non-zero sized type");
 #define RESIZE_FACTOR 2
 
 // INVARIANT: < MAX_CAPACITY
-#define INDEX NS(SELF, index)
+#define INDEX NS(SELF, index_t)
+
+typedef VALUE NS(SELF, value_t);
+typedef ALLOC NS(SELF, alloc_t);
 
 typedef struct {
     INDEX_TYPE index;
@@ -290,9 +294,7 @@ typedef struct {
 #define ITER NS(SELF, iter)
 typedef IV_PAIR const* NS(ITER, item);
 
-static bool NS(ITER, empty_item)(IV_PAIR const* const* item) {
-    return *item == NULL;
-}
+static bool NS(ITER, empty_item)(IV_PAIR const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF* arena;
@@ -367,9 +369,7 @@ static IV_PAIR_CONST NS(SELF, iv_const_empty) = {
 #define ITER_CONST NS(SELF, iter_const)
 typedef IV_PAIR_CONST const* NS(ITER_CONST, item);
 
-static bool NS(ITER_CONST, empty_item)(IV_PAIR_CONST const* const* item) {
-    return *item == NULL;
-}
+static bool NS(ITER_CONST, empty_item)(IV_PAIR_CONST const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF const* arena;
@@ -434,4 +434,6 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef INDEX
 
 #include <derive-c/core/alloc/undef.h>
+TRAIT_ARENA(SELF);
+
 #include <derive-c/core/self/undef.h>

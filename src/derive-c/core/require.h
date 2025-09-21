@@ -4,7 +4,7 @@
 #define REQUIRE_METHOD(ret, obj, name, args)                                                       \
     _Static_assert(_Generic(&NS(obj, name), ret(*) args: 1, default: 0),                           \
                    "Method " #obj "." #name " must exist with type " #ret " (*)" #args)
-                   
+
 #define REQUIRE_TYPE(obj, name)                                                                    \
     _Static_assert(sizeof(NS(obj, name)), "Type " #obj "." #name " must exist")
 

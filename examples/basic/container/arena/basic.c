@@ -58,9 +58,9 @@ void my_foo_delete(struct foo* self) { free(self->owned_data); }
 
 void foo_example() {
     foo_arena arena = foo_arena_new_with_capacity_for(12, stdalloc_get());
-    foo_arena_index index_a = foo_arena_insert(
+    foo_arena_index_t index_a = foo_arena_insert(
         &arena, (struct foo){.x = 42, .y = "A", .owned_data = (int*)malloc(sizeof(int))});
-    foo_arena_index index_b = foo_arena_insert(
+    foo_arena_index_t index_b = foo_arena_insert(
         &arena, (struct foo){.x = 41, .y = "B", .owned_data = (int*)malloc(sizeof(int))});
 
     assert(foo_arena_size(&arena) == 2);
