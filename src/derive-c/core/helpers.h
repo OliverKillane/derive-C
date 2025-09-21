@@ -28,6 +28,10 @@ typedef struct {
 } gdb_marker;
 #endif
 
+static gdb_marker gdb_marker_new() {
+    return (gdb_marker){};
+}
+
 static inline size_t next_power_of_2(size_t x) {
     if (x == 0)
         return 1;

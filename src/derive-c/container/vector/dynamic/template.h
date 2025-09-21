@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include <derive-c/container/vector/trait.h>
+#include <derive-c/core/debug/mutation_tracker.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -44,7 +45,8 @@ typedef struct {
     size_t capacity;
     ITEM* data;
     ALLOC* alloc;
-    gdb_marker derive_c_vector;
+    mutation_tracker iterator_invalidation_tracker;
+    gdb_marker derive_c_vector_marker;
 } SELF;
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
@@ -53,6 +55,8 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         .capacity = 0,
         .data = NULL,
         .alloc = alloc,
+        .iterator_invalidation_tracker = mutation_tracker_new(), 
+        .derive_c_vector_marker = gdb_marker_new(),
     };
     return temp;
 }
@@ -69,6 +73,8 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
         .capacity = capacity,
         .data = data,
         .alloc = alloc,
+        .iterator_invalidation_tracker = mutation_tracker_new(), 
+        .derive_c_vector_marker = gdb_marker_new(),
     };
 }
 
@@ -87,6 +93,8 @@ static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* a
         .capacity = size,
         .data = data,
         .alloc = alloc,
+        .iterator_invalidation_tracker = mutation_tracker_new(), 
+        .derive_c_vector_marker = gdb_marker_new(),
     };
 }
 
@@ -113,6 +121,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .capacity = self->capacity,
         .data = data,
         .alloc = self->alloc,
+        .iterator_invalidation_tracker = mutation_tracker_new(),
+        .derive_c_vector_marker = gdb_marker_new(),
     };
 }
 
@@ -148,6 +158,7 @@ static void NS(SELF, insert_at)(SELF* self, size_t at, ITEM const* items, size_t
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(items);
     ASSERT(at <= self->size);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (count == 0) {
         return;
@@ -163,6 +174,7 @@ static void NS(SELF, insert_at)(SELF* self, size_t at, ITEM const* items, size_t
 static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
     DEBUG_ASSERT(self);
     ASSERT(at + count <= self->size);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (count == 0) {
         return;
@@ -178,6 +190,8 @@ static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
 
 static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+
     if (self->size == self->capacity) {
         ITEM* new_data;
         size_t new_capacity;
@@ -209,6 +223,8 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
 
 static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+    
     if (LIKELY(self->size > 0)) {
         self->size--;
         *destination = self->data[self->size];
@@ -230,6 +246,7 @@ static ITEM NS(SELF, pop)(SELF* self) {
 
 static ITEM NS(SELF, pop_front)(SELF* self) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     ASSERT(self->size > 0);
     ITEM entry = self->data[0];
     memmove(&self->data[0], &self->data[1], (self->size - 1) * sizeof(ITEM));
@@ -260,10 +277,13 @@ static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 typedef struct {
     SELF* vec;
     size_t pos;
+    mutation_version vec_version;
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->vec_version);
+
     if (iter->pos < iter->vec->size) {
         ITEM* item = &iter->vec->data[iter->pos];
         iter->pos++;
@@ -274,11 +294,13 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 
 static size_t NS(ITER, position)(ITER const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->vec_version);
     return iter->pos;
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->vec_version);
     return iter->pos >= iter->vec->size;
 }
 
@@ -287,6 +309,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     return (ITER){
         .vec = self,
         .pos = 0,
+        .vec_version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 #undef ITER
@@ -299,10 +322,12 @@ static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item =
 typedef struct {
     SELF const* vec;
     size_t pos;
+    mutation_version vec_version;
 } ITER_CONST;
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->vec_version);
     if (iter->pos < iter->vec->size) {
         ITEM const* item = &iter->vec->data[iter->pos];
         iter->pos++;
@@ -313,11 +338,13 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 
 static size_t NS(ITER_CONST, position)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->vec_version);
     return iter->pos;
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->vec_version);
     return iter->pos >= iter->vec->size;
 }
 
@@ -326,6 +353,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .vec = self,
         .pos = 0,
+        .vec_version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 
