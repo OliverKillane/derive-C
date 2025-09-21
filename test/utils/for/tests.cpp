@@ -1,3 +1,4 @@
+#include "derive-c/alloc/std.h"
 #include <gtest/gtest.h>
 
 extern "C" {
@@ -10,19 +11,18 @@ extern "C" {
 }
 
 TEST(For, empty_iterator) {
-    int_vec v = int_vec_new();
+    int_vec v = int_vec_new(stdalloc_get());
 
-    FOR(int_vec, &v, item) { FAIL() << "Iterator should be empty"; }
+    FOR(int_vec, v, item) { FAIL() << "Iterator should be empty"; }
 
     int_vec_delete(&v);
 }
 
 TEST(For, single_item) {
-    int_vec v = int_vec_new();
+    int_vec v = int_vec_new(stdalloc_get());
     int_vec_push(&v, 42);
-
-    int count = 0;
-    FOR(int_vec, &v, item) {
+    size_t count = 0;
+    FOR(int_vec, v, item) {
         count++;
         EXPECT_EQ(*item, 42);
     }
@@ -32,13 +32,13 @@ TEST(For, single_item) {
 }
 
 TEST(For, multiple_items) {
-    int_vec v = int_vec_new();
+    int_vec v = int_vec_new(stdalloc_get());
     for (int i = 0; i < 10; i++) {
         int_vec_push(&v, i);
     }
 
-    int count = 0;
-    FOR(int_vec, &v, item) {
+    size_t count = 0;
+    FOR(int_vec, v, item) {
         EXPECT_EQ(*item, count);
         count++;
     }

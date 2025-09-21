@@ -356,6 +356,11 @@ typedef struct {
 } KV_PAIR;
 
 #define ITER NS(SELF, iter)
+typedef KV_PAIR const* NS(ITER, item);
+
+static bool NS(ITER, empty_item)(KV_PAIR const* const* item) {
+    return *item == NULL;
+}
 
 typedef struct {
     SELF* map;
@@ -363,7 +368,6 @@ typedef struct {
     KV_PAIR curr;
 } ITER;
 
-typedef KV_PAIR const* NS(ITER, item);
 
 static KV_PAIR const* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
@@ -423,6 +427,11 @@ typedef struct {
 } KV_PAIR_CONST;
 
 #define ITER_CONST NS(SELF, iter_const)
+typedef KV_PAIR_CONST const* NS(ITER_CONST, item);
+
+static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* const* item) {
+    return *item == NULL;
+}
 
 typedef struct {
     SELF const* map;
@@ -430,7 +439,6 @@ typedef struct {
     KV_PAIR_CONST curr;
 } ITER_CONST;
 
-typedef KV_PAIR_CONST const* NS(ITER_CONST, item);
 
 static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);

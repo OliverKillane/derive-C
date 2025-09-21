@@ -288,6 +288,12 @@ typedef struct {
 } IV_PAIR;
 
 #define ITER NS(SELF, iter)
+typedef IV_PAIR const* NS(ITER, item);
+
+static bool NS(ITER, empty_item)(IV_PAIR const* const* item) {
+    return *item == NULL;
+}
+
 typedef struct {
     SELF* arena;
     INDEX_TYPE next_index;
@@ -359,6 +365,12 @@ static IV_PAIR_CONST NS(SELF, iv_const_empty) = {
 };
 
 #define ITER_CONST NS(SELF, iter_const)
+typedef IV_PAIR_CONST const* NS(ITER_CONST, item);
+
+static bool NS(ITER_CONST, empty_item)(IV_PAIR_CONST const* const* item) {
+    return *item == NULL;
+}
+
 typedef struct {
     SELF const* arena;
     INDEX_TYPE next_index;
