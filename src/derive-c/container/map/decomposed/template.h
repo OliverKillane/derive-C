@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "utils.h"
+#include <derive-c/core/debug/mutation_tracker.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -85,6 +86,7 @@ typedef struct {
     VALUE* values;
     ALLOC* alloc;
     gdb_marker derive_c_hashmap;
+    mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
@@ -103,6 +105,8 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
         .keys = keys,
         .values = values,
         .alloc = alloc,
+        .derive_c_hashmap = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
@@ -141,6 +145,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .keys = keys,
         .values = values,
         .alloc = self->alloc,
+        .derive_c_hashmap = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
@@ -150,6 +156,7 @@ static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value);
 
 static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
         SELF new_map = NS(SELF, new_with_capacity_for)(expected_items, self->alloc);
@@ -167,6 +174,7 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (apply_capacity_policy(self->items) > self->capacity / 2) {
         NS(SELF, extend_capacity_for)(self, self->items * 2);
     }
@@ -274,6 +282,7 @@ static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
 
 static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
@@ -328,12 +337,15 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 }
 
 static VALUE NS(SELF, remove)(SELF* self, KEY key) {
+    DEBUG_ASSERT(self);
     VALUE value;
     ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
 static void NS(SELF, delete_entry)(SELF* self, KEY key) {
+    DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     VALUE value = NS(SELF, remove)(self, key);
     VALUE_DELETE(&value);
 }
@@ -359,10 +371,12 @@ typedef struct {
     SELF* map;
     size_t index;
     KV_PAIR curr;
+    mutation_version version;
 } ITER;
 
 static KV_PAIR const* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR){.key = &iter->map->keys[iter->index].key,
                                .value = &iter->map->values[iter->index]};
@@ -377,6 +391,7 @@ static KV_PAIR const* NS(ITER, next)(ITER* iter) {
 
 static bool NS(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
@@ -390,12 +405,12 @@ static ITER NS(SELF, get_iter)(SELF* self) {
         .map = self,
         .index = first_index,
         .curr = (KV_PAIR){.key = NULL, .value = NULL},
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 
 static void NS(SELF, delete)(SELF* self) {
     DEBUG_ASSERT(self);
-    ITER const iter = NS(SELF, get_iter)(self);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -427,10 +442,12 @@ typedef struct {
     SELF const* map;
     size_t index;
     KV_PAIR_CONST curr;
+    mutation_version version;
 } ITER_CONST;
 
 static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR_CONST){.key = &iter->map->keys[iter->index].key,
                                      .value = &iter->map->values[iter->index]};
@@ -445,6 +462,7 @@ static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
@@ -458,6 +476,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
         .map = self,
         .index = first_index,
         .curr = (KV_PAIR_CONST){.key = NULL, .value = NULL},
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 

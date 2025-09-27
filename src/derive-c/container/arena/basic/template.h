@@ -11,6 +11,7 @@
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
+#include <derive-c/core/debug/mutation_tracker.h>
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -116,6 +117,8 @@ typedef struct {
     size_t count;
 
     ALLOC* alloc;
+    gdb_marker derive_c_arena_basic;
+    mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
@@ -131,11 +134,14 @@ static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
         .exclusive_end = 0,
         .count = 0,
         .alloc = alloc,
+        .derive_c_arena_basic = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
 static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
         SLOT* slot = &self->slots[free_index];
@@ -222,6 +228,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .exclusive_end = self->exclusive_end,
         .count = self->count,
         .alloc = self->alloc,
+        .derive_c_arena_basic = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
@@ -245,6 +253,8 @@ static size_t NS(SELF, max_index) = MAX_INDEX;
 
 static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return false;
     }
@@ -262,6 +272,9 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
 }
 
 static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
+    DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+
     VALUE value;
     ASSERT(NS(SELF, try_remove)(self, index, &value));
     return value;
@@ -269,6 +282,8 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
 
 static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return false;
     }
@@ -300,10 +315,12 @@ typedef struct {
     SELF* arena;
     INDEX_TYPE next_index;
     IV_PAIR curr;
+    mutation_version version;
 } ITER;
 
 static bool NS(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     // JUSTIFY: If no entries are left, then the previous '.._next' call moved
     //          the index to the exclusive end
     // NOTE: `index + 1 > exclusive_end` implies `index >= exclusive_end`
@@ -312,6 +329,7 @@ static bool NS(ITER, empty)(ITER const* iter) {
 
 static IV_PAIR const* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
 
     if (NS(ITER, empty)(iter)) {
         return NULL;
@@ -338,6 +356,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
         .arena = self,
         .next_index = index,
         .curr = (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 
@@ -375,15 +394,18 @@ typedef struct {
     SELF const* arena;
     INDEX_TYPE next_index;
     IV_PAIR_CONST curr;
+    mutation_version version;
 } ITER_CONST;
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
 static IV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
 
     if (NS(ITER_CONST, empty)(iter)) {
         return NULL;
@@ -411,6 +433,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
         .arena = self,
         .next_index = index,
         .curr = (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 

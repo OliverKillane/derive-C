@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <derive-c/container/queue/trait.h>
+#include <derive-c/core/debug/mutation_tracker.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
@@ -47,15 +48,19 @@ typedef struct {
     bool empty;  /* Used to differentiate between head == tail when 1 element, or empty */
     ALLOC* alloc;
     gdb_marker derive_c_circular;
+    mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
-    return (SELF){.data = NULL,
-                  .head = 0,
-                  .tail = 0,
-                  .empty = true,
-                  .alloc = alloc,
-                  .derive_c_circular = (gdb_marker){}};
+    return (SELF){
+        .data = NULL,
+        .head = 0,
+        .tail = 0,
+        .empty = true,
+        .alloc = alloc,
+        .derive_c_circular = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
+    };
 }
 
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
@@ -74,7 +79,8 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
         .tail = 0,
         .empty = true,
         .alloc = alloc,
-        .derive_c_circular = (gdb_marker){},
+        .derive_c_circular = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
@@ -101,6 +107,7 @@ static size_t NS(SELF, size)(SELF const* self) {
 
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (new_capacity_for > self->capacity) {
         size_t const new_capacity = next_power_of_2(new_capacity_for * 2);
@@ -139,6 +146,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 
 static void NS(SELF, push_back)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
     if (!self->empty) {
@@ -150,6 +158,7 @@ static void NS(SELF, push_back)(SELF* self, ITEM item) {
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
     if (!self->empty) {
@@ -165,6 +174,7 @@ static void NS(SELF, push_front)(SELF* self, ITEM item) {
 
 static ITEM NS(SELF, pop_front)(SELF* self) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     ASSERT(!NS(SELF, empty)(self));
 
     ITEM value = self->data[self->head];
@@ -178,6 +188,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
 
 static ITEM NS(SELF, pop_back)(SELF* self) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     ASSERT(!NS(SELF, empty)(self));
 
     ITEM value = self->data[self->tail];
@@ -233,15 +244,18 @@ static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 typedef struct {
     SELF* circular;
     size_t position;
+    mutation_version version;
 } ITER;
 
 static bool NS(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
 static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     ITEM* item = NS(SELF, try_write_from_front)(iter->circular, iter->position);
     if (!item) {
         return NULL;
@@ -255,6 +269,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     return (ITER){
         .circular = self,
         .position = 0,
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 
@@ -280,15 +295,18 @@ static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item =
 typedef struct {
     SELF const* circular;
     size_t position;
+    mutation_version version;
 } ITER_CONST;
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     ITEM const* item = NS(SELF, try_read_from_front)(iter->circular, iter->position);
     if (!item) {
         return NULL;
@@ -302,6 +320,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .circular = self,
         .position = 0,
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 
@@ -332,7 +351,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .tail = tail,
         .empty = self->empty,
         .alloc = self->alloc,
-        .derive_c_circular = (gdb_marker){},
+        .derive_c_circular = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new()
     };
 }
 

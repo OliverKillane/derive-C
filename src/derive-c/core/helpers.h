@@ -1,5 +1,6 @@
 #pragma once
 #include <derive-c/core/panic.h>
+#include <derive-c/core/zerosized.h>
 #include <stdlib.h>
 
 #define NS_EXPANDED(pre, post) pre##_##post
@@ -19,14 +20,7 @@
 
 #define EXPAND(...) __VA_ARGS__
 
-#ifdef __cplusplus
-struct gdb_marker {
-    char UNUSED(_dummy_cpp_object_size_compatibility);
-};
-#else
-typedef struct {
-} gdb_marker;
-#endif
+ZERO_SIZED(gdb_marker);
 
 static gdb_marker gdb_marker_new() {
     return (gdb_marker){};

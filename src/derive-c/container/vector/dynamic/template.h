@@ -45,8 +45,8 @@ typedef struct {
     size_t capacity;
     ITEM* data;
     ALLOC* alloc;
-    mutation_tracker iterator_invalidation_tracker;
     gdb_marker derive_c_vector_marker;
+    mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
@@ -55,8 +55,8 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         .capacity = 0,
         .data = NULL,
         .alloc = alloc,
-        .iterator_invalidation_tracker = mutation_tracker_new(), 
         .derive_c_vector_marker = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(), 
     };
     return temp;
 }
@@ -73,8 +73,8 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
         .capacity = capacity,
         .data = data,
         .alloc = alloc,
-        .iterator_invalidation_tracker = mutation_tracker_new(), 
         .derive_c_vector_marker = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(), 
     };
 }
 
@@ -93,8 +93,8 @@ static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* a
         .capacity = size,
         .data = data,
         .alloc = alloc,
-        .iterator_invalidation_tracker = mutation_tracker_new(), 
         .derive_c_vector_marker = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(), 
     };
 }
 
@@ -121,8 +121,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .capacity = self->capacity,
         .data = data,
         .alloc = self->alloc,
-        .iterator_invalidation_tracker = mutation_tracker_new(),
         .derive_c_vector_marker = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
@@ -277,12 +277,12 @@ static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 typedef struct {
     SELF* vec;
     size_t pos;
-    mutation_version vec_version;
+    mutation_version version;
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
-    mutation_version_check(&iter->vec_version);
+    mutation_version_check(&iter->version);
 
     if (iter->pos < iter->vec->size) {
         ITEM* item = &iter->vec->data[iter->pos];
@@ -294,13 +294,13 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 
 static size_t NS(ITER, position)(ITER const* iter) {
     DEBUG_ASSERT(iter);
-    mutation_version_check(&iter->vec_version);
+    mutation_version_check(&iter->version);
     return iter->pos;
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
     DEBUG_ASSERT(iter);
-    mutation_version_check(&iter->vec_version);
+    mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
@@ -309,7 +309,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     return (ITER){
         .vec = self,
         .pos = 0,
-        .vec_version = mutation_tracker_get(&self->iterator_invalidation_tracker),
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 #undef ITER

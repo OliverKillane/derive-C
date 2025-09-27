@@ -1,12 +1,14 @@
 /// @brief tracks a specific version of a value, so that this can be compared later to check
 /// modification For example, checking iterator invalidation in debug mode.
+
 #pragma once
 #include <derive-c/core/helpers.h>
 #include <stddef.h>
 
 #if defined NDEBUG
-typedef struct {
-} mutation_tracker;
+#include <derive-c/core/zerosized.h>
+ZERO_SIZED(mutation_tracker);
+
 typedef struct {
 } mutation_version;
 static mutation_tracker mutation_tracker_new() { return (mutation_tracker){}; }

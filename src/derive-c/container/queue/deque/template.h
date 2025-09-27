@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "derive-c/core/debug/mutation_tracker.h"
 #include "utils.h"
 
 #include <derive-c/container/queue/trait.h>
@@ -63,32 +64,43 @@ typedef struct {
     ITEM_VECTORS back;
     ALLOC* alloc;
     gdb_marker derive_c_deque;
+    mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
-    return (SELF){.front = NS(ITEM_VECTORS, new)(alloc),
-                  .back = NS(ITEM_VECTORS, new)(alloc),
-                  .alloc = alloc,
-                  .derive_c_deque = (gdb_marker){}};
+    return (SELF){
+        .front = NS(ITEM_VECTORS, new)(alloc),
+        .back = NS(ITEM_VECTORS, new)(alloc),
+        .alloc = alloc,
+        .derive_c_deque = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
+    };
 }
 
 static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, ALLOC* alloc) {
-    return (SELF){.front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
-                  .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
-                  .alloc = alloc,
-                  .derive_c_deque = (gdb_marker){}};
+    return (SELF){
+        .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
+        .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
+        .alloc = alloc,
+        .derive_c_deque = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
+    };
 }
 
 static SELF NS(SELF, clone)(SELF const* other) {
     DEBUG_ASSERT(other);
-    return (SELF){.front = NS(ITEM_VECTORS, clone)(&other->front),
-                  .back = NS(ITEM_VECTORS, clone)(&other->back),
-                  .alloc = other->alloc,
-                  .derive_c_deque = (gdb_marker){}};
+    return (SELF){
+        .front = NS(ITEM_VECTORS, clone)(&other->front),
+        .back = NS(ITEM_VECTORS, clone)(&other->back),
+        .alloc = other->alloc,
+        .derive_c_deque = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
+    };
 }
 
 static void NS(SELF, rebalance)(SELF* self) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
@@ -181,18 +193,21 @@ static ITEM* NS(SELF, peek_back_write)(SELF* self) {
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->front, item);
     NS(SELF, rebalance)(self);
 }
 
 static void NS(SELF, push_back)(SELF* self, ITEM item) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->back, item);
     NS(SELF, rebalance)(self);
 }
 
 static ITEM NS(SELF, pop_front)(SELF* self) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->front) > 0) {
         ITEM result = NS(ITEM_VECTORS, pop)(&self->front);
         NS(SELF, rebalance)(self);
@@ -206,6 +221,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
 
 static ITEM NS(SELF, pop_back)(SELF* self) {
     DEBUG_ASSERT(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->back) > 0) {
         ITEM result = NS(ITEM_VECTORS, pop)(&self->back);
         NS(SELF, rebalance)(self);
@@ -235,10 +251,12 @@ static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 typedef struct {
     SELF* deque;
     size_t pos;
+    mutation_version version;
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t const back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
     size_t const total_size = front_size + back_size;
@@ -257,6 +275,7 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
+    mutation_version_check(&iter->version);
     DEBUG_ASSERT(iter);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
@@ -264,10 +283,9 @@ static bool NS(ITER, empty)(ITER const* iter) {
 
 static ITER NS(SELF, get_iter)(SELF* self) {
     DEBUG_ASSERT(self);
-    return (ITER){
-        .deque = self,
-        .pos = 0,
-    };
+    return (ITER){.deque = self,
+                  .pos = 0,
+                  .version = mutation_tracker_get(&self->iterator_invalidation_tracker)};
 }
 
 #undef ITER
@@ -280,10 +298,12 @@ static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item =
 typedef struct {
     SELF const* deque;
     size_t pos;
+    mutation_version version;
 } ITER_CONST;
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t const back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
     size_t const total_size = front_size + back_size;
@@ -303,6 +323,7 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DEBUG_ASSERT(iter);
+    mutation_version_check(&iter->version);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
 }
@@ -312,6 +333,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .deque = self,
         .pos = 0,
+        .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 
