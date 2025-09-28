@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "derive-c/core/debug/memory_tracker.h"
 #include "utils.h"
 #include <derive-c/core/debug/mutation_tracker.h>
 #include <derive-c/core/helpers.h>
@@ -80,8 +81,6 @@ typedef struct {
 typedef struct {
     size_t capacity; // INVARIANT: A power of 2
     size_t items;
-    // Split keys & values in an old hashmap I used, cannot remember why (many collisions better
-    // decomposed), should probably use 1 buffer.
     KEY_ENTRY* keys;
     VALUE* values;
     ALLOC* alloc;
@@ -99,6 +98,12 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
     VALUE* values = (VALUE*)NS(ALLOC, malloc)(alloc, sizeof(VALUE) * real_capacity);
     ASSERT(keys && values);
+    
+    // JUSTIFY: Deleteing only values & not keys
+    // - Keys are calloced/zeroed as we use this for item lookup, therefore it is valid to read them.
+    // - Values are only accessed when the corresponding key is present, so we can mark them as deleted.
+    memory_tracker_delete(values, sizeof(VALUE) * real_capacity);
+
     return (SELF){
         .capacity = real_capacity,
         .items = 0,
@@ -136,6 +141,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
                 .key = KEY_CLONE(&old_entry->key),
             };
             values[i] = VALUE_CLONE(&self->values[i]);
+        } else {
+            memory_tracker_delete(&values[i], sizeof(VALUE));
         }
     }
 
@@ -182,7 +189,9 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     uint16_t distance_from_desired = 0;
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
-    VALUE* placed_entry = NULL;
+    
+    VALUE* inserted_to_entry = NULL;
+
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
         DEBUG_ASSERT(distance_from_desired < self->capacity);
@@ -205,8 +214,8 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
                 distance_from_desired = switch_distance_from_desired;
                 value = switch_value;
 
-                if (!placed_entry) {
-                    placed_entry = &self->values[index];
+                if (!inserted_to_entry) {
+                    inserted_to_entry = &self->values[index];
                 }
             }
 
@@ -216,12 +225,17 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
             entry->present = true;
             entry->distance_from_desired = distance_from_desired;
             entry->key = key;
+
+            memory_tracker_new(&self->values[index], sizeof(VALUE));
+
             self->values[index] = value;
-            if (!placed_entry) {
-                placed_entry = &self->values[index];
+            
+            if (!inserted_to_entry) {
+                inserted_to_entry = &self->values[index];
             }
+
             self->items++;
-            return placed_entry;
+            return inserted_to_entry;
         }
     }
 }
@@ -326,6 +340,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
                 //             should be false.
 
                 free_entry->present = false;
+                memory_tracker_delete(&self->values[free_index], sizeof(VALUE));
 
                 return true;
             }

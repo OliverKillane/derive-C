@@ -23,10 +23,9 @@ jobs:
         uses: anothrNick/github-tag-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          release_branches: main
-          tag_prefix: ''
-          bump: ${{ github.event.inputs.release_type }}
+          DEFAULT_BUMP: ${{ github.event.inputs.release_type }}
+          RELEASE_BRANCHES: main
+          TAG_PREFIX: ''
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -56,7 +55,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           nix_path: nixpkgs=channel:nixos-unstable
       - name: Build docs via Nix shell
-        run:  nix-shell --run "cmake -S . -B build -GNinja -DDEVELOP=On -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && ninja -C build docs"
+        run:  nix-shell toolchain/clang.nix --run "cmake -S . -B build -GNinja && ninja -C build docs"
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -1,3 +1,5 @@
+# Examples
+# - Run in CI
 function(add_example file)
   file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}" "${file}")
   get_filename_component(example_name_we "${rel_path}" NAME_WE)

@@ -12,39 +12,7 @@ Derive-C aims to avoid these, and to get an experience close to simple templates
  - no performance tradeoff
  - easy to debug with in GDB
 
-For example:
-> Create a vector of characters '1'-'9', iterate and print them. No heap allocation & no memory leaks.
-
-```c
-#include <stdio.h>
-
-#define CAPACITY 2048
-#define NAME alloc_2048
-#include <derive-c/alloc/staticbump/template.h>
-
-#define ITEM char
-#define ALLOC alloc_2048
-#define NAME vec_char
-#include <derive-c/container/vector/dynamic/template.h>
-
-int main() {
-    alloc_2048 alloc = alloc_2048_new();
-    vec_char vec = vec_char_new(&alloc);
-
-    for (char x = 1; x <= 9; x++) {
-        vec_char_push(&vec, (char)('0' + x));
-    }
-
-    vec_char_iter_const iter = vec_char_get_iter_const(&vec);
-    char const* entry;
-    while ((entry = vec_char_iter_const_next(&iter))) {
-        printf("entry: %c\n", *entry);
-    }
-
-    vec_char_delete(&vec);
-}
-```
- - See more usage examples in [./examples](./examples/)
+See examples in [./examples](./examples/)
 
 ## Use
 In a `CMakeLists.txt`
@@ -60,9 +28,9 @@ FetchContent_MakeAvailable(derive-c)
 ```
 
 ## Develop
-[nix-shell](./shell.nix) is included to setup the C/C++ toolchain.
+For development, the [clang toolchain](./toolchain/clang.nix) is recommended.
 ```bash
-nix-shell # from repo root
+nix-shell toolchain/clang.nix # from repo root
 ```
 ```bash
 cmake -S . -B build -GNinja
@@ -98,6 +66,7 @@ In development, remaining tasks:
  - Regression benchmarks
  - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
 
+```
 container
     vector 
         static  // current staticvec
@@ -141,9 +110,7 @@ allocs
     alloc
 test
     mock
-
+```
 
 ## References
 - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)
-
-

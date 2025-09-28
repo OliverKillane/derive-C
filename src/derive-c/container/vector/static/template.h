@@ -1,6 +1,7 @@
 /// @brief A vector storing the first N elements in-place, and optionally spilling additional
 /// elements to a heap vector.
 
+#include "derive-c/core/debug/memory_tracker.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -62,11 +63,13 @@ typedef struct {
 } SELF;
 
 static SELF NS(SELF, new)() {
-    return (SELF){
+    SELF self = {
         .size = 0,
         .derive_c_staticvec = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
+    memory_tracker_uninit(&self.data, sizeof(ITEM) * INPLACE_CAPACITY);
+    return self;
 }
 
 static const INDEX_TYPE NS(SELF, max_size) = INPLACE_CAPACITY;
@@ -151,6 +154,7 @@ static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
 
     memmove(&self->data[at], &self->data[at + count], (self->size - (at + count)) * sizeof(ITEM));
     self->size -= count;
+    memory_tracker_uninit(&self->data[self->size],count * sizeof(ITEM));
 }
 
 static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
@@ -165,6 +169,7 @@ static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     if (LIKELY(self->size > 0)) {
         self->size--;
         *destination = self->data[self->size];
+        memory_tracker_uninit(&self->data[self->size + 1], sizeof(ITEM));
         return true;
     }
     return false;
@@ -186,6 +191,7 @@ static void NS(SELF, delete)(SELF* self) {
     for (INDEX_TYPE i = 0; i < self->size; i++) {
         ITEM_DELETE(&self->data[i]);
     }
+    memory_tracker_uninit(&self->data, self->size * sizeof(ITEM));
 }
 
 #define ITER NS(SELF, iter)

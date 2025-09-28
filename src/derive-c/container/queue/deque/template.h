@@ -129,22 +129,7 @@ static void NS(SELF, rebalance)(SELF* self) {
     }
 
     size_t const to_move = (source_size - target_size) / 2;
-
-    NS(ITEM_VECTORS, reserve)(target, target_size + to_move);
-
-    ITEM* source_data = NS(ITEM_VECTORS, data)(source);
-    ITEM* target_data = NS(ITEM_VECTORS, data)(target);
-
-    memmove(&target_data[to_move], target_data, target_size * sizeof(ITEM));
-
-    for (size_t i = 0; i < to_move; i++) {
-        target_data[to_move - 1 - i] = source_data[i];
-    }
-
-    memmove(source_data, &source_data[to_move], (source_size - to_move) * sizeof(ITEM));
-
-    target->size += to_move;
-    source->size -= to_move;
+    NS(ITEM_VECTORS, transfer_reverse)(source, target, to_move);
 }
 
 static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {

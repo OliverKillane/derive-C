@@ -129,7 +129,7 @@ struct Insert : Command {
         *rc::gen::inRange(std::numeric_limits<size_t>::min(), std::numeric_limits<Value>::max());
 
     void checkPreconditions(const Model& s) const override {
-        RC_ASSERT(s.map.size() < Sut_max_capacity);
+        RC_ASSERT(s.map.size() < Sut_max_entries);
     }
 
     void apply(Model& s) const override {
@@ -253,9 +253,9 @@ RC_GTEST_PROP(ArenaTests, General, ()) {
 TEST(ArenaTests, Full) {
     Sut sut = Sut_new_with_capacity_for(1, stdalloc_get());
     ASSERT_FALSE(Sut_full(&sut));
-    ASSERT_EQ(Sut_max_capacity, 256);
+    ASSERT_EQ(Sut_max_entries, 254);
 
-    for (size_t i = 0; i < Sut_max_capacity; ++i) {
+    for (size_t i = 0; i < Sut_max_entries; ++i) {
         Sut_insert(&sut, i);
     }
     ASSERT_TRUE(Sut_full(&sut));

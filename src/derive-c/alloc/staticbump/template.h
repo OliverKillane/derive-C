@@ -9,6 +9,7 @@
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
+#include <derive-c/core/debug/memory_tracker.h>
 
 #include <derive-c/core/self/def.h>
 
@@ -47,6 +48,11 @@ static SELF NS(SELF, new)() {
     //           - For easier debugging & view in gdb.
     //           - Additionally allows for calloc to be malloc.
     memset(self.buffer, 0, CAPACITY);
+
+    // JUSTIFY: Marked as deleted instead of uninit
+    //  - Allows for warnings with asan - which can only track free/poisoned and available/unpoisoned
+    memory_tracker_delete(&self.buffer, CAPACITY);
+    
     return self;
 }
 
@@ -56,13 +62,16 @@ static void NS(SELF, clear)(SELF* self) {
 
 #if !defined NDEBUG
     // JUSTIFY: Allocations & sizes zeroed on free in debug, we check all data has been freed.
+    memory_tracker_new(self->buffer, self->used);
     for (size_t i = 0; i < self->used; i++) {
         if (self->buffer[i] != 0) {
             PANIC("Data not freed before clearing the static bump allocator");
         }
     }
 #endif
+    memory_tracker_uninit(self->buffer, self->used);
     memset(self->buffer, 0, self->used);
+    memory_tracker_delete(self->buffer, CAPACITY);
     self->used = 0;
 }
 
@@ -78,9 +87,16 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
     }
     char* ptr = &self->buffer[self->used];
     USED* used_ptr = (USED*)ptr;
+
+    memory_tracker_new(used_ptr, sizeof(USED));
     *used_ptr = size;
+    char* allocation_ptr = ptr + sizeof(USED);
     self->used += size + sizeof(USED);
-    return ptr + sizeof(USED);
+
+    memory_tracker_delete(used_ptr, sizeof(USED));
+    memory_tracker_new(allocation_ptr, size);
+    
+    return allocation_ptr;
 }
 
 static void NS(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) {
@@ -92,9 +108,13 @@ static void NS(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) {
     //           - Expensive for release, but helpful when debugging
     // NOTE: This means that users should free, before they clear and reuse the buffer.
     USED* used_ptr = (USED*)((char*)ptr - sizeof(USED));
+    memory_tracker_new(used_ptr, sizeof(USED));
     memset(ptr, 0, *used_ptr);
+    memory_tracker_delete(ptr, *used_ptr);
     *used_ptr = 0;
+    memory_tracker_delete(used_ptr, sizeof(USED));
 #endif
+
 }
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
@@ -106,15 +126,30 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
 
     char* byte_ptr = (char*)ptr;
     USED* old_size = (USED*)(byte_ptr - sizeof(USED));
+    memory_tracker_new(old_size, sizeof(USED));
     const bool was_last_alloc = (byte_ptr + *old_size == self->buffer + self->used);
 
     if (was_last_alloc) {
-        if (self->used + (new_size - *old_size) > CAPACITY) {
-            return NULL;
-        }
+        if (new_size > *old_size) {
+            size_t increase = new_size - *old_size;
+            if (self->used + increase > CAPACITY) {
+                return NULL;
+            }
+            self->used += increase;
+            memory_tracker_new((char*)ptr + *old_size, increase);
+        } else if (new_size < *old_size) {
+            size_t decrease = *old_size - new_size;
+            self->used -= decrease;
 
-        self->used += (new_size - *old_size);
+            // JUSTIFY: Zeroing the end of the old allocation
+            // - Future calls to calloc may reuse this memory
+            memset((char*)ptr + new_size, 0, decrease);
+
+            memory_tracker_delete((char*)ptr + new_size, decrease);
+        }
+    
         *old_size = new_size;
+        memory_tracker_delete(old_size, sizeof(USED));
         return ptr;
     }
 
@@ -122,7 +157,9 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
         // JUSTIFY: Shrinking an allocation
         //           - Can become a noop - as we cannot re-extend the allocation
         //             afterwards - no metadata for unused capacity not at end of buffer.
+        memory_tracker_new(old_size, sizeof(USED));
         *old_size = new_size;
+        memory_tracker_delete(old_size, sizeof(USED));
         return ptr;
     }
 

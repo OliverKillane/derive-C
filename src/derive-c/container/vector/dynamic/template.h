@@ -1,5 +1,6 @@
 /// @brief A simple vector
 
+#include "derive-c/core/debug/memory_tracker.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -50,7 +51,7 @@ typedef struct {
 } SELF;
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
-    SELF temp = (SELF){
+    SELF self = (SELF){
         .size = 0,
         .capacity = 0,
         .data = NULL,
@@ -58,7 +59,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         .derive_c_vector_marker = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(), 
     };
-    return temp;
+    return self;
 }
 
 static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
@@ -68,6 +69,7 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
 
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
     ASSERT(LIKELY(data));
+    memory_tracker_delete(data, capacity * sizeof(ITEM));
     return (SELF){
         .size = 0,
         .capacity = capacity,
@@ -101,10 +103,12 @@ static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* a
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
     DEBUG_ASSERT(self);
     if (new_capacity > self->capacity) {
+        size_t capacity_increase = new_capacity - self->capacity;
         ITEM* new_data =
             (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
         ASSERT(new_data);
         self->data = new_data;
+        memory_tracker_delete(&self->data[self->capacity], capacity_increase * sizeof(ITEM));
         self->capacity = new_capacity;
     }
 }
@@ -116,6 +120,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     for (size_t index = 0; index < self->size; index++) {
         data[index] = ITEM_CLONE(&self->data[index]);
     }
+    memory_tracker_delete(&data[self->size], (self->capacity - self->size) * sizeof(ITEM));
     return (SELF){
         .size = self->size,
         .capacity = self->capacity,
@@ -165,7 +170,7 @@ static void NS(SELF, insert_at)(SELF* self, size_t at, ITEM const* items, size_t
     }
 
     NS(SELF, reserve)(self, self->size + count);
-
+    memory_tracker_new(&self->data[self->size], count * sizeof(ITEM));
     memmove(&self->data[at + count], &self->data[at], (self->size - at) * sizeof(ITEM));
     memcpy(&self->data[at], items, count * sizeof(ITEM));
     self->size += count;
@@ -186,6 +191,7 @@ static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
 
     memmove(&self->data[at], &self->data[at + count], (self->size - (at + count)) * sizeof(ITEM));
     self->size -= count;
+    memory_tracker_delete(&self->data[self->size], count * sizeof(ITEM));
 }
 
 static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
@@ -214,10 +220,14 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
         ASSERT(new_data);
         self->capacity = new_capacity;
         self->data = new_data;
+    } else {
+        memory_tracker_new(&self->data[self->size], sizeof(ITEM));
     }
+
     ITEM* entry = &self->data[self->size];
     *entry = item;
     self->size++;
+    memory_tracker_delete(&self->data[self->size], (self->capacity - self->size) * sizeof(ITEM));
     return entry;
 }
 
@@ -228,6 +238,7 @@ static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     if (LIKELY(self->size > 0)) {
         self->size--;
         *destination = self->data[self->size];
+        memory_tracker_delete(&self->data[self->size + 1], sizeof(ITEM));
         return true;
     }
     return false;
@@ -251,6 +262,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
     ITEM entry = self->data[0];
     memmove(&self->data[0], &self->data[1], (self->size - 1) * sizeof(ITEM));
     self->size--;
+    memory_tracker_delete(&self->data[self->size], sizeof(ITEM));
     return entry;
 }
 
@@ -267,6 +279,41 @@ static void NS(SELF, delete)(SELF* self) {
         }
         NS(ALLOC, free)(self->alloc, self->data);
     }
+}
+
+/// Moves `to_move` items from the beginning of source, to the end of target, 
+/// shuffling elements in source forward appropriately.
+/// - Used for `deque` rebalancing
+///
+/// ```
+/// index:   0  1  2  3  4  5
+/// source: [5, 4, 3, 2, 1, 0]
+/// target: [6, 7, 8, 9]
+/// ```
+/// Becomes:
+/// ```
+/// index:   0  1  2  3  4  5
+/// source: [3, 2, 1, 0]
+/// target: [4, 5, 6, 7, 8, 9]
+/// ```
+static void NS(SELF, transfer_reverse)(SELF* source, SELF* target, size_t to_move) {
+    DEBUG_ASSERT(source);
+    DEBUG_ASSERT(target);
+
+    NS(SELF, reserve)(target, target->size + to_move);
+
+    memory_tracker_new(&target->data[target->size], to_move * sizeof(ITEM));
+    memmove(&target->data[to_move], target->data, target->size * sizeof(ITEM));
+
+    for (size_t i = 0; i < to_move; i++) {
+        target->data[to_move - 1 - i] = source->data[i];
+    }
+
+    memmove(source->data, &source->data[to_move], (source->size - to_move) * sizeof(ITEM));
+    
+    source->size -= to_move;
+    target->size += to_move;
+    memory_tracker_delete(&source->data[source->size], to_move * sizeof(ITEM));
 }
 
 #define ITER NS(SELF, iter)

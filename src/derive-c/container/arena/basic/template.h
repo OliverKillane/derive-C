@@ -12,6 +12,7 @@
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
 #include <derive-c/core/debug/mutation_tracker.h>
+#include <derive-c/core/debug/memory_tracker.h>
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -49,23 +50,23 @@ _Static_assert(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #if INDEX_BITS == 8
     #define INDEX_TYPE uint8_t
-    #define MAX_CAPACITY (UINT8_MAX + 1ULL)
+    #define CAPACITY_EXCLUSIVE_UPPER (UINT8_MAX + 1ULL)
     #define MAX_INDEX (UINT8_MAX - 1ULL)
     #define INDEX_NONE UINT8_MAX
 #elif INDEX_BITS == 16
     #define INDEX_TYPE uint16_t
-    #define MAX_CAPACITY (UINT16_MAX + 1ULL)
+    #define CAPACITY_EXCLUSIVE_UPPER (UINT16_MAX + 1ULL)
     #define MAX_INDEX (UINT16_MAX - 1ULL)
     #define INDEX_NONE UINT16_MAX
 #elif INDEX_BITS == 32
     #define INDEX_TYPE uint32_t
-    #define MAX_CAPACITY (UINT32_MAX + 1ULL)
+    #define CAPACITY_EXCLUSIVE_UPPER (UINT32_MAX + 1ULL)
     #define MAX_INDEX (UINT32_MAX - 1ULL)
     #define INDEX_NONE UINT32_MAX
 #elif INDEX_BITS == 64
     #define INDEX_TYPE uint64_t
     // JUSTIFY: Special case, we cannot store the max capacity as a size_t integer
-    #define MAX_CAPACITY UINT64_MAX
+    #define CAPACITY_EXCLUSIVE_UPPER UINT64_MAX
     #define MAX_INDEX (UINT64_MAX - 1ULL)
     #define INDEX_NONE UINT64_MAX
 #endif
@@ -78,7 +79,7 @@ _Static_assert(sizeof(VALUE), "VALUE must be a non-zero sized type");
 //           - Avoids the need to cast to the INDEX_TYPE
 #define RESIZE_FACTOR 2
 
-// INVARIANT: < MAX_CAPACITY
+// INVARIANT: < CAPACITY_EXCLUSIVE_UPPER
 #define INDEX NS(SELF, index_t)
 
 typedef VALUE NS(SELF, value_t);
@@ -100,6 +101,18 @@ typedef struct {
     //             padding
     bool present;
 } SLOT;
+
+static void NS(SLOT, memory_tracker_empty)(SLOT const* slot) {
+    // memory_tracker_delete(&slot->value, sizeof(VALUE));
+    // memory_tracker_new(&slot->next_free, sizeof(INDEX_TYPE));
+    // memory_tracker_new(&slot->present, sizeof(bool));
+}
+
+static void NS(SLOT, memory_tracker_present)(SLOT const* slot) {
+    // memory_tracker_new(&slot->value, sizeof(VALUE));
+    // memory_tracker_delete(&slot->next_free, sizeof(INDEX_TYPE));
+    // memory_tracker_new(&slot->present, sizeof(bool));
+}
 
 typedef struct {
     SLOT* slots;
@@ -124,9 +137,14 @@ typedef struct {
 static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
     DEBUG_ASSERT(items > 0);
     size_t capacity = next_power_of_2(items);
-    ASSERT(capacity <= MAX_CAPACITY);
+    ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
     ASSERT(slots);
+
+    for (INDEX_TYPE index = 0; index < capacity; index++) {
+        NS(SLOT, memory_tracker_empty)(&slots[index]);
+    }
+
     return (SELF){
         .slots = slots,
         .capacity = (INDEX_TYPE)capacity,
@@ -141,6 +159,8 @@ static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
 
 static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     DEBUG_ASSERT(self);
+    ASSERT(self->count < MAX_INDEX);
+
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
@@ -148,22 +168,28 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         DEBUG_ASSERT(!slot->present);
         self->free_list = slot->next_free;
         slot->present = true;
+        NS(SLOT, memory_tracker_present)(slot);
         slot->value = value;
         self->count++;
         return (INDEX){.index = free_index};
     }
 
     if (self->exclusive_end == self->capacity) {
-        ASSERT(self->capacity <= (MAX_CAPACITY / RESIZE_FACTOR));
+        ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR));
         self->capacity *= RESIZE_FACTOR;
         SLOT* new_alloc = (SLOT*)realloc(self->slots, self->capacity * sizeof(SLOT));
         ASSERT(new_alloc);
         self->slots = new_alloc;
+
+        for (size_t index = self->exclusive_end; index < self->capacity; index++) {
+            NS(SLOT, memory_tracker_empty)(&self->slots[index]);
+        }
     }
 
     INDEX_TYPE new_index = self->exclusive_end;
     SLOT* slot = &self->slots[new_index];
     slot->present = true;
+    NS(SLOT, memory_tracker_present)(slot);
     slot->value = value;
     self->count++;
     self->exclusive_end++;
@@ -213,9 +239,11 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     for (INDEX_TYPE index = 0; index < self->exclusive_end; index++) {
         if (self->slots[index].present) {
+            NS(SLOT, memory_tracker_present)(&slots[index]);
             slots[index].present = true;
             slots[index].value = VALUE_CLONE(&self->slots[index].value);
         } else {
+            NS(SLOT, memory_tracker_empty)(&slots[index]);
             slots[index].present = false;
             slots[index].next_free = self->slots[index].next_free;
         }
@@ -240,7 +268,7 @@ static INDEX_TYPE NS(SELF, size)(SELF const* self) {
 
 static bool NS(SELF, full)(SELF const* self) {
     DEBUG_ASSERT(self);
-    if (self->capacity == MAX_CAPACITY) {
+    if (self->capacity == CAPACITY_EXCLUSIVE_UPPER) {
         if (self->free_list == INDEX_NONE) {
             return true;
         }
@@ -248,8 +276,7 @@ static bool NS(SELF, full)(SELF const* self) {
     return false;
 }
 
-static size_t NS(SELF, max_capacity) = MAX_CAPACITY;
-static size_t NS(SELF, max_index) = MAX_INDEX;
+static size_t NS(SELF, max_entries) = MAX_INDEX;
 
 static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     DEBUG_ASSERT(self);
@@ -263,6 +290,7 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     if (entry->present) {
         *destination = entry->value;
         entry->present = false;
+        NS(SLOT, memory_tracker_empty)(entry);
         entry->next_free = self->free_list;
         self->free_list = index.index;
         self->count--;
@@ -292,6 +320,7 @@ static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
     if (entry->present) {
         VALUE_DELETE(&entry->value);
         entry->present = false;
+        NS(SLOT, memory_tracker_empty)(entry);
         entry->next_free = self->free_list;
         self->free_list = index.index;
         self->count--;
@@ -447,7 +476,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef VALUE_CLONE
 
 #undef INDEX_TYPE
-#undef MAX_CAPACITY
+#undef CAPACITY_EXCLUSIVE_UPPER
 #undef MAX_INDEX
 #undef INDEX_NONE
 

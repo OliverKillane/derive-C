@@ -31,19 +31,16 @@
 #endif
 
 /// Mark a new allocation as writable, but not readable.
-static void memory_tracker_new(const volatile void* addr, size_t size, unsigned origin) {
+static void memory_tracker_new(const volatile void* addr, size_t size) {
 #if defined(MSAN_ON)
     // Mark bytes uninitialized
     __msan_poison(addr, size);
-    // Tag origin for better diagnostics
-    __msan_set_origin(addr, size, origin);
 #elif defined(ASAN_ON)
     // Ensure [addr, addr+size) is accessible
     __asan_unpoison_memory_region(addr, size);
 #else
     (void)addr;
     (void)size;
-    (void)origin;
 #endif
 }
 
@@ -59,7 +56,7 @@ static void memory_tracker_init(const volatile void* addr, size_t size) {
 }
 
 // Mark a location as writable, but not readable
-static void memory_tracker_deinit(const volatile void* addr, size_t size) {
+static void memory_tracker_uninit(const volatile void* addr, size_t size) {
 #if defined(MSAN_ON)
     // Mark bytes uninitialized again
     __msan_poison(addr, size);
