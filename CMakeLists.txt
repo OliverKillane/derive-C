@@ -28,6 +28,22 @@ else()
   set(DEFAULT_SANITIZERS "")
 endif()
 
+# JUSTIFY: Custom tracking off for gcc
+#  - the readme.c example dies with and uknown crash inside memset on GCC.
+#  TODO(oliverkillane): Figure out why this happens.
+# `SUMMARY: AddressSanitizer: unknown-crash (/nix/store/g73qbrh4mpxymzwq0fzdd3rhvn6jwn5m-gcc-14-20241116-lib/lib/libasan.so.8+0xf99db) in memset`
+if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set(DEFAULT_CUSTOM_MEMORY_TRACKING ON)
+else()
+    set(DEFAULT_CUSTOM_MEMORY_TRACKING OFF)
+endif()
+
+option(CUSTOM_MEMORY_TRACKING "Enable custom memory tracking" ${DEFAULT_CUSTOM_MEMORY_TRACKING})
+if (CUSTOM_MEMORY_TRACKING)
+  add_definitions(-DCUSTOM_MEMORY_TRACKING)
+endif()
+
+
 set(SANITIZERS "${DEFAULT_SANITIZERS}" CACHE STRING "Sanitizers to use" FORCE)
 set_property(CACHE SANITIZERS PROPERTY STRINGS "address,undefined" "memory" "thread")
 if (SANITIZERS)

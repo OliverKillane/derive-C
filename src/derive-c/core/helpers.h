@@ -50,3 +50,9 @@ static inline size_t modulus_power_of_2_capacity(size_t index, size_t capacity) 
 }
 
 #define FORCE_INLINE inline __attribute__((always_inline))
+
+#if defined __cplusplus
+    #define STATIC_ASSERT static_assert
+#else
+    #define STATIC_ASSERT _Static_assert
+#endif

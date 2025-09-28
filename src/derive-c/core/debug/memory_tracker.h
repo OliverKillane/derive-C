@@ -3,27 +3,29 @@
 
 #include <stddef.h>
 
-// For clang, we detect asan with feature
-// - See: https://clang.llvm.org/docs/LanguageExtensions.html#has-feature-and-has-extension
-#if defined __has_feature
-    #if __has_feature(address_sanitizer)
+#if defined CUSTOM_MEMORY_TRACKING
+    // For clang, we detect asan with feature
+    // - See: https://clang.llvm.org/docs/LanguageExtensions.html#has-feature-and-has-extension
+    #if defined __has_feature
+        #if __has_feature(address_sanitizer)
+            #define ASAN_ON
+        #endif
+        #if __has_feature(memory_sanitizer)
+            #define MSAN_ON
+        #endif
+    #endif
+
+    // For detection under gcc
+    // - See: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/cpp.pdf
+    // - No support for msan as of GCC 15.2.0
+    #if defined __SANITIZE_ADDRESS__
         #define ASAN_ON
     #endif
-    #if __has_feature(memory_sanitizer)
-        #define MSAN_ON
-    #endif
-#endif
-
-// For detection under gcc
-// - See: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/cpp.pdf
-// - No support for msan as of GCC 15.2.0
-#if defined __SANITIZE_ADDRESS__
-    #define ASAN_ON
 #endif
 
 #if defined ASAN_ON
     #if defined MSAN_ON
-        #error "cannot support asan and msan simultaneously
+        #error "cannot support asan and msan simultaneously"
     #endif
     #include <sanitizer/asan_interface.h>
 #elif defined MSAN_ON

@@ -38,7 +38,7 @@ static value_t value_clone(value_t const* self) { return *self; }
     #define VALUE_CLONE value_clone
 #endif
 
-_Static_assert(sizeof(VALUE), "VALUE must be a non-zero sized type");
+STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #if !defined VALUE_DELETE
     #define VALUE_DELETE(value) (void)value

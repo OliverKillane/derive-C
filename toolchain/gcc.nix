@@ -1,21 +1,21 @@
 { pkgs ? import <nixpkgs> {} }:
 
 # For GCC compatibility check only
-
 let
-  myStdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv pkgs.gcc15;
+  gcc = pkgs.gcc14;
+  myStdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv gcc;
 in
 myStdenv.mkDerivation {
-  name = "derive-c-gcc";
+  name = "derive-c-gcc14";
 
   buildInputs = with pkgs; [
     cmake
     ninja
     doxygen
     graphviz
-    gcc15
     binutils
     gdb
     pkg-config
+    gcc  # optional, keeps gcc tools on PATH in the shell
   ];
 }
