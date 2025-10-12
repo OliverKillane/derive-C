@@ -1,7 +1,10 @@
 /// @brief An allocator that prints to stdout when it allocates or frees memory.
 ///  - Takes a specific instance, so we can define different printers for
-//     different instances of data structures, only see the allocations we want
-//     to.
+///     different instances of data structures, only see the allocations we want
+///     to.
+
+// JUSTIFY: No custom memory tracking
+//  - already done by the wrapper allocator
 
 #include <stdio.h>
 

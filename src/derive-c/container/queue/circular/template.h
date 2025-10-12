@@ -344,16 +344,14 @@ static SELF NS(SELF, clone)(SELF const* self) {
         }
         tail--;
     }
-    return (SELF){
-        .data = new_data,
-        .capacity = new_capacity,
-        .head = 0,
-        .tail = tail,
-        .empty = self->empty,
-        .alloc = self->alloc,
-        .derive_c_circular = gdb_marker_new(),
-        .iterator_invalidation_tracker = mutation_tracker_new()
-    };
+    return (SELF){.data = new_data,
+                  .capacity = new_capacity,
+                  .head = 0,
+                  .tail = tail,
+                  .empty = self->empty,
+                  .alloc = self->alloc,
+                  .derive_c_circular = gdb_marker_new(),
+                  .iterator_invalidation_tracker = mutation_tracker_new()};
 }
 
 #undef ITER_CONST

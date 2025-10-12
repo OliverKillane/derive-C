@@ -3,7 +3,8 @@
 #include <assert.h>
 
 #if !defined PANIC
-    #include <stdio.h> // NOLINT(misc-include-cleaner) (for default panic implementation)
+    #include <stdio.h>  // NOLINT(misc-include-cleaner) (for default panic implementation)
+    #include <stdlib.h> // NOLINT(misc-include-cleaner) (for default panic implementation)
     #define PANIC(...)                                                                             \
         do {                                                                                       \
             fprintf(stderr, __VA_ARGS__);                                                          \

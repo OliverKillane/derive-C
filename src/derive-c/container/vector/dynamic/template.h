@@ -1,6 +1,5 @@
 /// @brief A simple vector
 
-#include "derive-c/core/debug/memory_tracker.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -8,6 +7,7 @@
 #include <string.h>
 
 #include <derive-c/container/vector/trait.h>
+#include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
@@ -57,7 +57,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         .data = NULL,
         .alloc = alloc,
         .derive_c_vector_marker = gdb_marker_new(),
-        .iterator_invalidation_tracker = mutation_tracker_new(), 
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
     return self;
 }
@@ -69,14 +69,15 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
 
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
     ASSERT(LIKELY(data));
-    memory_tracker_delete(data, capacity * sizeof(ITEM));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, data,
+                       capacity * sizeof(ITEM));
     return (SELF){
         .size = 0,
         .capacity = capacity,
         .data = data,
         .alloc = alloc,
         .derive_c_vector_marker = gdb_marker_new(),
-        .iterator_invalidation_tracker = mutation_tracker_new(), 
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
@@ -96,19 +97,27 @@ static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* a
         .data = data,
         .alloc = alloc,
         .derive_c_vector_marker = gdb_marker_new(),
-        .iterator_invalidation_tracker = mutation_tracker_new(), 
+        .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
     DEBUG_ASSERT(self);
     if (new_capacity > self->capacity) {
-        size_t capacity_increase = new_capacity - self->capacity;
+        const size_t capacity_increase = new_capacity - self->capacity;
+        const size_t uninit_elements = self->capacity - self->size;
+
+        // Set to writeable for allocator
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
+                           &self->data[self->size], uninit_elements * sizeof(ITEM));
+
         ITEM* new_data =
             (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
         ASSERT(new_data);
         self->data = new_data;
-        memory_tracker_delete(&self->data[self->capacity], capacity_increase * sizeof(ITEM));
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                           &self->data[self->size],
+                           (uninit_elements + capacity_increase) * sizeof(ITEM));
         self->capacity = new_capacity;
     }
 }
@@ -120,7 +129,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
     for (size_t index = 0; index < self->size; index++) {
         data[index] = ITEM_CLONE(&self->data[index]);
     }
-    memory_tracker_delete(&data[self->size], (self->capacity - self->size) * sizeof(ITEM));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &data[self->size],
+                       (self->capacity - self->size) * sizeof(ITEM));
     return (SELF){
         .size = self->size,
         .capacity = self->capacity,
@@ -170,7 +180,8 @@ static void NS(SELF, insert_at)(SELF* self, size_t at, ITEM const* items, size_t
     }
 
     NS(SELF, reserve)(self, self->size + count);
-    memory_tracker_new(&self->data[self->size], count * sizeof(ITEM));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
+                       &self->data[self->size], count * sizeof(ITEM));
     memmove(&self->data[at + count], &self->data[at], (self->size - at) * sizeof(ITEM));
     memcpy(&self->data[at], items, count * sizeof(ITEM));
     self->size += count;
@@ -191,7 +202,8 @@ static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
 
     memmove(&self->data[at], &self->data[at + count], (self->size - (at + count)) * sizeof(ITEM));
     self->size -= count;
-    memory_tracker_delete(&self->data[self->size], count * sizeof(ITEM));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                       &self->data[self->size], count * sizeof(ITEM));
 }
 
 static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
@@ -199,7 +211,6 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (self->size == self->capacity) {
-        ITEM* new_data;
         size_t new_capacity;
         if (self->data == NULL) {
             DEBUG_ASSERT(self->capacity == 0);
@@ -208,37 +219,33 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
             //             size sero (from new)
             //           Otherwise an arbitrary choice (given we do not know the size of T)
             new_capacity = 8;
-            new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
         } else {
             // JUSTIFY: Growth factor of 2
             //           - Simple arithmetic (for debugging)
             //           - Same as used by GCC's std::vector implementation
             new_capacity = self->capacity * 2;
-            new_data =
-                (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
         }
-        ASSERT(new_data);
-        self->capacity = new_capacity;
-        self->data = new_data;
-    } else {
-        memory_tracker_new(&self->data[self->size], sizeof(ITEM));
+        NS(SELF, reserve)(self, new_capacity);
     }
+
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
+                       &self->data[self->size], sizeof(ITEM));
 
     ITEM* entry = &self->data[self->size];
     *entry = item;
     self->size++;
-    memory_tracker_delete(&self->data[self->size], (self->capacity - self->size) * sizeof(ITEM));
     return entry;
 }
 
 static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     DEBUG_ASSERT(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    
+
     if (LIKELY(self->size > 0)) {
         self->size--;
         *destination = self->data[self->size];
-        memory_tracker_delete(&self->data[self->size + 1], sizeof(ITEM));
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                           &self->data[self->size + 1], sizeof(ITEM));
         return true;
     }
     return false;
@@ -262,7 +269,8 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
     ITEM entry = self->data[0];
     memmove(&self->data[0], &self->data[1], (self->size - 1) * sizeof(ITEM));
     self->size--;
-    memory_tracker_delete(&self->data[self->size], sizeof(ITEM));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                       &self->data[self->size], sizeof(ITEM));
     return entry;
 }
 
@@ -276,12 +284,21 @@ static void NS(SELF, delete)(SELF* self) {
     if (self->data) {
         for (size_t i = 0; i < self->size; i++) {
             ITEM_DELETE(&self->data[i]);
+            // JUSTIFY: Setting items as inaccessible
+            //  - Incase a destructor of one item accesses the memory of another.
+            memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                               &self->data[i], sizeof(ITEM));
         }
+
+        // JUSTIFY: Return to write level before passing to allocator
+        //  - Is uninitialised, but still valid memory
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, self->data,
+                           self->capacity * sizeof(ITEM));
         NS(ALLOC, free)(self->alloc, self->data);
     }
 }
 
-/// Moves `to_move` items from the beginning of source, to the end of target, 
+/// Moves `to_move` items from the beginning of source, to the end of target,
 /// shuffling elements in source forward appropriately.
 /// - Used for `deque` rebalancing
 ///
@@ -302,7 +319,8 @@ static void NS(SELF, transfer_reverse)(SELF* source, SELF* target, size_t to_mov
 
     NS(SELF, reserve)(target, target->size + to_move);
 
-    memory_tracker_new(&target->data[target->size], to_move * sizeof(ITEM));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
+                       &target->data[target->size], to_move * sizeof(ITEM));
     memmove(&target->data[to_move], target->data, target->size * sizeof(ITEM));
 
     for (size_t i = 0; i < to_move; i++) {
@@ -310,10 +328,11 @@ static void NS(SELF, transfer_reverse)(SELF* source, SELF* target, size_t to_mov
     }
 
     memmove(source->data, &source->data[to_move], (source->size - to_move) * sizeof(ITEM));
-    
+
     source->size -= to_move;
     target->size += to_move;
-    memory_tracker_delete(&source->data[source->size], to_move * sizeof(ITEM));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                       &source->data[source->size], to_move * sizeof(ITEM));
 }
 
 #define ITER NS(SELF, iter)

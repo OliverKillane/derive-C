@@ -98,11 +98,14 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
     VALUE* values = (VALUE*)NS(ALLOC, malloc)(alloc, sizeof(VALUE) * real_capacity);
     ASSERT(keys && values);
-    
-    // JUSTIFY: Deleteing only values & not keys
-    // - Keys are calloced/zeroed as we use this for item lookup, therefore it is valid to read them.
-    // - Values are only accessed when the corresponding key is present, so we can mark them as deleted.
-    memory_tracker_delete(values, sizeof(VALUE) * real_capacity);
+
+    // JUSTIFY: no access for values & but keys are fine
+    // - Keys are calloced/zeroed as we use this for item lookup, therefore it is valid to read
+    // them.
+    // - Values are only accessed when the corresponding key is present, so we can mark them as
+    // deleted.
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, values,
+                       sizeof(VALUE) * real_capacity);
 
     return (SELF){
         .capacity = real_capacity,
@@ -142,7 +145,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
             };
             values[i] = VALUE_CLONE(&self->values[i]);
         } else {
-            memory_tracker_delete(&values[i], sizeof(VALUE));
+            memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &values[i],
+                               sizeof(VALUE));
         }
     }
 
@@ -189,7 +193,7 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     uint16_t distance_from_desired = 0;
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
-    
+
     VALUE* inserted_to_entry = NULL;
 
     for (;;) {
@@ -226,10 +230,11 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
             entry->distance_from_desired = distance_from_desired;
             entry->key = key;
 
-            memory_tracker_new(&self->values[index], sizeof(VALUE));
+            memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
+                               &self->values[index], sizeof(VALUE));
 
             self->values[index] = value;
-            
+
             if (!inserted_to_entry) {
                 inserted_to_entry = &self->values[index];
             }
@@ -340,7 +345,8 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
                 //             should be false.
 
                 free_entry->present = false;
-                memory_tracker_delete(&self->values[free_index], sizeof(VALUE));
+                memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                                   &self->values[free_index], sizeof(VALUE));
 
                 return true;
             }

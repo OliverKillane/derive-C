@@ -6,7 +6,7 @@
 #include <stddef.h>
 
 #if defined NDEBUG
-#include <derive-c/core/zerosized.h>
+    #include <derive-c/core/zerosized.h>
 ZERO_SIZED(mutation_tracker);
 
 typedef struct {
@@ -38,10 +38,7 @@ static void mutation_tracker_mutate(mutation_tracker* self) {
 
 static mutation_version mutation_tracker_get(mutation_tracker const* self) {
     ASSERT(self);
-    return (mutation_version){
-        .tracker = self,
-        .count = self->count
-    };
+    return (mutation_version){.tracker = self, .count = self->count};
 }
 
 /// Throw on the tracker version not matching.
@@ -49,6 +46,6 @@ static mutation_version mutation_tracker_get(mutation_tracker const* self) {
 /// access it can check it was not invalidated by mutation to the vector.
 static void mutation_version_check(mutation_version const* self) {
     ASSERT(self->count == self->tracker->count, "No mutations to the tracker's data structure were "
-                                          "expected... however it has been mutated");
+                                                "expected... however it has been mutated");
 }
 #endif

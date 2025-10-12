@@ -17,8 +17,8 @@
 /// For most circumstances with a key as a single integer, this is a good option.
 #define ID(type)                                                                                   \
     static size_t hash_id_##type(type const* key) {                                                \
-        STATIC_ASSERT(sizeof(type) <= sizeof(size_t),                                             \
-                       "ID hashing only supports up to size_t integers");                          \
+        STATIC_ASSERT(sizeof(type) <= sizeof(size_t),                                              \
+                      "ID hashing only supports up to size_t integers");                           \
         return (size_t)(*key);                                                                     \
     }
 
@@ -28,8 +28,8 @@
 // JUSTIFY: Casting signed to unsigned. This is just a hash, and signed->unsigned is not UB.
 #define MURMURHASH_3_FMIx64(type)                                                                  \
     static size_t hash_murmurhash3_##type(type const* key) {                                       \
-        STATIC_ASSERT(sizeof(type) <= sizeof(uint64_t),                                           \
-                       "MurmurHash3 only supports up to 64-bit integers");                         \
+        STATIC_ASSERT(sizeof(type) <= sizeof(uint64_t),                                            \
+                      "MurmurHash3 only supports up to 64-bit integers");                          \
         return (size_t)derive_c_fmix64((uint64_t)(*key));                                          \
     }
 

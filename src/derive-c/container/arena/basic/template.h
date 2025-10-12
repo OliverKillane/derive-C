@@ -8,11 +8,11 @@
 #include <string.h>
 
 #include <derive-c/container/arena/trait.h>
+#include <derive-c/core/debug/memory_tracker.h>
+#include <derive-c/core/debug/mutation_tracker.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/placeholder.h>
-#include <derive-c/core/debug/mutation_tracker.h>
-#include <derive-c/core/debug/memory_tracker.h>
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -103,15 +103,21 @@ typedef struct {
 } SLOT;
 
 static void NS(SLOT, memory_tracker_empty)(SLOT const* slot) {
-    // memory_tracker_delete(&slot->value, sizeof(VALUE));
-    // memory_tracker_new(&slot->next_free, sizeof(INDEX_TYPE));
-    // memory_tracker_new(&slot->present, sizeof(bool));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->value,
+                       sizeof(VALUE));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->next_free,
+                       sizeof(INDEX_TYPE));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
+                       sizeof(bool));
 }
 
 static void NS(SLOT, memory_tracker_present)(SLOT const* slot) {
-    // memory_tracker_new(&slot->value, sizeof(VALUE));
-    // memory_tracker_delete(&slot->next_free, sizeof(INDEX_TYPE));
-    // memory_tracker_new(&slot->present, sizeof(bool));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->next_free,
+                       sizeof(INDEX_TYPE));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->value,
+                       sizeof(VALUE));
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
+                       sizeof(bool));
 }
 
 typedef struct {

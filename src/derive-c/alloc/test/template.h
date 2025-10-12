@@ -4,7 +4,10 @@
 /// In release, it is a no-op / pass through.
 ///
 /// As this is entirely C, we do not get the niceties of a C++ RAII allocator guard shebang.
-// However, this is usable inside unit tests written in C.
+/// However, this is usable inside unit tests written in C.
+
+// JUSTIFY: No custom memory tracking
+//  - already done by the wrapper allocator
 
 #include <stddef.h>
 

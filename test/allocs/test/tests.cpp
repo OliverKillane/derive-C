@@ -2,7 +2,7 @@
 
 namespace testalloc {
 
-#define PANIC(msg) throw std::runtime_error(std::format(msg))
+#define PANIC(...) throw std::runtime_error(std::format(__VA_ARGS__))
 
 extern "C" {
 #include <derive-c/alloc/std.h>

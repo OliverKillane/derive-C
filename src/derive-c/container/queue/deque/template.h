@@ -16,6 +16,9 @@
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
 
+// JUSTIFY: No custom memory tracking
+//  - already done by the contained vectors
+
 #if !defined ITEM
     #if !defined PLACEHOLDERS
         #error "The contained type must be defined for a deque template"
