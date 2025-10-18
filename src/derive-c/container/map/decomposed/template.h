@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "utils.h"
+
 #include <derive-c/core/debug/gdb_marker.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
@@ -87,13 +88,12 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
-static void PRIV(NS(SELF, invariant_check))(SELF const* self) {
-    ASSUME(self);
-    ASSUME(is_power_of_2(self->capacity));
-    ASSUME(self->keys);
-    ASSUME(self->values);
-    ASSUME(self->alloc);
-}
+#define INVARIANT_CHECK(self)                                                                      \
+    ASSUME(self);                                                                                  \
+    ASSUME(is_power_of_2((self)->capacity));                                                       \
+    ASSUME((self)->keys);                                                                          \
+    ASSUME((self)->values);                                                                        \
+    ASSUME((self)->alloc);
 
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     ASSERT(capacity > 0);
@@ -130,7 +130,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    PRIV(NS(SELF, invariant_check))(self);
+    INVARIANT_CHECK(self);
 
     // JUSTIFY: Naive copy
     //           - We could resize (potentially a smaller map) and rehash
@@ -173,7 +173,7 @@ static void NS(SELF, delete)(SELF* self);
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value);
 
 static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
-    PRIV(NS(SELF, invariant_check))(self);
+    INVARIANT_CHECK(self);
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const target_capacity = apply_capacity_policy(expected_items);
@@ -188,13 +188,13 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
         NS(ALLOC, free)(self->alloc, (void*)self->keys);
         NS(ALLOC, free)(self->alloc, (void*)self->values);
 
-        PRIV(NS(SELF, invariant_check))(&new_map);
+        INVARIANT_CHECK(&new_map);
         *self = new_map;
     }
 }
 
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
-    PRIV(NS(SELF, invariant_check))(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (apply_capacity_policy(self->items) > self->capacity / 2) {
         NS(SELF, extend_capacity_for)(self, self->items * 2);
@@ -262,7 +262,7 @@ static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
 }
 
 static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
-    PRIV(NS(SELF, invariant_check))(self);
+    INVARIANT_CHECK(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
@@ -286,7 +286,7 @@ static VALUE* NS(SELF, write)(SELF* self, KEY key) {
 }
 
 static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
-    PRIV(NS(SELF, invariant_check))(self);
+    INVARIANT_CHECK(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
@@ -310,7 +310,7 @@ static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
 }
 
 static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
-    PRIV(NS(SELF, invariant_check))(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
@@ -379,7 +379,7 @@ static void NS(SELF, delete_entry)(SELF* self, KEY key) {
 }
 
 static size_t NS(SELF, size)(SELF const* self) {
-    PRIV(NS(SELF, invariant_check))(self);
+    INVARIANT_CHECK(self);
     return self->items;
 }
 
@@ -521,6 +521,8 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef VALUE
 #undef VALUE_DELETE
 #undef VALUE_CLONE
+
+#undef INVARIANT_CHECK
 
 #include <derive-c/core/alloc/undef.h>
 

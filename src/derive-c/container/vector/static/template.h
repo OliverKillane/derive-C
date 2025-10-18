@@ -61,6 +61,10 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
+#define INVARIANT_CHECK(self)                                                                      \
+    ASSUME(self)                                                                                   \
+    ASSUME((self->size) <= INPLACE_CAPACITY)
+
 static SELF NS(SELF, new)() {
     SELF self = {
         .size = 0,
@@ -88,7 +92,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 }
 
 static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
     }
@@ -102,7 +106,7 @@ static ITEM const* NS(SELF, read)(SELF const* self, INDEX_TYPE index) {
 }
 
 static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
     }
@@ -116,7 +120,7 @@ static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
 }
 
 static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->size < INPLACE_CAPACITY) {
         ITEM* slot = &self->data[self->size];
@@ -131,7 +135,7 @@ static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
 
 static bool NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
                                     INDEX_TYPE count) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     ASSUME(items);
     ASSERT(at <= self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
@@ -149,7 +153,7 @@ static bool NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items
 }
 
 static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     ASSERT(at + count <= self->size);
 
     if (count == 0) {
@@ -173,7 +177,7 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
 }
 
 static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (LIKELY(self->size > 0)) {
         self->size--;
@@ -192,12 +196,12 @@ static ITEM NS(SELF, pop)(SELF* self) {
 }
 
 static INDEX_TYPE NS(SELF, size)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     return self->size;
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     for (INDEX_TYPE i = 0; i < self->size; i++) {
         ITEM_DELETE(&self->data[i]);
     }
@@ -299,6 +303,8 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef ITEM
 #undef ITEM_DELETE
 #undef ITEM_CLONE
+
+#undef INVARIANT_CHECK
 
 TRAIT_VECTOR(SELF);
 #include <derive-c/core/self/undef.h>

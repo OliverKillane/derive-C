@@ -69,6 +69,10 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
+#define INVARIANT_CHECK(self)                                                                      \
+    ASSUME(self);                                                                                  \
+    ASSUME((self)->alloc);
+
 static SELF NS(SELF, new)(ALLOC* alloc) {
     return (SELF){
         .front = NS(ITEM_VECTORS, new)(alloc),
@@ -90,7 +94,7 @@ static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, ALLOC* a
 }
 
 static SELF NS(SELF, clone)(SELF const* other) {
-    ASSUME(other);
+    INVARIANT_CHECK(other);
     return (SELF){
         .front = NS(ITEM_VECTORS, clone)(&other->front),
         .back = NS(ITEM_VECTORS, clone)(&other->back),
@@ -101,7 +105,7 @@ static SELF NS(SELF, clone)(SELF const* other) {
 }
 
 static void NS(SELF, rebalance)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
@@ -135,7 +139,7 @@ static void NS(SELF, rebalance)(SELF* self) {
 }
 
 static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
 
     size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
     if (front_size > 0) {
@@ -146,7 +150,7 @@ static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {
 }
 
 static ITEM* NS(SELF, peek_front_write)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
 
     size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
     if (front_size > 0) {
@@ -157,7 +161,7 @@ static ITEM* NS(SELF, peek_front_write)(SELF* self) {
 }
 
 static ITEM const* NS(SELF, peek_back_read)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
 
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
     if (back_size > 0) {
@@ -168,7 +172,7 @@ static ITEM const* NS(SELF, peek_back_read)(SELF const* self) {
 }
 
 static ITEM* NS(SELF, peek_back_write)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
 
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
     if (back_size > 0) {
@@ -179,21 +183,21 @@ static ITEM* NS(SELF, peek_back_write)(SELF* self) {
 }
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->front, item);
     NS(SELF, rebalance)(self);
 }
 
 static void NS(SELF, push_back)(SELF* self, ITEM item) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->back, item);
     NS(SELF, rebalance)(self);
 }
 
 static ITEM NS(SELF, pop_front)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->front) > 0) {
         ITEM result = NS(ITEM_VECTORS, pop)(&self->front);
@@ -207,7 +211,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
 }
 
 static ITEM NS(SELF, pop_back)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->back) > 0) {
         ITEM result = NS(ITEM_VECTORS, pop)(&self->back);
@@ -221,12 +225,12 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
 }
 
 static size_t NS(SELF, size)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     return NS(ITEM_VECTORS, size)(&self->front) + NS(ITEM_VECTORS, size)(&self->back);
 }
 
 static bool NS(SELF, empty)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     return NS(ITEM_VECTORS, size)(&self->front) == 0 && NS(ITEM_VECTORS, size)(&self->back) == 0;
 }
 
@@ -327,10 +331,12 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef ITER_CONST
 
 static void NS(SELF, delete)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     NS(ITEM_VECTORS, delete)(&self->front);
     NS(ITEM_VECTORS, delete)(&self->back);
 }
+
+#undef INVARIANT_CHECK
 
 #include <derive-c/core/alloc/undef.h>
 TRAIT_QUEUE(SELF);

@@ -51,6 +51,14 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
+#define INVARIANT_CHECK(self)                                                                      \
+    ASSUME(self);                                                                                  \
+    ASSUME((self)->head < (self)->capacity);                                                       \
+    ASSUME((self)->tail < (self)->capacity);                                                       \
+    ASSUME((self)->alloc);                                                                         \
+    ASSUME(WHEN((self)->empty, (self)->head == (self)->tail));                                     \
+    ASSUME(WHEN(!(self)->data, (self)->head == 0 && (self)->tail == 0));
+
 static SELF NS(SELF, new)(ALLOC* alloc) {
     return (SELF){
         .data = NULL,
@@ -125,7 +133,7 @@ static void PRIV(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
 }
 
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (new_capacity_for > self->capacity) {
@@ -170,10 +178,11 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
         // Set the new inaccessible memory
         PRIV(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_NONE);
     }
+    INVARIANT_CHECK(self);
 }
 
 static void NS(SELF, push_back)(SELF* self, ITEM item) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
@@ -187,7 +196,7 @@ static void NS(SELF, push_back)(SELF* self, ITEM item) {
 }
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
@@ -205,7 +214,7 @@ static void NS(SELF, push_front)(SELF* self, ITEM item) {
 }
 
 static ITEM NS(SELF, pop_front)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     ASSERT(!NS(SELF, empty)(self));
 
@@ -224,7 +233,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
 }
 
 static ITEM NS(SELF, pop_back)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     ASSERT(!NS(SELF, empty)(self));
 
@@ -244,7 +253,7 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
 }
 
 static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (index < NS(SELF, size)(self)) {
         size_t const real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
         return &self->data[real_index];
@@ -253,14 +262,13 @@ static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index)
 }
 
 static ITEM const* NS(SELF, read_from_front)(SELF const* self, size_t index) {
-    ASSUME(self);
     ITEM const* item = NS(SELF, try_read_from_front)(self, index);
     ASSERT(item);
     return item;
 }
 
 static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (index < NS(SELF, size)(self)) {
         size_t const real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
         return &self->data[real_index];
@@ -269,14 +277,13 @@ static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
 }
 
 static ITEM* NS(SELF, write_from_front)(SELF* self, size_t index) {
-    ASSUME(self);
     ITEM* value = NS(SELF, try_write_from_front)(self, index);
     ASSERT(value);
     return value;
 }
 
 static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (index >= NS(SELF, size)(self)) {
         return NULL;
     }
@@ -288,14 +295,13 @@ static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) 
 }
 
 static ITEM const* NS(SELF, read_from_back)(SELF const* self, size_t index) {
-    ASSUME(self);
     ITEM const* item = NS(SELF, try_read_from_back)(self, index);
     ASSERT(item);
     return item;
 }
 
 static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (index >= NS(SELF, size)(self)) {
         return NULL;
     }
@@ -307,7 +313,7 @@ static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
 }
 
 static ITEM* NS(SELF, write_from_back)(SELF* self, size_t index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     ITEM* value = NS(SELF, try_write_from_back)(self, index);
     ASSERT(value);
     return value;
@@ -342,7 +348,7 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     return (ITER){
         .circular = self,
         .position = 0,
@@ -351,7 +357,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (self->data) {
         ITER iter = NS(SELF, get_iter)(self);
         ITEM* item;
@@ -397,7 +403,7 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     return (ITER_CONST){
         .circular = self,
         .position = 0,
@@ -406,7 +412,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     ITEM* new_data = NULL;
     size_t tail = 0;
     size_t new_capacity = 0;
@@ -444,6 +450,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
 #undef ITEM
 #undef ITEM_DELETE
 #undef ITEM_CLONE
+
+#undef INVARIANT_CHECK
 
 #include <derive-c/core/alloc/undef.h>
 TRAIT_QUEUE(SELF);

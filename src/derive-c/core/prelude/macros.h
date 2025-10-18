@@ -12,6 +12,10 @@
     #define CONST __attribute__((const))
 #endif
 
+#if !defined PURE
+    #define PURE __attribute__((pure))
+#endif
+
 #if !defined NODISCARD
     #define NODISCARD __attribute__((warn_unused_result))
 #endif
@@ -49,6 +53,10 @@
     #define LIKELY(x) __builtin_expect(!!(x), 1)
 #endif
 
+#if !defined WHEN
+    #define WHEN(cond, expr) ((cond) ? (expr) : true)
+#endif
+
 #if !defined ASSUME
     #if !defined NDEBUG
         #define ASSUME(expr, ...) ASSERT(expr, __VA_ARGS__)
@@ -59,7 +67,7 @@
             // GCC doesn't have __builtin_assume, but this pattern has the same effect:
             #define ASSUME(expr, ...)                                                              \
                 do {                                                                               \
-                    if (!(cond))                                                                   \
+                    if (!(expr))                                                                   \
                         __builtin_unreachable();                                                   \
                 } while (0)
         #else

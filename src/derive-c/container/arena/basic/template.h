@@ -139,8 +139,13 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
+#define INVARIANT_CHECK(self)                                                                      \
+    ASSUME(self);                                                                                  \
+    ASSUME((self)->count <= (self)->capacity);                                                     \
+    ASSUME((self)->exclusive_end > (self)->count);
+
 static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
-    ASSUME(items > 0);
+    ASSERT(items > 0);
     size_t capacity = next_power_of_2(items);
     ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
@@ -163,7 +168,7 @@ static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
 }
 
 static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     ASSERT(self->count < MAX_INDEX);
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
@@ -202,7 +207,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 }
 
 static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
     }
@@ -220,7 +225,7 @@ static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
 }
 
 static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
     }
@@ -238,7 +243,7 @@ static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(self->alloc, self->capacity, sizeof(SLOT));
     ASSERT(slots);
 
@@ -267,12 +272,12 @@ static SELF NS(SELF, clone)(SELF const* self) {
 }
 
 static INDEX_TYPE NS(SELF, size)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     return self->count;
 }
 
 static bool NS(SELF, full)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     if (self->capacity == CAPACITY_EXCLUSIVE_UPPER) {
         if (self->free_list == INDEX_NONE) {
             return true;
@@ -284,7 +289,7 @@ static bool NS(SELF, full)(SELF const* self) {
 static size_t NS(SELF, max_entries) = MAX_INDEX;
 
 static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (!CHECK_ACCESS_INDEX(self, index)) {
@@ -305,7 +310,7 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
 }
 
 static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
@@ -314,7 +319,7 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
 }
 
 static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (!CHECK_ACCESS_INDEX(self, index)) {
@@ -380,7 +385,7 @@ static IV_PAIR const* NS(ITER, next)(ITER* iter) {
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
         index++;
@@ -395,7 +400,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     ITER iter = NS(SELF, get_iter)(self);
     IV_PAIR const* entry;
     while ((entry = NS(ITER, next)(&iter))) {
@@ -457,7 +462,7 @@ static IV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    ASSUME(self);
+    INVARIANT_CHECK(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
         index++;
@@ -489,6 +494,8 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef CHECK_ACCESS_INDEX
 #undef RESIZE_FACTOR
 #undef INDEX
+
+#undef INVARIANT_CHECK
 
 #include <derive-c/core/alloc/undef.h>
 TRAIT_ARENA(SELF);

@@ -5,7 +5,7 @@
 
 #include <derive-c/core/prelude/macros.h>
 
-static inline size_t next_power_of_2(size_t x) {
+static INLINE CONST size_t next_power_of_2(size_t x) {
     if (x == 0)
         return 1;
     x--;
@@ -20,15 +20,15 @@ static inline size_t next_power_of_2(size_t x) {
     return x + 1;
 }
 
-static bool __attribute__((const)) is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
+static bool INLINE CONST is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
 
-static size_t __attribute__((const)) modulus_power_of_2_capacity(size_t index, size_t capacity) {
+static size_t INLINE CONST modulus_power_of_2_capacity(size_t index, size_t capacity) {
     ASSUME(is_power_of_2(capacity));
     // NOTE: If we know capacity is a power of 2, we can reduce the cost of 'index + 1 % capacity'
     return index & (capacity - 1);
 }
 
-static inline bool __attribute__((const)) is_aligned_pow2_exp(const void* ptr, unsigned exp) {
+static bool INLINE CONST is_aligned_pow2_exp(const void* ptr, unsigned exp) {
     uintptr_t const mask = (1U << exp) - 1;
     return (((uintptr_t)ptr) & mask) == 0;
 }
