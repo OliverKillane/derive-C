@@ -62,8 +62,8 @@ typedef struct {
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self)                                                                                   \
-    ASSUME((self->size) <= INPLACE_CAPACITY)
+    ASSUME(self);                                                                                  \
+    ASSUME((self->size) <= INPLACE_CAPACITY);
 
 static SELF NS(SELF, new)() {
     SELF self = {

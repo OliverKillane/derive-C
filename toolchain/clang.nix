@@ -24,6 +24,7 @@ llvm20.stdenv.mkDerivation {
       compiler-rt      # libs for -fsanitize=...
       lld
       crt              # keep the attr around (its .dev output provides headers)
+      lldb
     ]);
 
   # Expose sanitizer headers to the compiler/clangd without editing CMake

@@ -28,34 +28,6 @@ else()
   set(DEFAULT_SANITIZERS "")
 endif()
 
-# JUSTIFY: Custom tracking off for gcc
-#  - the readme.c example dies with and uknown crash inside memset on GCC.
-#  TODO(oliverkillane): Figure out why this happens.
-# `SUMMARY: AddressSanitizer: unknown-crash (/nix/store/g73qbrh4mpxymzwq0fzdd3rhvn6jwn5m-gcc-14-20241116-lib/lib/libasan.so.8+0xf99db) in memset`
-
-# Default tracking level (see memory_tracker.h for details)
-set(CUSTOM_MEMORY_TRACKING 2 CACHE STRING
-  "Memory tracking level (see memory_tracker.h):
-   0 = MEMORY_TRACKER_LVL_NONE
-   1 = MEMORY_TRACKER_LVL_ALLOC
-   2 = MEMORY_TRACKER_LVL_CONTAINER")
-
-# Restrict GUI options
-set_property(CACHE CUSTOM_MEMORY_TRACKING PROPERTY STRINGS 0 1 2)
-
-# Validate value
-set(_valid_levels 0 1 2)
-list(FIND _valid_levels "${CUSTOM_MEMORY_TRACKING}" _hit)
-if (_hit EQUAL -1)
-  message(FATAL_ERROR
-    "Invalid CUSTOM_MEMORY_TRACKING='${CUSTOM_MEMORY_TRACKING}'. "
-    "Must be one of: 0, 1, or 2 (see memory_tracker.h).")
-endif()
-message(STATUS "Memory Tracking at level=${CUSTOM_MEMORY_TRACKING}")
-
-# Export to compiler
-add_compile_definitions(CUSTOM_MEMORY_TRACKING=${CUSTOM_MEMORY_TRACKING})
-
 set(SANITIZERS "${DEFAULT_SANITIZERS}" CACHE STRING "Sanitizers to use" FORCE)
 set_property(CACHE SANITIZERS PROPERTY STRINGS "address,undefined" "memory" "thread")
 if (SANITIZERS)
@@ -67,6 +39,15 @@ else()
   message(STATUS "No Sanitizers enabled")
 endif()
 
+
+# Memory Tracking
+#  - Configured to use msan or asan based on `SANITIZERS`
+#  - See: memory_tracker.h
+# Default tracking level (see memory_tracker.h for details)
+set(CUSTOM_MEMORY_TRACKING 2 CACHE STRING "")
+set_property(CACHE CUSTOM_MEMORY_TRACKING PROPERTY STRINGS 0 1 2)
+message(STATUS "Memory Tracking at level=${CUSTOM_MEMORY_TRACKING}")
+add_compile_definitions(CUSTOM_MEMORY_TRACKING=${CUSTOM_MEMORY_TRACKING})
 
 # Debug Info
 # - Want to additionally add macro debug information
@@ -81,6 +62,9 @@ endif()
 # Testing
 # - Including for the examples directory
 enable_testing()
+
+# Optimisation Reports
+option(OPT_REPORTS "Create Clang Optimisation Reports" Off)
 
 # Project Structure
 option(TESTS "Build tests" ON)
