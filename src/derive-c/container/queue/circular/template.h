@@ -53,9 +53,9 @@ typedef struct {
 
 #define INVARIANT_CHECK(self)                                                                      \
     ASSUME(self);                                                                                  \
-    ASSUME((self)->head < (self)->capacity);                                                       \
-    ASSUME((self)->tail < (self)->capacity);                                                       \
     ASSUME((self)->alloc);                                                                         \
+    ASSUME(                                                                                        \
+        WHEN(!(self)->empty, (self)->head < (self)->capacity && (self)->tail < (self)->capacity)); \
     ASSUME(WHEN((self)->empty, (self)->head == (self)->tail));                                     \
     ASSUME(WHEN(!(self)->data, (self)->head == 0 && (self)->tail == 0));
 

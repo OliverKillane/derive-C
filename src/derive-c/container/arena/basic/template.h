@@ -142,7 +142,8 @@ typedef struct {
 #define INVARIANT_CHECK(self)                                                                      \
     ASSUME(self);                                                                                  \
     ASSUME((self)->count <= (self)->capacity);                                                     \
-    ASSUME((self)->exclusive_end > (self)->count);
+    ASSUME((self)->exclusive_end >= (self)->count);                                                \
+    ASSUME((self)->count <= MAX_INDEX);
 
 static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
     ASSERT(items > 0);
