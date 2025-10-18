@@ -28,7 +28,7 @@ static void* NS(stdalloc, malloc)(stdalloc* DEBUG_UNUSED(self), size_t size) {
     return malloc(size);
 }
 
-static void* NS(stdalloc, realloc)(stdalloc* DEBUG_UNUSED(self), void* ptr, size_t size) {
+static void* NS(stdalloc, realloc)(stdalloc* self, void* ptr, size_t size) {
     DEBUG_ASSERT(self);
     if (ptr) {
         return realloc(ptr, size);
