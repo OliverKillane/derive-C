@@ -4,12 +4,12 @@
 /// Demonstrating embedding vectors inside hashmaps, and making efficient use of small indexes for
 /// arenas.
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <derive-c/alloc/std.h>
+#include <derive-c/core/panic.h>
 
 typedef struct {
     char const* forename;
@@ -131,8 +131,8 @@ int main() {
     hr_system_new_employee(&hr, bob);
 
     employee const* newest_22 = hr_system_newest_of_age(&hr, (age){.value = 22});
-    assert(newest_22);
-    assert(name_eq(&newest_22->name, &bob_name));
+    ASSERT(newest_22);
+    ASSERT(name_eq(&newest_22->name, &bob_name));
 
     hr_system_delete(&hr);
 }

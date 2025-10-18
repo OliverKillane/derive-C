@@ -11,7 +11,10 @@
 
 /// The worst possible hash, for testing purposes.
 #define ALWAYS_COLLIDE(type)                                                                       \
-    static size_t hash_always_collide_##type(type const* UNUSED(key)) { return 0; }
+    static size_t hash_always_collide_##type(type const* key) {                                    \
+        (void)key;                                                                                 \
+        return 0;                                                                                  \
+    }
 
 /// No hashing, just returns the integer value.
 /// For most circumstances with a key as a single integer, this is a good option.

@@ -2,7 +2,6 @@
 /// @example container/vector/dynamic.c
 /// @brief Examples for inserting, iterating, and deleting from vectors.
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -10,6 +9,7 @@
 #include <string.h>
 
 #include <derive-c/alloc/std.h>
+#include <derive-c/core/panic.h>
 
 #define ITEM int32_t
 #define NAME vec_ints
@@ -22,7 +22,7 @@ void ints_example() {
     for (int32_t i = 0; i < upto; i++) {
         vec_ints_push(&ints, i);
     }
-    assert(vec_ints_size(&ints) == upto);
+    ASSERT(vec_ints_size(&ints) == upto);
 
     for (int32_t i = 0; i < upto; i++) {
         int* value = vec_ints_write(&ints, i);
@@ -30,13 +30,13 @@ void ints_example() {
     }
 
     for (int32_t i = 0; i < upto; i++) {
-        assert(*vec_ints_read(&ints, i) == i + 1);
+        ASSERT(*vec_ints_read(&ints, i) == i + 1);
     }
 
     // Pop the last value
     int32_t last_value = vec_ints_pop(&ints);
-    assert(last_value == upto); // Last value should be 99 + 1
-    assert(vec_ints_size(&ints) == upto - 1);
+    ASSERT(last_value == upto); // Last value should be 99 + 1
+    ASSERT(vec_ints_size(&ints) == upto - 1);
 
     vec_ints_delete(&ints);
 }
@@ -61,15 +61,15 @@ void complex_data_example() {
         vec_complex_data_push(&vec, item);
     }
 
-    assert(vec_complex_data_size(&vec) == entries);
+    ASSERT(vec_complex_data_size(&vec) == entries);
 
     struct complex_data* first_item = vec_complex_data_write(&vec, 0);
     first_item->score += 5;
 
-    assert(vec_complex_data_read(&vec, 0)->score == 5);
+    ASSERT(vec_complex_data_read(&vec, 0)->score == 5);
 
     struct complex_data popped = vec_complex_data_pop(&vec);
-    assert(popped.score == 40); // Last item's score should be 40
+    ASSERT(popped.score == 40); // Last item's score should be 40
 
     vec_complex_data_delete(&vec);
     complex_data_delete(&popped);
@@ -93,7 +93,7 @@ void iterate_example() {
     char_vec_push(&vec, 'l');
     char_vec_push(&vec, 'd');
 
-    assert(char_vec_size(&vec) == 11);
+    ASSERT(char_vec_size(&vec) == 11);
     {
         // Iterate over the vector and print the items
         char_vec_iter_const iter = char_vec_get_iter_const(&vec);

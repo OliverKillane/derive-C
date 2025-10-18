@@ -1,6 +1,6 @@
-#include <assert.h>
 #include <stdint.h>
 
+#include <derive-c/core/panic.h>
 #include <derive-c/derive/clone.h>
 #include <derive-c/derive/eq.h>
 #include <derive-c/derive/ord.h>
@@ -21,10 +21,10 @@ int main() {
     Foo f = {.bing = 23, .baz = 'c', .zing = 3.14};
     Foo g = {.bing = 23, .baz = 'c', .zing = 3.14};
 
-    assert(Foo_eq(&f, &g));
-    assert(!Foo_gt(&f, &g) && !Foo_lt(&f, &g));
+    ASSERT(Foo_eq(&f, &g));
+    ASSERT(!Foo_gt(&f, &g) && !Foo_lt(&f, &g));
 
     Foo z = Foo_clone(&f);
     z.bing += 10;
-    assert(Foo_gt(&z, &f));
+    ASSERT(Foo_gt(&z, &f));
 }

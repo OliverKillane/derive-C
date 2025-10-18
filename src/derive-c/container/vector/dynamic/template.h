@@ -24,7 +24,7 @@ typedef struct {
     int x;
 } item_t;
     #define ITEM item_t
-static void item_delete(item_t* UNUSED(t)) {}
+static void item_delete(item_t* t) { (void)t; }
     #define ITEM_DELETE item_delete
 static item_t item_clone(item_t const* i) { return *i; }
     #define ITEM_CLONE item_clone

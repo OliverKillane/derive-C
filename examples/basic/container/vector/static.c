@@ -2,9 +2,10 @@
 /// @example container/vector/static.c
 /// @brief Examples for using static vectors (in-place storage, up to a fixed size).
 
-#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+
+#include <derive-c/core/panic.h>
 
 #define MAX_CAPACITY 8
 
@@ -22,16 +23,16 @@ void push_example() {
     }
 
     // Cannot push past the in-place capacity
-    assert(!staticvec_chars_try_push(&vec, 8));
+    ASSERT(!staticvec_chars_try_push(&vec, 8));
 
     // Check that the first 8 characters are in place
     for (unsigned char i = 0; i < MAX_CAPACITY; i++) {
-        assert(*staticvec_chars_read(&vec, i) == i);
+        ASSERT(*staticvec_chars_read(&vec, i) == i);
     }
 
     // The next two should be NULL since they exceed the in-place capacity
-    assert(staticvec_chars_try_read(&vec, MAX_CAPACITY) == NULL);
-    assert(staticvec_chars_try_read(&vec, MAX_CAPACITY + 1) == NULL);
+    ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY) == NULL);
+    ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY + 1) == NULL);
 
     staticvec_chars_delete(&vec);
 }

@@ -19,10 +19,12 @@ void allocate_and_throw(stdtestalloc* alloc) {
 }
 }
 
+#if !defined NDEBUG
 TEST(TestAlloc, BasicAllocation) {
     stdtestalloc alloc = stdtestalloc_new(stdalloc_get());
     EXPECT_ANY_THROW(allocate_and_throw(&alloc));
     stdtestalloc_unleak_and_delete(&alloc);
 }
+#endif
 
 } // namespace testalloc

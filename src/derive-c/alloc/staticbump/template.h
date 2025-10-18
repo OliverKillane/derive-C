@@ -101,7 +101,7 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
     return allocation_ptr;
 }
 
-static void NS(SELF, free)(SELF* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr)) {
+static void NS(SELF, free)(SELF* self, void* ptr) {
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(ptr);
 

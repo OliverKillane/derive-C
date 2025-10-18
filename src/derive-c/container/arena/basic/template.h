@@ -32,7 +32,7 @@ typedef struct {
     int x;
 } value_t;
     #define VALUE value_t
-static void value_delete(value_t* UNUSED(self)) {}
+static void value_delete(value_t* self) { (void)self; }
     #define VALUE_DELETE value_delete
 static value_t value_clone(value_t const* self) { return *self; }
     #define VALUE_CLONE value_clone

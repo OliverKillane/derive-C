@@ -39,7 +39,7 @@ static bool KEY_EQ(KEY const* key_1, KEY const* key_2) { return *key_1 == *key_2
 
 #if !defined KEY_DELETE
     #define KEY_DELETE NS(SELF, key_delete_default)
-static void KEY_DELETE(KEY* UNUSED(key)) {}
+static void KEY_DELETE(KEY* key /* NOLINT(readability-non-const-parameter) */) { (void)key; }
 #endif
 
 #if !defined KEY_CLONE
@@ -59,7 +59,7 @@ typedef struct {
 
 #if !defined VALUE_DELETE
     #define VALUE_DELETE NS(SELF, value_delete_default)
-static void VALUE_DELETE(VALUE* UNUSED(value)) {}
+static void VALUE_DELETE(VALUE* value) { (void)value; }
 #endif
 
 #if !defined VALUE_CLONE

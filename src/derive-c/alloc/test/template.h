@@ -11,7 +11,6 @@
 
 #include <stddef.h>
 
-#include <derive-c/alloc/std.h>
 #include <derive-c/alloc/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
@@ -38,9 +37,10 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
     return NS(ALLOC, realloc)(self->alloc, ptr, size);
 }
 
-static void NS(SELF, free)(SELF* self, void* ptr) { return NS(ALLOC, free)(self->alloc, ptr); }
+static void NS(SELF, free)(SELF* self, void* ptr) { NS(ALLOC, free)(self->alloc, ptr); }
 
 #else
+    #include <derive-c/alloc/std.h>
     #define ENTRIES_VECTOR NS(NAME, entries)
     #define TRACKED_ENTRY NS(EXPAND(ENTRIES), entry)
 

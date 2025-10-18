@@ -2,11 +2,11 @@
 /// @example container/arena/basic.c
 /// @brief Examples using arenas with different index sizes.
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <derive-c/alloc/std.h>
+#include <derive-c/core/panic.h>
 
 #define INDEX_BITS 32
 #define VALUE uint32_t
@@ -20,7 +20,7 @@ void int_example() {
     ints_insert(&arena, 1000);
     ints_insert(&arena, 1001);
 
-    assert(ints_size(&arena) == 4);
+    ASSERT(ints_size(&arena) == 4);
     {
         ints_iter_const print_ints = ints_get_iter_const(&arena);
         ints_iv_const const* entry = NULL;
@@ -63,13 +63,13 @@ void foo_example() {
     foo_arena_index_t index_b = foo_arena_insert(
         &arena, (struct foo){.x = 41, .y = "B", .owned_data = (int*)malloc(sizeof(int))});
 
-    assert(foo_arena_size(&arena) == 2);
-    assert(foo_arena_full(&arena) == false);
-    assert(foo_arena_read(&arena, index_a)->x == 42);
-    assert(foo_arena_read(&arena, index_b)->x == 41);
+    ASSERT(foo_arena_size(&arena) == 2);
+    ASSERT(foo_arena_full(&arena) == false);
+    ASSERT(foo_arena_read(&arena, index_a)->x == 42);
+    ASSERT(foo_arena_read(&arena, index_b)->x == 41);
 
     foo_arena_write(&arena, index_b)->x = 100;
-    assert(foo_arena_read(&arena, index_b)->x == 100);
+    ASSERT(foo_arena_read(&arena, index_b)->x == 100);
 
     // we remove the entry, improtantly - we now own this data
     struct foo entry_a = foo_arena_remove(&arena, index_a);
@@ -78,7 +78,7 @@ void foo_example() {
     foo_arena_delete(&arena);
 
     // entry a has not yet been deleted, so we can still access and then delete it
-    assert(entry_a.x == 42);
+    ASSERT(entry_a.x == 42);
 
     my_foo_delete(&entry_a);
 }

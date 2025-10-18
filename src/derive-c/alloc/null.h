@@ -8,37 +8,34 @@
 #include <derive-c/alloc/trait.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
+#include <derive-c/core/zerosized.h>
 
-#if defined __cplusplus
-struct nullalloc {
-    char UNUSED(_dummy_cpp_object_size_compatibility);
-};
-#else
-typedef struct {
-} nullalloc;
-#endif
+ZERO_SIZED(nullalloc);
 
 static nullalloc NS(nullalloc, get)() { return (nullalloc){}; }
 
-static void* NS(nullalloc, malloc)(nullalloc* DEBUG_UNUSED(self), size_t UNUSED(size)) {
+static void* NS(nullalloc, malloc)(nullalloc* self, size_t size) {
+    (void)size;
     DEBUG_ASSERT(self);
     return NULL;
 }
 
-static void* NS(nullalloc, realloc)(nullalloc* DEBUG_UNUSED(self), void* DEBUG_UNUSED(ptr),
-                                    size_t UNUSED(size)) {
+static void* NS(nullalloc, realloc)(nullalloc* self, void* ptr, size_t size) {
+    (void)size;
     DEBUG_ASSERT(self);
     DEBUG_ASSERT(ptr);
     return NULL;
 }
 
-static void* NS(nullalloc, calloc)(nullalloc* DEBUG_UNUSED(self), size_t UNUSED(count),
-                                   size_t UNUSED(size)) {
+static void* NS(nullalloc, calloc)(nullalloc* self, size_t count, size_t size) {
+    (void)count;
+    (void)size;
     DEBUG_ASSERT(self);
     return NULL;
 }
 
-static void NS(nullalloc, free)(nullalloc* DEBUG_UNUSED(self), void* UNUSED(ptr)) {
+static void NS(nullalloc, free)(nullalloc* self, void* ptr) {
+    (void)ptr;
     DEBUG_ASSERT(self);
     PANIC("Not possible to free memory from the null allocator, as it allocates nothing")
 }

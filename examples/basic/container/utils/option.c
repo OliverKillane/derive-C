@@ -2,9 +2,10 @@
 /// @example utils/option.c
 /// @brief Examples for using the optional type.
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <derive-c/core/panic.h>
 
 struct complex_data {
     int x;
@@ -29,23 +30,23 @@ struct complex_data complex_data_clone(struct complex_data const* self) {
 
 void option_example() {
     complex_data_option opt = complex_data_option_empty();
-    assert(!complex_data_option_is_present(&opt));
+    ASSERT(!complex_data_option_is_present(&opt));
 
     // when accessing a value, you get a pointer. Not present = NULL
-    assert(!complex_data_option_get(&opt));
-    assert(!complex_data_option_get_const(&opt));
+    ASSERT(!complex_data_option_get(&opt));
+    ASSERT(!complex_data_option_get_const(&opt));
 
     bool was_present_1 = complex_data_option_replace(
         &opt, (struct complex_data){.x = 42, .y = 3.14, .description = strdup("A complex data")});
-    assert(!was_present_1);
+    ASSERT(!was_present_1);
 
-    assert(complex_data_option_is_present(&opt));
-    assert(complex_data_option_get(&opt));
+    ASSERT(complex_data_option_is_present(&opt));
+    ASSERT(complex_data_option_get(&opt));
 
     bool was_present_2 = complex_data_option_replace(
         &opt,
         (struct complex_data){.x = 100, .y = 2.71, .description = strdup("Another complex data")});
-    assert(was_present_2);
+    ASSERT(was_present_2);
 
     complex_data_option_delete(&opt);
 }

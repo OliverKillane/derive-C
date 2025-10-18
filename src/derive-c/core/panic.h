@@ -31,8 +31,23 @@
     #endif
 #endif
 
-#if !defined NDEBUG
-    #define DEBUG_ASSERT(expr) ASSERT(expr)
+#if defined(__clang__)
+    #define ASSUME(cond) __builtin_assume(cond)
+#elif defined(_MSC_VER)
+    #define ASSUME(cond) __assume(cond)
+#elif defined(__GNUC__)
+    // GCC doesn't have __builtin_assume, but this pattern has the same effect:
+    #define ASSUME(cond)                                                                           \
+        do {                                                                                       \
+            if (!(cond))                                                                           \
+                __builtin_unreachable();                                                           \
+        } while (0)
 #else
-    #define DEBUG_ASSERT(expr)
+    #define ASSUME(cond) ((void)0)
+#endif
+
+#if !defined NDEBUG
+    #define DEBUG_ASSERT(...) ASSERT(__VA_ARGS__)
+#else
+    #define DEBUG_ASSERT(expr, ...) ASSUME(expr)
 #endif

@@ -18,7 +18,7 @@ typedef struct {
     int x;
 } item_t;
     #define ITEM item_t
-static void item_delete(item_t* UNUSED(self)) {}
+static void item_delete(item_t* self) { (void)self; }
     #define ITEM_DELETE item_delete
 static item_t item_clone(item_t const* self) { return *self; }
     #define ITEM_CLONE item_clone

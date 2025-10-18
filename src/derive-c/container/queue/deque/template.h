@@ -29,7 +29,7 @@ typedef struct {
 } item_t;
     #define ITEM item_t
 
-static void item_delete(item_t* UNUSED(a)) {}
+static void item_delete(item_t* a) { (void)a; }
     #define ITEM_DELETE item_delete
 static item_t item_clone(item_t const* a) { return *a; }
     #define ITEM_CLONE item_clone
@@ -124,7 +124,7 @@ static void NS(SELF, rebalance)(SELF* self) {
         source_size = front_size;
         target_size = back_size;
     } else {
-        DEBUG_ASSERT(back_size > front_size + 1)
+        DEBUG_ASSERT(back_size > front_size + 1);
         source = &self->back;
         target = &self->front;
         source_size = back_size;

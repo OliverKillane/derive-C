@@ -3,12 +3,13 @@
  * @example complex/prime_sieve.c
  * @brief Using a vector in implementing a basic prime sieve.
  */
-// #include <errno.h>
-#include <assert.h>
+
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <derive-c/core/panic.h>
 
 #define MAX_UP_TO 100000
 
@@ -79,7 +80,7 @@ void compute(sieve_vec* sieve) {
 
 int main() {
     size_t up_to = 28;
-    assert(up_to < MAX_UP_TO);
+    ASSERT(up_to < MAX_UP_TO);
     printf("Listing primes up to: %zu\n", up_to);
     bump_alloc alloc = bump_alloc_new();
     sieve_vec values = sieve_vec_new_with_defaults(up_to, false, &alloc);

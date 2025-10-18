@@ -24,7 +24,7 @@ typedef struct {
     int x;
 } item_t;
     #define ITEM item_t
-static void item_delete(item_t* UNUSED(self)) {}
+static void item_delete(item_t* self) { (void)self; }
     #define ITEM_DELETE item_delete
 static item_t item_clone(item_t const* self) { return *self; }
     #define ITEM_CLONE item_clone
@@ -109,8 +109,8 @@ static size_t NS(SELF, size)(SELF const* self) {
     return (self->capacity - self->head) + self->tail + 1;
 }
 
-static void NS(_, NS(SELF, set_inaccessible_memory_caps))(SELF* self,
-                                                          memory_tracker_capability cap) {
+static void PRIVATE(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
+                                                            memory_tracker_capability cap) {
     if (self->empty) {
         memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
                            self->capacity * sizeof(ITEM));
@@ -134,7 +134,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 
         // We set the capability to write for the allocator, and only touch the
         // state for memory that is inaccessible
-        NS(_, NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_WRITE);
+        PRIVATE(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_WRITE);
 
         ITEM* new_data =
             (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
@@ -169,7 +169,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
         self->data = new_data;
 
         // Set the new inaccessible memory
-        NS(_, NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_NONE);
+        PRIVATE(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_NONE);
     }
 }
 
@@ -436,7 +436,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .derive_c_circular = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
-    NS(_, NS(SELF, set_inaccessible_memory_caps))(&new_self, MEMORY_TRACKER_CAP_NONE);
+    PRIVATE(NS(SELF, set_inaccessible_memory_caps))(&new_self, MEMORY_TRACKER_CAP_NONE);
     return new_self;
 }
 

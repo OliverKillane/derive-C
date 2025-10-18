@@ -26,16 +26,16 @@ typedef struct {
     ALLOC* alloc;
 } SELF;
 
-static ssize_t NS(_, NS(SELF, read))(void* cookie,
-                                     char* buf /*NOLINT(readability-non-const-parameter)*/,
-                                     size_t size) {
+static ssize_t PRIVATE(NS(SELF, read))(void* cookie,
+                                       char* buf /*NOLINT(readability-non-const-parameter)*/,
+                                       size_t size) {
     (void)cookie;
     (void)buf;
     (void)size;
     PANIC("Cannot read on a string builder");
 }
 
-static ssize_t NS(_, NS(SELF, write))(void* capture, const char* data, size_t size) {
+static ssize_t PRIVATE(NS(SELF, write))(void* capture, const char* data, size_t size) {
     DEBUG_ASSERT(capture);
     SELF* self = (SELF*)capture;
 
@@ -64,9 +64,9 @@ static ssize_t NS(_, NS(SELF, write))(void* capture, const char* data, size_t si
     return (ssize_t)size;
 }
 
-static int NS(_, NS(SELF, seek))(void* cookie,
-                                 off_t* offset /*NOLINT(readability-non-const-parameter)*/,
-                                 int whence) {
+static int PRIVATE(NS(SELF, seek))(void* cookie,
+                                   off_t* offset /*NOLINT(readability-non-const-parameter)*/,
+                                   int whence) {
     (void)cookie;
     (void)offset;
     (void)whence;
@@ -75,7 +75,7 @@ static int NS(_, NS(SELF, seek))(void* cookie,
     return -1;
 }
 
-static int NS(_, NS(SELF, close))(void* cookie) {
+static int PRIVATE(NS(SELF, close))(void* cookie) {
     (void)cookie;
     return 0;
 }
@@ -96,10 +96,10 @@ static FILE* NS(SELF, stream)(SELF* self) {
 
     if (self->stream == NULL) {
         cookie_io_functions_t /* NOLINT(misc-include-cleaner) */ const io = {
-            .read = NS(_, NS(SELF, read)),
-            .write = NS(_, NS(SELF, write)),
-            .seek = NS(_, NS(SELF, seek)),
-            .close = NS(_, NS(SELF, close)),
+            .read = PRIVATE(NS(SELF, read)),
+            .write = PRIVATE(NS(SELF, write)),
+            .seek = PRIVATE(NS(SELF, seek)),
+            .close = PRIVATE(NS(SELF, close)),
         };
         self->stream = fopencookie(self, "w", io);
         ASSERT(self->stream != NULL, "Failed to open stream for string builder, with error: %s",

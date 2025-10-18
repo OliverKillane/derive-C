@@ -2,7 +2,6 @@
 /// @example container/map/decomposed.c
 /// @brief Examples for inserting, iterating, and deleting hashmaps.
 
-#include <assert.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -12,6 +11,7 @@
 
 #include <derive-c/algorithm/hash/hashers.h>
 #include <derive-c/alloc/std.h>
+#include <derive-c/core/panic.h>
 #include <derive-c/derive/std.h>
 
 #define KEY uint32_t
@@ -40,12 +40,12 @@ void id_to_name_example() {
     id_to_name_insert(&map, 23, "hello");
     id_to_name_insert(&map, 10, "bob");
     id_to_name_insert(&map, 42, "meaning");
-    assert(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
+    ASSERT(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
 
     print_map(&map);
 
     char const** entry = id_to_name_write(&map, 23);
-    assert(entry);
+    ASSERT(entry);
     *entry = "a different string!";
 
     print_map(&map);
@@ -97,7 +97,7 @@ void report_map_example() {
     report_map_insert(&map, id2,
                       (struct report){.description = strdup("Description B"), .value = 200});
 
-    assert(strcmp(report_map_read(&map, id1)->description, "Description A") == 0);
+    ASSERT(strcmp(report_map_read(&map, id1)->description, "Description A") == 0);
 
     {
         report_map_iter_const iter = report_map_get_iter_const(&map);
@@ -147,9 +147,9 @@ void fixed_string_example() {
     fixed_string_map_insert(&map, key2, 456);
     fixed_string_map_insert(&map, key3, 789);
 
-    assert(*fixed_string_map_read(&map, key1) == 123);
-    assert(*fixed_string_map_read(&map, key2) == 456);
-    assert(*fixed_string_map_read(&map, key3) == 789);
+    ASSERT(*fixed_string_map_read(&map, key1) == 123);
+    ASSERT(*fixed_string_map_read(&map, key2) == 456);
+    ASSERT(*fixed_string_map_read(&map, key3) == 789);
 
     fixed_string_map_iter_const iter = fixed_string_map_get_iter_const(&map);
 
