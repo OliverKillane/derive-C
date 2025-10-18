@@ -16,27 +16,27 @@ static nullalloc NS(nullalloc, get)() { return (nullalloc){}; }
 
 static void* NS(nullalloc, malloc)(nullalloc* self, size_t size) {
     (void)size;
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return NULL;
 }
 
 static void* NS(nullalloc, realloc)(nullalloc* self, void* ptr, size_t size) {
     (void)size;
-    DEBUG_ASSERT(self);
-    DEBUG_ASSERT(ptr);
+    ASSUME(self);
+    ASSUME(ptr);
     return NULL;
 }
 
 static void* NS(nullalloc, calloc)(nullalloc* self, size_t count, size_t size) {
     (void)count;
     (void)size;
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return NULL;
 }
 
 static void NS(nullalloc, free)(nullalloc* self, void* ptr) {
     (void)ptr;
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     PANIC("Not possible to free memory from the null allocator, as it allocates nothing")
 }
 

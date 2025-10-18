@@ -89,7 +89,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 }
 
 static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
     }
@@ -103,7 +103,7 @@ static ITEM const* NS(SELF, read)(SELF const* self, INDEX_TYPE index) {
 }
 
 static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (LIKELY(index < self->size)) {
         return &self->data[index];
     }
@@ -117,7 +117,7 @@ static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
 }
 
 static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->size < INPLACE_CAPACITY) {
         ITEM* slot = &self->data[self->size];
@@ -132,8 +132,8 @@ static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
 
 static bool NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
                                     INDEX_TYPE count) {
-    DEBUG_ASSERT(self);
-    DEBUG_ASSERT(items);
+    ASSUME(self);
+    ASSUME(items);
     ASSERT(at <= self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -150,7 +150,7 @@ static bool NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items
 }
 
 static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ASSERT(at + count <= self->size);
 
     if (count == 0) {
@@ -174,7 +174,7 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
 }
 
 static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (LIKELY(self->size > 0)) {
         self->size--;
@@ -193,12 +193,12 @@ static ITEM NS(SELF, pop)(SELF* self) {
 }
 
 static INDEX_TYPE NS(SELF, size)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return self->size;
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     for (INDEX_TYPE i = 0; i < self->size; i++) {
         ITEM_DELETE(&self->data[i]);
     }
@@ -218,7 +218,7 @@ typedef struct {
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->pos < iter->vec->size) {
         ITEM* item = &iter->vec->data[iter->pos];
@@ -229,19 +229,19 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 }
 
 static INDEX_TYPE NS(ITER, position)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return (ITER){.vec = self,
                   .pos = 0,
                   .version = mutation_tracker_get(&self->iterator_invalidation_tracker)};
@@ -261,7 +261,7 @@ typedef struct {
 } ITER_CONST;
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->pos < iter->vec->size) {
         ITEM const* item = &iter->vec->data[iter->pos];
@@ -272,19 +272,19 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static INDEX_TYPE NS(ITER_CONST, position)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return (ITER_CONST){
         .vec = self,
         .pos = 0,

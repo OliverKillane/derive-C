@@ -36,7 +36,7 @@ static ssize_t PRIVATE(NS(SELF, read))(void* cookie,
 }
 
 static ssize_t PRIVATE(NS(SELF, write))(void* capture, const char* data, size_t size) {
-    DEBUG_ASSERT(capture);
+    ASSUME(capture);
     SELF* self = (SELF*)capture;
 
     size_t const for_subsequent_small_inserts = 32;
@@ -48,7 +48,7 @@ static ssize_t PRIVATE(NS(SELF, write))(void* capture, const char* data, size_t 
             self->buf = (char*)NS(ALLOC, realloc)(self->alloc, self->buf, self->capacity);
         }
     } else {
-        DEBUG_ASSERT(self->capacity == 0);
+        ASSUME(self->capacity == 0);
         self->capacity = size + 1 + for_subsequent_small_inserts;
         self->buf = (char*)NS(ALLOC, malloc)(self->alloc, self->capacity);
     }
@@ -92,7 +92,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 
 /// Opens a file for
 static FILE* NS(SELF, stream)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     if (self->stream == NULL) {
         cookie_io_functions_t /* NOLINT(misc-include-cleaner) */ const io = {
@@ -117,7 +117,7 @@ static FILE* NS(SELF, stream)(SELF* self) {
 
 /// Resets the string, but keps the same stream pointer alive.
 static void NS(SELF, reset)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     self->size_without_null = 0;
 }
 
@@ -142,7 +142,7 @@ static char* NS(SELF, release_string)(SELF* self) {
 static size_t NS(SELF, string_size)(SELF* self) { return self->size_without_null; }
 
 static void NS(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->stream) {
         fclose(self->stream);
     }

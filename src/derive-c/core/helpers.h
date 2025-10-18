@@ -35,7 +35,7 @@ static inline size_t next_power_of_2(size_t x) {
 static inline bool is_power_of_2(size_t x) { return x != 0 && (x & (x - 1)) == 0; }
 
 static inline size_t modulus_power_of_2_capacity(size_t index, size_t capacity) {
-    DEBUG_ASSERT(is_power_of_2(capacity));
+    ASSUME(is_power_of_2(capacity));
     // NOTE: If we know capacity is a power of 2, we can reduce the cost of 'index + 1 % capacity'
     return index & (capacity - 1);
 }

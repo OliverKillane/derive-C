@@ -73,7 +73,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static ENTRIES_VECTOR const* NS(SELF, get_entries)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return &self->entries;
 }
 
@@ -91,7 +91,7 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 }
 
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     void* ptr = NS(ALLOC, calloc)(self->alloc, count, size);
     if (ptr) {
         NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
@@ -103,7 +103,7 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     void* ptr = NS(ALLOC, malloc)(self->alloc, size);
     if (ptr) {
         NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
@@ -115,21 +115,21 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 }
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-    DEBUG_ASSERT(self);
-    DEBUG_ASSERT(ptr);
+    ASSUME(self);
+    ASSUME(ptr);
     return NS(ALLOC, realloc)(self->alloc, ptr, size);
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
-    DEBUG_ASSERT(ptr);
-    DEBUG_ASSERT(self);
+    ASSUME(ptr);
+    ASSUME(self);
 
     NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
     TRACKED_ENTRY* entry;
 
     while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
         if (entry->ptr == ptr) {
-            DEBUG_ASSERT(!entry->freed);
+            ASSUME(!entry->freed);
             entry->freed = true;
             break;
         }

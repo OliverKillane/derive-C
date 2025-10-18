@@ -123,7 +123,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     // JUSTIFY: Naive copy
     //           - We could resize (potentially a smaller map) and rehash
@@ -166,7 +166,7 @@ static void NS(SELF, delete)(SELF* self);
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value);
 
 static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
@@ -184,7 +184,7 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 }
 
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (apply_capacity_policy(self->items) > self->capacity / 2) {
         NS(SELF, extend_capacity_for)(self, self->items * 2);
@@ -198,7 +198,7 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
-        DEBUG_ASSERT(distance_from_desired < self->capacity);
+        ASSUME(distance_from_desired < self->capacity);
 
         if (entry->present) {
             if (KEY_EQ(&entry->key, &key)) {
@@ -252,7 +252,7 @@ static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
 }
 
 static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
@@ -276,7 +276,7 @@ static VALUE* NS(SELF, write)(SELF* self, KEY key) {
 }
 
 static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
@@ -300,7 +300,7 @@ static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
 }
 
 static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
@@ -358,21 +358,21 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 }
 
 static VALUE NS(SELF, remove)(SELF* self, KEY key) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     VALUE value;
     ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
 static void NS(SELF, delete_entry)(SELF* self, KEY key) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     VALUE value = NS(SELF, remove)(self, key);
     VALUE_DELETE(&value);
 }
 
 static size_t NS(SELF, size)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return self->items;
 }
 
@@ -396,7 +396,7 @@ typedef struct {
 } ITER;
 
 static KV_PAIR const* NS(ITER, next)(ITER* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR){.key = &iter->map->keys[iter->index].key,
@@ -411,13 +411,13 @@ static KV_PAIR const* NS(ITER, next)(ITER* iter) {
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
         first_index++;
@@ -431,7 +431,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -467,7 +467,7 @@ typedef struct {
 } ITER_CONST;
 
 static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR_CONST){.key = &iter->map->keys[iter->index].key,
@@ -482,13 +482,13 @@ static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
         first_index++;

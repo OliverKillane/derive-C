@@ -141,7 +141,7 @@ typedef struct {
 } SELF;
 
 static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
-    DEBUG_ASSERT(items > 0);
+    ASSUME(items > 0);
     size_t capacity = next_power_of_2(items);
     ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
@@ -164,14 +164,14 @@ static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
 }
 
 static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ASSERT(self->count < MAX_INDEX);
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
         SLOT* slot = &self->slots[free_index];
-        DEBUG_ASSERT(!slot->present);
+        ASSUME(!slot->present);
         self->free_list = slot->next_free;
         slot->present = true;
         NS(SLOT, memory_tracker_present)(slot);
@@ -203,7 +203,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 }
 
 static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
     }
@@ -221,7 +221,7 @@ static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
 }
 
 static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
     }
@@ -239,7 +239,7 @@ static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(self->alloc, self->capacity, sizeof(SLOT));
     ASSERT(slots);
 
@@ -268,12 +268,12 @@ static SELF NS(SELF, clone)(SELF const* self) {
 }
 
 static INDEX_TYPE NS(SELF, size)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return self->count;
 }
 
 static bool NS(SELF, full)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->capacity == CAPACITY_EXCLUSIVE_UPPER) {
         if (self->free_list == INDEX_NONE) {
             return true;
@@ -285,7 +285,7 @@ static bool NS(SELF, full)(SELF const* self) {
 static size_t NS(SELF, max_entries) = MAX_INDEX;
 
 static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (!CHECK_ACCESS_INDEX(self, index)) {
@@ -306,7 +306,7 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
 }
 
 static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
@@ -315,7 +315,7 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
 }
 
 static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (!CHECK_ACCESS_INDEX(self, index)) {
@@ -354,7 +354,7 @@ typedef struct {
 } ITER;
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     // JUSTIFY: If no entries are left, then the previous '.._next' call moved
     //          the index to the exclusive end
@@ -363,7 +363,7 @@ static bool NS(ITER, empty)(ITER const* iter) {
 }
 
 static IV_PAIR const* NS(ITER, next)(ITER* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
 
     if (NS(ITER, empty)(iter)) {
@@ -381,7 +381,7 @@ static IV_PAIR const* NS(ITER, next)(ITER* iter) {
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
         index++;
@@ -396,7 +396,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ITER iter = NS(SELF, get_iter)(self);
     IV_PAIR const* entry;
     while ((entry = NS(ITER, next)(&iter))) {
@@ -433,13 +433,13 @@ typedef struct {
 } ITER_CONST;
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
 static IV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
 
     if (NS(ITER_CONST, empty)(iter)) {
@@ -458,7 +458,7 @@ static IV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
         index++;

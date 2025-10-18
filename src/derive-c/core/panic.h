@@ -23,31 +23,21 @@
     #define UNREACHABLE(...) PANIC("unreachable: " __VA_ARGS__ "\n");
 #endif
 
-#if !defined DEBUG_UNREACHABLE
+#if !defined ASSUME
     #if !defined NDEBUG
-        #define DEBUG_UNREACHABLE(...) UNREACHABLE(__VA_ARGS__)
+        #define ASSUME(expr, ...) ASSERT(expr, __VA_ARGS__)
     #else
-        #define DEBUG_UNREACHABLE(...) __builtin_unreachable()
+        #if defined(__clang__)
+            #define ASSUME(expr, ...) __builtin_assume(expr)
+        #elif defined(__GNUC__)
+            // GCC doesn't have __builtin_assume, but this pattern has the same effect:
+            #define ASSUME(expr, ...)                                                              \
+                do {                                                                               \
+                    if (!(cond))                                                                   \
+                        __builtin_unreachable();                                                   \
+                } while (0)
+        #else
+            #define ASSUME(expr, ...) ((void)0)
+        #endif
     #endif
-#endif
-
-#if defined(__clang__)
-    #define ASSUME(cond) __builtin_assume(cond)
-#elif defined(_MSC_VER)
-    #define ASSUME(cond) __assume(cond)
-#elif defined(__GNUC__)
-    // GCC doesn't have __builtin_assume, but this pattern has the same effect:
-    #define ASSUME(cond)                                                                           \
-        do {                                                                                       \
-            if (!(cond))                                                                           \
-                __builtin_unreachable();                                                           \
-        } while (0)
-#else
-    #define ASSUME(cond) ((void)0)
-#endif
-
-#if !defined NDEBUG
-    #define DEBUG_ASSERT(...) ASSERT(__VA_ARGS__)
-#else
-    #define DEBUG_ASSERT(expr, ...) ASSUME(expr)
 #endif

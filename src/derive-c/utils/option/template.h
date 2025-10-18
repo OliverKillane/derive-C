@@ -47,7 +47,7 @@ static SELF NS(SELF, from)(ITEM value) { return (SELF){.item = value, .present =
 static SELF NS(SELF, empty)() { return (SELF){.present = false}; }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->present) {
         return NS(SELF, from)(ITEM_CLONE(&self->item));
     }
@@ -55,7 +55,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 }
 
 static ITEM* NS(SELF, get)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->present) {
         return &self->item;
     }
@@ -63,7 +63,7 @@ static ITEM* NS(SELF, get)(SELF* self) {
 }
 
 static ITEM const* NS(SELF, get_const)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->present) {
         return &self->item;
     }
@@ -71,7 +71,7 @@ static ITEM const* NS(SELF, get_const)(SELF const* self) {
 }
 
 static ITEM const* NS(SELF, get_const_or)(SELF const* self, ITEM const* default_value) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->present) {
         return &self->item;
     }
@@ -79,19 +79,19 @@ static ITEM const* NS(SELF, get_const_or)(SELF const* self, ITEM const* default_
 }
 
 static bool NS(SELF, is_present)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return self->present;
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->present) {
         ITEM_DELETE(&self->item);
     }
 }
 
 static bool NS(SELF, replace)(SELF* self, ITEM value) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     bool was_present;
     if (self->present) {
         ITEM_DELETE(&self->item);

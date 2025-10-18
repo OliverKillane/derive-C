@@ -25,7 +25,7 @@ static SELF NS(SELF, new)(char const* name, ALLOC* alloc) {
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     void* ptr = NS(ALLOC, malloc)(self->base, size);
     if (ptr) {
         printf("%s allocated %zu bytes at %p\n", self->name, size, ptr);
@@ -36,7 +36,7 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 }
 
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     void* ptr = NS(ALLOC, calloc)(self->base, count, size);
     if (ptr) {
         printf("%s allocated %zu bytes at %p\n", self->name, count * size, ptr);
@@ -47,7 +47,7 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 }
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     void* new_ptr = NS(ALLOC, realloc)(self->base, ptr, size);
     if (new_ptr) {
         printf("%s reallocated memory at %p to %zu bytes\n", self->name, new_ptr, size);
@@ -58,7 +58,7 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     printf("%s freeing memory at %p\n", self->name, ptr);
     NS(ALLOC, free)(self->base, ptr);
 }

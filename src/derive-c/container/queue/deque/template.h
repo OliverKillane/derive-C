@@ -91,7 +91,7 @@ static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, ALLOC* a
 }
 
 static SELF NS(SELF, clone)(SELF const* other) {
-    DEBUG_ASSERT(other);
+    ASSUME(other);
     return (SELF){
         .front = NS(ITEM_VECTORS, clone)(&other->front),
         .back = NS(ITEM_VECTORS, clone)(&other->back),
@@ -102,7 +102,7 @@ static SELF NS(SELF, clone)(SELF const* other) {
 }
 
 static void NS(SELF, rebalance)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
@@ -124,7 +124,7 @@ static void NS(SELF, rebalance)(SELF* self) {
         source_size = front_size;
         target_size = back_size;
     } else {
-        DEBUG_ASSERT(back_size > front_size + 1);
+        ASSUME(back_size > front_size + 1);
         source = &self->back;
         target = &self->front;
         source_size = back_size;
@@ -136,7 +136,7 @@ static void NS(SELF, rebalance)(SELF* self) {
 }
 
 static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
     if (front_size > 0) {
@@ -147,7 +147,7 @@ static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {
 }
 
 static ITEM* NS(SELF, peek_front_write)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
     if (front_size > 0) {
@@ -158,7 +158,7 @@ static ITEM* NS(SELF, peek_front_write)(SELF* self) {
 }
 
 static ITEM const* NS(SELF, peek_back_read)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
     if (back_size > 0) {
@@ -169,7 +169,7 @@ static ITEM const* NS(SELF, peek_back_read)(SELF const* self) {
 }
 
 static ITEM* NS(SELF, peek_back_write)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
     if (back_size > 0) {
@@ -180,21 +180,21 @@ static ITEM* NS(SELF, peek_back_write)(SELF* self) {
 }
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->front, item);
     NS(SELF, rebalance)(self);
 }
 
 static void NS(SELF, push_back)(SELF* self, ITEM item) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->back, item);
     NS(SELF, rebalance)(self);
 }
 
 static ITEM NS(SELF, pop_front)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->front) > 0) {
         ITEM result = NS(ITEM_VECTORS, pop)(&self->front);
@@ -208,7 +208,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
 }
 
 static ITEM NS(SELF, pop_back)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->back) > 0) {
         ITEM result = NS(ITEM_VECTORS, pop)(&self->back);
@@ -222,12 +222,12 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
 }
 
 static size_t NS(SELF, size)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return NS(ITEM_VECTORS, size)(&self->front) + NS(ITEM_VECTORS, size)(&self->back);
 }
 
 static bool NS(SELF, empty)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return NS(ITEM_VECTORS, size)(&self->front) == 0 && NS(ITEM_VECTORS, size)(&self->back) == 0;
 }
 
@@ -243,7 +243,7 @@ typedef struct {
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t const back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
@@ -264,13 +264,13 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 
 static bool NS(ITER, empty)(ITER const* iter) {
     mutation_version_check(&iter->version);
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return (ITER){.deque = self,
                   .pos = 0,
                   .version = mutation_tracker_get(&self->iterator_invalidation_tracker)};
@@ -290,7 +290,7 @@ typedef struct {
 } ITER_CONST;
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t const back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
@@ -310,14 +310,14 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return (ITER_CONST){
         .deque = self,
         .pos = 0,
@@ -328,7 +328,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef ITER_CONST
 
 static void NS(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     NS(ITEM_VECTORS, delete)(&self->front);
     NS(ITEM_VECTORS, delete)(&self->back);
 }

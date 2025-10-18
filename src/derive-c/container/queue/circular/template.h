@@ -89,17 +89,17 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
 }
 
 static bool NS(SELF, empty)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->empty) {
-        DEBUG_ASSERT(self->head == self->tail);
+        ASSUME(self->head == self->tail);
     }
     return self->empty;
 }
 
 static size_t NS(SELF, size)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->empty) {
-        DEBUG_ASSERT(self->tail == self->head);
+        ASSUME(self->tail == self->head);
         return 0;
     }
 
@@ -126,7 +126,7 @@ static void PRIVATE(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
 }
 
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (new_capacity_for > self->capacity) {
@@ -159,7 +159,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
                 // the number of items at the front. As a result, we never need to consider:
                 // - Only copying the first n from the front
                 // - Shifting some of the front items to the start of the buffer
-                DEBUG_ASSERT(front_tail_items <= additional_capacity);
+                ASSUME(front_tail_items <= additional_capacity);
 
                 memcpy(&new_data[old_capacity], &new_data[0], front_tail_items * sizeof(ITEM));
                 self->tail = old_capacity + front_tail_items - 1;
@@ -174,7 +174,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 }
 
 static void NS(SELF, push_back)(SELF* self, ITEM item) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
@@ -188,7 +188,7 @@ static void NS(SELF, push_back)(SELF* self, ITEM item) {
 }
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
@@ -206,7 +206,7 @@ static void NS(SELF, push_front)(SELF* self, ITEM item) {
 }
 
 static ITEM NS(SELF, pop_front)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     ASSERT(!NS(SELF, empty)(self));
 
@@ -225,7 +225,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
 }
 
 static ITEM NS(SELF, pop_back)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     ASSERT(!NS(SELF, empty)(self));
 
@@ -245,7 +245,7 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
 }
 
 static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (index < NS(SELF, size)(self)) {
         size_t const real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
         return &self->data[real_index];
@@ -254,14 +254,14 @@ static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index)
 }
 
 static ITEM const* NS(SELF, read_from_front)(SELF const* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ITEM const* item = NS(SELF, try_read_from_front)(self, index);
     ASSERT(item);
     return item;
 }
 
 static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (index < NS(SELF, size)(self)) {
         size_t const real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
         return &self->data[real_index];
@@ -270,14 +270,14 @@ static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
 }
 
 static ITEM* NS(SELF, write_from_front)(SELF* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ITEM* value = NS(SELF, try_write_from_front)(self, index);
     ASSERT(value);
     return value;
 }
 
 static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (index >= NS(SELF, size)(self)) {
         return NULL;
     }
@@ -289,14 +289,14 @@ static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) 
 }
 
 static ITEM const* NS(SELF, read_from_back)(SELF const* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ITEM const* item = NS(SELF, try_read_from_back)(self, index);
     ASSERT(item);
     return item;
 }
 
 static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (index >= NS(SELF, size)(self)) {
         return NULL;
     }
@@ -308,7 +308,7 @@ static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
 }
 
 static ITEM* NS(SELF, write_from_back)(SELF* self, size_t index) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ITEM* value = NS(SELF, try_write_from_back)(self, index);
     ASSERT(value);
     return value;
@@ -326,13 +326,13 @@ typedef struct {
 } ITER;
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
 static ITEM* NS(ITER, next)(ITER* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     ITEM* item = NS(SELF, try_write_from_front)(iter->circular, iter->position);
     if (!item) {
@@ -343,7 +343,7 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return (ITER){
         .circular = self,
         .position = 0,
@@ -352,7 +352,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->data) {
         ITER iter = NS(SELF, get_iter)(self);
         ITEM* item;
@@ -381,13 +381,13 @@ typedef struct {
 } ITER_CONST;
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    DEBUG_ASSERT(iter);
+    ASSUME(iter);
     mutation_version_check(&iter->version);
     ITEM const* item = NS(SELF, try_read_from_front)(iter->circular, iter->position);
     if (!item) {
@@ -398,7 +398,7 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return (ITER_CONST){
         .circular = self,
         .position = 0,
@@ -407,7 +407,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     ITEM* new_data = NULL;
     size_t tail = 0;
     size_t new_capacity = 0;

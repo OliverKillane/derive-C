@@ -18,12 +18,12 @@ static stdalloc* NS(stdalloc, get)() {
 }
 
 static void* NS(stdalloc, malloc)(stdalloc* self, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return malloc(size);
 }
 
 static void* NS(stdalloc, realloc)(stdalloc* self, void* ptr, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (ptr) {
         return realloc(ptr, size);
     }
@@ -31,13 +31,13 @@ static void* NS(stdalloc, realloc)(stdalloc* self, void* ptr, size_t size) {
 }
 
 static void* NS(stdalloc, calloc)(stdalloc* self, size_t count, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return calloc(count, size);
 }
 
 static void NS(stdalloc, free)(stdalloc* self, void* ptr) {
-    DEBUG_ASSERT(self);
-    DEBUG_ASSERT(ptr);
+    ASSUME(self);
+    ASSUME(ptr);
     free(ptr);
 }
 

@@ -58,7 +58,7 @@ static SELF NS(SELF, new)() {
 
 /// Clear the allocator, note that all data should be freed before this occurs.
 static void NS(SELF, clear)(SELF* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
 #if !defined NDEBUG
     // JUSTIFY: Allocations & sizes zeroed on free in debug, we check all data has been freed.
@@ -78,12 +78,12 @@ static void NS(SELF, clear)(SELF* self) {
 }
 
 static USED NS(SELF, get_used)(SELF const* self) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     return self->used;
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
     if (self->used + (size + sizeof(USED)) > CAPACITY) {
         return NULL;
     }
@@ -102,8 +102,8 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
-    DEBUG_ASSERT(self);
-    DEBUG_ASSERT(ptr);
+    ASSUME(self);
+    ASSUME(ptr);
 
 #if !defined NDEBUG
     // JUSTIFY: Zero memory in debug.
@@ -120,7 +120,7 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
 }
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
-    DEBUG_ASSERT(self);
+    ASSUME(self);
 
     if (!ptr) {
         return NS(SELF, malloc)(self, new_size);
