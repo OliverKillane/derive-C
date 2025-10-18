@@ -2,14 +2,14 @@
 /// modification For example, checking iterator invalidation in debug mode.
 
 #pragma once
+#include <derive-c/core/prelude.h>
 #include <stddef.h>
 
 #if defined NDEBUG
-    #include <derive-c/core/zerosized.h>
-ZERO_SIZED(mutation_tracker);
 
-typedef struct {
-} mutation_version;
+ZERO_SIZED(mutation_tracker);
+ZERO_SIZED(mutation_version);
+
 static mutation_tracker mutation_tracker_new() { return (mutation_tracker){}; }
 
 static void mutation_tracker_mutate(mutation_tracker* self) { (void)self; }
@@ -22,7 +22,7 @@ static mutation_version mutation_tracker_get(mutation_tracker const* self) {
 static void mutation_version_check(mutation_version const* self) { (void)self; }
 
 #else
-    #include <derive-c/core/helpers.h>
+
 typedef struct {
     size_t count;
 } mutation_tracker;

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 #include <derive-c/derive/clone.h>
 #include <derive-c/derive/eq.h>
 #include <derive-c/derive/ord.h>

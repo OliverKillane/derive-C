@@ -1,4 +1,4 @@
-#include <derive-c/core/helpers.h>
+#include <derive-c/core/prelude.h>
 #include <stdbool.h>
 
 #define DERIVE_EQ_MEMBER(t, n) &&NS(t, eq)(&self_1->n, &self_2->n)

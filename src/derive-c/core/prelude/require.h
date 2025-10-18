@@ -1,5 +1,5 @@
 #pragma once
-#include <derive-c/core/helpers.h>
+#include <derive-c/core/prelude/macros.h>
 
 #if defined __cplusplus
     #define CPP_COMPAIBILITY

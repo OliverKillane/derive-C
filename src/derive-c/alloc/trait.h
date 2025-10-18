@@ -1,5 +1,5 @@
 #pragma once
-#include <derive-c/core/require.h>
+#include <derive-c/core/prelude.h>
 
 #define TRAIT_ALLOC(SELF)                                                                          \
     REQUIRE_METHOD(void*, SELF, malloc, (SELF*, size_t));                                          \

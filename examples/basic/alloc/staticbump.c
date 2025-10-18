@@ -5,7 +5,7 @@
 #define NAME foopool
 #include <derive-c/alloc/staticbump/template.h>
 
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 void foopool_raw_example() {
     foopool pool = foopool_new();

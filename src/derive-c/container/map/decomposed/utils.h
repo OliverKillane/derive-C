@@ -2,8 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <derive-c/core/helpers.h>
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 static inline size_t apply_capacity_policy(size_t capacity) {
     // TODO(oliverkillane): play with overallocation policy

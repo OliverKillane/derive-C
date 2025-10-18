@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <derive-c/core/helpers.h>
+#include <derive-c/core/prelude.h>
 
 TEST(CoreTests, NextPowerOf2) {
     ASSERT_EQ(next_power_of_2(0), 1);

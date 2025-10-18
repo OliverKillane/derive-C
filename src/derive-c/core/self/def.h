@@ -1,5 +1,5 @@
-#include <derive-c/core/helpers.h> // NOLINT(misc-include-cleaner)
-#include <derive-c/core/placeholder.h>
+#include <derive-c/core/prelude/macros.h> // NOLINT(misc-include-cleaner)
+#include <derive-c/core/prelude/placeholder.h>
 
 /// @brief Supporting templates that internally invoke new templates.
 ///

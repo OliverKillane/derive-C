@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 #define MAX_CAPACITY 8
 

@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 #define MAX_UP_TO 100000
 

@@ -6,11 +6,10 @@
 #include <string.h>
 
 #include <derive-c/container/queue/trait.h>
+#include <derive-c/core/debug/gdb_marker.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
-#include <derive-c/core/helpers.h>
-#include <derive-c/core/panic.h>
-#include <derive-c/core/placeholder.h>
+#include <derive-c/core/prelude.h>
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -109,8 +108,8 @@ static size_t NS(SELF, size)(SELF const* self) {
     return (self->capacity - self->head) + self->tail + 1;
 }
 
-static void PRIVATE(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
-                                                            memory_tracker_capability cap) {
+static void PRIV(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
+                                                         memory_tracker_capability cap) {
     if (self->empty) {
         memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
                            self->capacity * sizeof(ITEM));
@@ -134,7 +133,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 
         // We set the capability to write for the allocator, and only touch the
         // state for memory that is inaccessible
-        PRIVATE(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_WRITE);
+        PRIV(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_WRITE);
 
         ITEM* new_data =
             (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
@@ -169,7 +168,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
         self->data = new_data;
 
         // Set the new inaccessible memory
-        PRIVATE(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_NONE);
+        PRIV(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_NONE);
     }
 }
 
@@ -436,7 +435,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .derive_c_circular = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
-    PRIVATE(NS(SELF, set_inaccessible_memory_caps))(&new_self, MEMORY_TRACKER_CAP_NONE);
+    PRIV(NS(SELF, set_inaccessible_memory_caps))(&new_self, MEMORY_TRACKER_CAP_NONE);
     return new_self;
 }
 

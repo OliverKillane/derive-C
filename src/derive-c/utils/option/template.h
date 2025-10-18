@@ -4,9 +4,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include <derive-c/core/helpers.h>
-#include <derive-c/core/panic.h>
-#include <derive-c/core/placeholder.h>
+#include <derive-c/core/debug/gdb_marker.h>
+#include <derive-c/core/prelude.h>
 
 #include <derive-c/core/self/def.h>
 

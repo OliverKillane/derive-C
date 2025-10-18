@@ -1,19 +1,19 @@
 /// @brief MurmurHash3 implementation, copied (with love) from [Austin Appleby's
 /// implementation](https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.h)
 
-#include <derive-c/core/helpers.h>
+#include <derive-c/core/prelude.h>
 #include <stddef.h>
 #include <stdint.h>
 
-FORCE_INLINE uint32_t derive_c_rotl32(uint32_t x, int8_t r) { return (x << r) | (x >> (32 - r)); }
+INLINE uint32_t derive_c_rotl32(uint32_t x, int8_t r) { return (x << r) | (x >> (32 - r)); }
 
-FORCE_INLINE uint64_t derive_c_rotl64(uint64_t x, int8_t r) { return (x << r) | (x >> (64 - r)); }
+INLINE uint64_t derive_c_rotl64(uint64_t x, int8_t r) { return (x << r) | (x >> (64 - r)); }
 
-FORCE_INLINE uint32_t derive_c_getblock32(const uint32_t* p, int32_t i) { return p[i]; }
+INLINE uint32_t derive_c_getblock32(const uint32_t* p, int32_t i) { return p[i]; }
 
-FORCE_INLINE uint64_t derive_c_getblock64(const uint64_t* p, int32_t i) { return p[i]; }
+INLINE uint64_t derive_c_getblock64(const uint64_t* p, int32_t i) { return p[i]; }
 
-FORCE_INLINE uint32_t derive_c_fmix32(uint32_t h) {
+INLINE uint32_t derive_c_fmix32(uint32_t h) {
     h ^= h >> 16;
     h *= 0x85ebca6b;
     h ^= h >> 13;
@@ -23,7 +23,7 @@ FORCE_INLINE uint32_t derive_c_fmix32(uint32_t h) {
     return h;
 }
 
-FORCE_INLINE uint64_t derive_c_fmix64(uint64_t k) {
+INLINE uint64_t derive_c_fmix64(uint64_t k) {
     k ^= k >> 33;
     k *= 0xff51afd7ed558ccdLLU;
     k ^= k >> 33;

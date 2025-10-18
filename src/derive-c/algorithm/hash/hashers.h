@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include <derive-c/algorithm/hash/murmurhash.h>
-#include <derive-c/core/helpers.h>
+#include <derive-c/core/prelude.h>
 
 /// The worst possible hash, for testing purposes.
 #define ALWAYS_COLLIDE(type)                                                                       \

@@ -6,9 +6,7 @@
 #include <stdlib.h>
 
 #include <derive-c/alloc/trait.h>
-#include <derive-c/core/helpers.h>
-#include <derive-c/core/panic.h>
-#include <derive-c/core/zerosized.h>
+#include <derive-c/core/prelude.h>
 
 ZERO_SIZED(nullalloc);
 

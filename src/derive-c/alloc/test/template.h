@@ -12,8 +12,7 @@
 #include <stddef.h>
 
 #include <derive-c/alloc/trait.h>
-#include <derive-c/core/helpers.h>
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>

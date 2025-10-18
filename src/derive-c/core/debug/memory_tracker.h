@@ -6,8 +6,7 @@
 ///    before passing to allocator free.
 #pragma once
 
-#include <derive-c/core/helpers.h> // NOLINT(misc-include-cleaner)
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 #include <stddef.h>
 #include <stdint.h>

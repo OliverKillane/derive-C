@@ -11,7 +11,7 @@
 
 #include <derive-c/algorithm/hash/hashers.h>
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 #include <derive-c/derive/std.h>
 
 #define KEY uint32_t

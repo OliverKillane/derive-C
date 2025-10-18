@@ -5,12 +5,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "derive-c/core/debug/memory_tracker.h"
 #include "utils.h"
+#include <derive-c/core/debug/gdb_marker.h>
+#include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
-#include <derive-c/core/helpers.h>
-#include <derive-c/core/panic.h>
-#include <derive-c/core/placeholder.h>
+#include <derive-c/core/prelude.h>
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -88,6 +87,14 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
+static void PRIV(NS(SELF, invariant_check))(SELF const* self) {
+    ASSUME(self);
+    ASSUME(is_power_of_2(self->capacity));
+    ASSUME(self->keys);
+    ASSUME(self->values);
+    ASSUME(self->alloc);
+}
+
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     ASSERT(capacity > 0);
     size_t const real_capacity = apply_capacity_policy(capacity);
@@ -123,7 +130,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
-    ASSUME(self);
+    PRIV(NS(SELF, invariant_check))(self);
 
     // JUSTIFY: Naive copy
     //           - We could resize (potentially a smaller map) and rehash
@@ -166,7 +173,8 @@ static void NS(SELF, delete)(SELF* self);
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value);
 
 static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
-    ASSUME(self);
+    PRIV(NS(SELF, invariant_check))(self);
+
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const target_capacity = apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
@@ -179,12 +187,14 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
         }
         NS(ALLOC, free)(self->alloc, (void*)self->keys);
         NS(ALLOC, free)(self->alloc, (void*)self->values);
+
+        PRIV(NS(SELF, invariant_check))(&new_map);
         *self = new_map;
     }
 }
 
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
-    ASSUME(self);
+    PRIV(NS(SELF, invariant_check))(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (apply_capacity_policy(self->items) > self->capacity / 2) {
         NS(SELF, extend_capacity_for)(self, self->items * 2);
@@ -252,7 +262,7 @@ static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
 }
 
 static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
-    ASSUME(self);
+    PRIV(NS(SELF, invariant_check))(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
@@ -276,7 +286,7 @@ static VALUE* NS(SELF, write)(SELF* self, KEY key) {
 }
 
 static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
-    ASSUME(self);
+    PRIV(NS(SELF, invariant_check))(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
 
@@ -300,7 +310,7 @@ static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
 }
 
 static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
-    ASSUME(self);
+    PRIV(NS(SELF, invariant_check))(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
@@ -358,21 +368,18 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 }
 
 static VALUE NS(SELF, remove)(SELF* self, KEY key) {
-    ASSUME(self);
     VALUE value;
     ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
 static void NS(SELF, delete_entry)(SELF* self, KEY key) {
-    ASSUME(self);
-    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     VALUE value = NS(SELF, remove)(self, key);
     VALUE_DELETE(&value);
 }
 
 static size_t NS(SELF, size)(SELF const* self) {
-    ASSUME(self);
+    PRIV(NS(SELF, invariant_check))(self);
     return self->items;
 }
 

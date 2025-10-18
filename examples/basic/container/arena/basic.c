@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 #define INDEX_BITS 32
 #define VALUE uint32_t

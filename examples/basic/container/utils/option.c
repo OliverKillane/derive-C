@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 struct complex_data {
     int x;

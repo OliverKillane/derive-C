@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/panic.h>
+#include <derive-c/core/prelude.h>
 
 typedef struct {
     char const* forename;
