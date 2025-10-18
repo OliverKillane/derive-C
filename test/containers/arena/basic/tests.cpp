@@ -26,6 +26,7 @@ struct Model {
 
 extern "C" {
 #include <derive-c/alloc/std.h>
+#include <derive-c/core/debug/memory_tracker.h>
 
 #define NAME Sut
 #define VALUE Value
@@ -207,7 +208,10 @@ struct Remove : Command {
         s.indexToSutIndex.erase(index.value());
         s.SutIndexToIndex.erase(sut_index);
 
+        Value const* entry_ptr = Sut_read(s.getConst(), sut_index);
         Value entry = Sut_remove(s.get(), sut_index);
+        memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, entry_ptr,
+                             sizeof(Value));
         RC_ASSERT(entry == m.map.at(index.value()));
     }
 };
@@ -238,7 +242,10 @@ struct Delete : Command {
         s.indexToSutIndex.erase(index.value());
         s.SutIndexToIndex.erase(sut_index);
 
+        Value const* entry_ptr = Sut_read(s.getConst(), sut_index);
         bool was_removed = Sut_delete_entry(s.get(), sut_index);
+        memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, entry_ptr,
+                             sizeof(Value));
         RC_ASSERT(was_removed);
     }
 };

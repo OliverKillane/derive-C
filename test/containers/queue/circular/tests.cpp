@@ -6,10 +6,16 @@
 
 #include <deque>
 
+// #define PANIC(fmt, ...) RC_FAIL(fmt)
+#define PANIC(...) throw std::runtime_error(std::format(__VA_ARGS__))
+
 using Data = int;
 using Model = std::deque<Data>;
 
 extern "C" {
+#include <derive-c/alloc/std.h>
+#include <derive-c/core/debug/memory_tracker.h>
+
 #define NAME Sut
 #define ITEM Data
 #include <derive-c/container/queue/circular/template.h>
@@ -51,10 +57,14 @@ struct Command : rc::state::Command<Model, SutWrapper> {
                 RC_ASSERT(!Sut_iter_empty(&iter));
                 const auto* sut_item_const = Sut_iter_const_next(&iter_const);
                 auto* sut_item = Sut_iter_next(&iter);
+
                 RC_ASSERT(*sut_item_const == item);
                 RC_ASSERT(*sut_item == item);
                 RC_ASSERT(*Sut_read_from_front(s.getConst(), index) == item);
+                RC_ASSERT(*Sut_read_from_back(s.getConst(), m.size() - index - 1) == item);
                 RC_ASSERT(*Sut_write_from_front(wrapperCopy.get(), index) == item);
+                RC_ASSERT(*Sut_write_from_back(wrapperCopy.get(), m.size() - index - 1) == item);
+
                 index++;
             }
             RC_ASSERT(Sut_iter_const_empty(&iter_const));
@@ -98,14 +108,28 @@ struct PushBack : Command {
 struct PopFront : Command {
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_front(); }
-    void runAndCheck(const Model& m, SutWrapper& sut) const override { Sut_pop_front(sut.get()); }
+    void runAndCheck(const Model& m, SutWrapper& sut) const override {
+        Data const* entry_ptr = Sut_read_from_front(sut.getConst(), 0);
+        Data front = *entry_ptr;
+        Data front_popped = Sut_pop_front(sut.get());
+        RC_ASSERT(front == front_popped);
+        memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, entry_ptr,
+                             sizeof(Data));
+    }
     void show(std::ostream& os) const override { os << "PopFront()"; }
 };
 
 struct PopBack : Command {
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_back(); }
-    void runAndCheck(const Model& m, SutWrapper& sut) const override { Sut_pop_back(sut.get()); }
+    void runAndCheck(const Model& m, SutWrapper& sut) const override {
+        Data const* entry_ptr = Sut_read_from_back(sut.getConst(), 0);
+        Data back = *entry_ptr;
+        Data back_popped = Sut_pop_back(sut.get());
+        RC_ASSERT(back == back_popped);
+        memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, entry_ptr,
+                             sizeof(Data));
+    }
     void show(std::ostream& os) const override { os << "PopBack()"; }
 };
 

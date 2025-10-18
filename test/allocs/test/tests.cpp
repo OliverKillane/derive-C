@@ -15,7 +15,7 @@ extern "C" {
 void allocate_and_throw(stdtestalloc* alloc) {
     void* a = stdtestalloc_malloc(alloc, 10000000);
     ((int*)a)[12] = 42;
-    PANIC("prblem!");
+    PANIC("problem!");
 }
 }
 

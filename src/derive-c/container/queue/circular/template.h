@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <derive-c/container/queue/trait.h>
+#include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
 #include <derive-c/core/helpers.h>
 #include <derive-c/core/panic.h>
@@ -72,6 +73,9 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
     ASSERT(data);
 
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, data,
+                       capacity * sizeof(ITEM));
+
     return (SELF){
         .data = data,
         .capacity = capacity,
@@ -105,14 +109,36 @@ static size_t NS(SELF, size)(SELF const* self) {
     return (self->capacity - self->head) + self->tail + 1;
 }
 
+static void NS(_, NS(SELF, set_inaccessible_memory_caps))(SELF* self,
+                                                          memory_tracker_capability cap) {
+    if (self->empty) {
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
+                           self->capacity * sizeof(ITEM));
+    } else if (self->head <= self->tail) {
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, &self->data[self->tail + 1],
+                           (self->capacity - (self->tail + 1)) * sizeof(ITEM));
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
+                           self->head * sizeof(ITEM));
+    } else {
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, &self->data[self->tail + 1],
+                           (self->head - (self->tail + 1)) * sizeof(ITEM));
+    }
+}
+
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
     DEBUG_ASSERT(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (new_capacity_for > self->capacity) {
         size_t const new_capacity = next_power_of_2(new_capacity_for * 2);
+
+        // We set the capability to write for the allocator, and only touch the
+        // state for memory that is inaccessible
+        NS(_, NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_WRITE);
+
         ITEM* new_data =
             (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
+
         ASSERT(new_data);
         if (self->head > self->tail) {
             // The queue wraps at the old end, so we need to either:
@@ -141,6 +167,9 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
         }
         self->capacity = new_capacity;
         self->data = new_data;
+
+        // Set the new inaccessible memory
+        NS(_, NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_NONE);
     }
 }
 
@@ -152,6 +181,8 @@ static void NS(SELF, push_back)(SELF* self, ITEM item) {
     if (!self->empty) {
         self->tail = modulus_power_of_2_capacity(self->tail + 1, self->capacity);
     }
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
+                       &self->data[self->tail], sizeof(ITEM));
     self->data[self->tail] = item;
     self->empty = false;
 }
@@ -168,6 +199,8 @@ static void NS(SELF, push_front)(SELF* self, ITEM item) {
             self->head--;
         }
     }
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
+                       &self->data[self->head], sizeof(ITEM));
     self->data[self->head] = item;
     self->empty = false;
 }
@@ -178,6 +211,11 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
     ASSERT(!NS(SELF, empty)(self));
 
     ITEM value = self->data[self->head];
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                       &self->data[self->head], sizeof(ITEM));
+    memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                         &self->data[self->head], sizeof(ITEM));
+
     if (self->head == self->tail) {
         self->empty = true;
     } else {
@@ -192,6 +230,8 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
     ASSERT(!NS(SELF, empty)(self));
 
     ITEM value = self->data[self->tail];
+    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
+                       &self->data[self->tail], sizeof(ITEM));
     if (self->head == self->tail) {
         self->empty = true;
     } else {
@@ -232,6 +272,44 @@ static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
 static ITEM* NS(SELF, write_from_front)(SELF* self, size_t index) {
     DEBUG_ASSERT(self);
     ITEM* value = NS(SELF, try_write_from_front)(self, index);
+    ASSERT(value);
+    return value;
+}
+
+static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
+    DEBUG_ASSERT(self);
+    if (index >= NS(SELF, size)(self)) {
+        return NULL;
+    }
+    if (index <= self->tail) {
+        return &self->data[self->tail - index];
+    }
+    size_t const from_end = index - self->tail;
+    return &self->data[self->capacity - from_end];
+}
+
+static ITEM const* NS(SELF, read_from_back)(SELF const* self, size_t index) {
+    DEBUG_ASSERT(self);
+    ITEM const* item = NS(SELF, try_read_from_back)(self, index);
+    ASSERT(item);
+    return item;
+}
+
+static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
+    DEBUG_ASSERT(self);
+    if (index >= NS(SELF, size)(self)) {
+        return NULL;
+    }
+    if (index <= self->tail) {
+        return &self->data[self->tail - index];
+    }
+    size_t const from_end = index - self->tail;
+    return &self->data[self->capacity - from_end];
+}
+
+static ITEM* NS(SELF, write_from_back)(SELF* self, size_t index) {
+    DEBUG_ASSERT(self);
+    ITEM* value = NS(SELF, try_write_from_back)(self, index);
     ASSERT(value);
     return value;
 }
@@ -280,7 +358,11 @@ static void NS(SELF, delete)(SELF* self) {
         ITEM* item;
         while ((item = NS(ITER, next)(&iter))) {
             ITEM_DELETE(item);
+            memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, item,
+                               sizeof(ITEM));
         }
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, self->data,
+                           self->capacity * sizeof(ITEM));
         NS(ALLOC, free)(self->alloc, self->data);
     }
 }
@@ -344,14 +426,18 @@ static SELF NS(SELF, clone)(SELF const* self) {
         }
         tail--;
     }
-    return (SELF){.data = new_data,
-                  .capacity = new_capacity,
-                  .head = 0,
-                  .tail = tail,
-                  .empty = self->empty,
-                  .alloc = self->alloc,
-                  .derive_c_circular = gdb_marker_new(),
-                  .iterator_invalidation_tracker = mutation_tracker_new()};
+    SELF new_self = {
+        .data = new_data,
+        .capacity = new_capacity,
+        .head = 0,
+        .tail = tail,
+        .empty = self->empty,
+        .alloc = self->alloc,
+        .derive_c_circular = gdb_marker_new(),
+        .iterator_invalidation_tracker = mutation_tracker_new(),
+    };
+    NS(_, NS(SELF, set_inaccessible_memory_caps))(&new_self, MEMORY_TRACKER_CAP_NONE);
+    return new_self;
 }
 
 #undef ITER_CONST

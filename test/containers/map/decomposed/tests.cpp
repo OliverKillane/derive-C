@@ -7,6 +7,10 @@
 #include <optional>
 #include <unordered_map>
 
+// JUSTIFY: No memory tracker check on remove/delete items
+//  - Robin hood hashing means the entry may be replaced by other values,
+//    shifted backwards.
+
 using Value = size_t;
 using Key = size_t;
 using Model = std::unordered_map<Key, Value>;

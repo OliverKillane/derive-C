@@ -1,6 +1,7 @@
 #pragma once
 #include <derive-c/core/panic.h>
 #include <derive-c/core/zerosized.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #define NS_EXPANDED(pre, post) pre##_##post
@@ -45,6 +46,11 @@ static inline size_t modulus_power_of_2_capacity(size_t index, size_t capacity) 
     DEBUG_ASSERT(is_power_of_2(capacity))
     // NOTE: If we know capacity is a power of 2, we can reduce the cost of 'index + 1 % capacity'
     return index & (capacity - 1);
+}
+
+static inline bool is_aligned_pow2_exp(const void* ptr, unsigned exp) {
+    uintptr_t const mask = (1U << exp) - 1;
+    return (((uintptr_t)ptr) & mask) == 0;
 }
 
 #define FORCE_INLINE inline __attribute__((always_inline))

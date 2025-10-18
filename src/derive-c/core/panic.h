@@ -15,7 +15,7 @@
 #if !defined ASSERT
     #define ASSERT(expr, ...)                                                                      \
         if (!(expr)) {                                                                             \
-            PANIC("assertion " #expr " failed: " __VA_ARGS__ "\n");                                \
+            PANIC("assertion " #expr " failed: " __VA_ARGS__);                                     \
         }
 #endif
 
