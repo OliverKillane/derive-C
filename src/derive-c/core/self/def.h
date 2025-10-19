@@ -1,4 +1,5 @@
-#include <derive-c/core/helpers.h> // NOLINT(misc-include-cleaner)
+#include <derive-c/core/prelude/macros.h> // NOLINT(misc-include-cleaner)
+#include <derive-c/core/prelude/placeholder.h>
 
 /// @brief Supporting templates that internally invoke new templates.
 ///
@@ -10,7 +11,7 @@
 /// #pragma push_macro("SELF")
 /// #define SELF NS(SELF, internal_vector)
 /// // ...
-/// #include <derive-c/structures/vector/template.h>
+/// #include <derive-c/container/vector/dynamic/template.h>
 ///
 /// // ...
 ///
@@ -44,9 +45,9 @@
     #endif
     #define SELF EXPAND(NAME)
 #else
-    #if !defined __clang_analyzer__
+    #if !defined PLACEHOLDERS
         #error "The `SELF` type for a data structure must be defined (by `NAME` or `INTERNAL_NAME`)"
     #endif
-    #define NAME derive_c_parameter_self
+    #define NAME self_t
     #define SELF NAME
 #endif

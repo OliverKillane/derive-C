@@ -4,12 +4,12 @@
 /// Demonstrating embedding vectors inside hashmaps, and making efficient use of small indexes for
 /// arenas.
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <derive-c/allocs/std.h>
+#include <derive-c/alloc/std.h>
+#include <derive-c/core/prelude.h>
 
 typedef struct {
     char const* forename;
@@ -44,18 +44,18 @@ size_t age_hash(age const* age) { return age->value; }
 #define INDEX_BITS 16
 #define VALUE employee
 #define NAME employees
-#include <derive-c/structures/arena/template.h>
+#include <derive-c/container/arena/basic/template.h>
 
-#define ITEM employees_index
+#define ITEM employees_index_t
 #define NAME same_age_employees
-#include <derive-c/structures/vector/template.h>
+#include <derive-c/container/vector/dynamic/template.h>
 
 #define KEY age
 #define KEY_EQ age_eq
 #define KEY_HASH age_hash
 #define VALUE same_age_employees
 #define NAME employees_by_age
-#include <derive-c/structures/hashmap/template.h>
+#include <derive-c/container/map/decomposed/template.h>
 
 typedef struct {
     employees data;
@@ -71,7 +71,7 @@ hr_system hr_system_new() {
 
 void hr_system_new_employee(hr_system* self, employee emp) {
     printf("Adding employee %s %s\n", emp.name.forename, emp.name.surname);
-    employees_index idx = employees_insert(&self->data, emp);
+    employees_index_t idx = employees_insert(&self->data, emp);
     same_age_employees* idxes = employees_by_age_try_write(&self->by_age, emp.age);
     if (!idxes) {
         idxes =
@@ -88,7 +88,8 @@ employee const* hr_system_newest_of_age(hr_system const* self, age age) {
     if (same_age_employees_size(idxes) == 0) {
         return NULL;
     }
-    employees_index const* idx = same_age_employees_read(idxes, same_age_employees_size(idxes) - 1);
+    employees_index_t const* idx =
+        same_age_employees_read(idxes, same_age_employees_size(idxes) - 1);
     return employees_read(&self->data, *idx);
 }
 
@@ -130,8 +131,8 @@ int main() {
     hr_system_new_employee(&hr, bob);
 
     employee const* newest_22 = hr_system_newest_of_age(&hr, (age){.value = 22});
-    assert(newest_22);
-    assert(name_eq(&newest_22->name, &bob_name));
+    ASSERT(newest_22);
+    ASSERT(name_eq(&newest_22->name, &bob_name));
 
     hr_system_delete(&hr);
 }

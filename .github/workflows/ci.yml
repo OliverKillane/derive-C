@@ -2,31 +2,74 @@ name: CI for Pull Requests
 
 on:
   push:
-    branches:
-        - main
+    branches: [ main ]
   pull_request:
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: clang_debug_asan_ubsan
+            build_type: Debug
+            toolchain: clang.nix
+            sanitizers: address,undefined
+            coverage: true
+            lint: On
+          - name: clang_debug_msan
+            build_type: Debug
+            toolchain: clang.nix
+            sanitizers: memory
+            coverage: false
+            lint: Off
+          - name: clang_release
+            build_type: Release
+            toolchain: clang.nix
+            sanitizers: ""
+            coverage: false
+            lint: Off
+          - name: gcc_debug_asan_ubsan
+            build_type: Debug
+            toolchain: gcc.nix
+            sanitizers: address,undefined
+            coverage: false
+            lint: Off
+          - name: gcc_release
+            build_type: Release
+            toolchain: gcc.nix
+            sanitizers: ""
+            coverage: false
+            lint: Off
+
+    name: CI for ${{ matrix.name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           nix_path: nixpkgs=channel:nixos-unstable
+
       - name: CMake
-        run: nix-shell --run 'cmake -S . -B build -GNinja'
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DLINTING=${{matrix.lint}} -DSANITIZERS="${{ matrix.sanitizers }}"'
+
       - name: Build
-        run: nix-shell --run 'ninja -C build'
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ninja -C build'
+
       - name: Test
-        run: nix-shell --run 'ctest --test-dir build -j --output-on-failure'
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j --output-on-failure'
+
       - name: Test Coverage
-        run: nix-shell --run 'ninja -C build coverage'
-      - name: Upload all coverage artifacts
+        if: matrix.coverage == true
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ninja -C build coverage'
+
+      - name: Upload coverage artifacts
+        if: matrix.coverage == true
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-report-${{ matrix.name }}
           path: build/coverage_html/

@@ -1,18 +1,29 @@
 include(FetchContent)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  set(COVERAGE_FLAGS
-    -fprofile-instr-generate
-    -fcoverage-mapping
-  )
+# Coverage
+# - Only setup for clang, testing done with clang for better sanitizer support
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  option(COVERAGE "Enable code coverage instrumentation" ON)
+else()
+  # Define it in the cache but hard-set to OFF so user can't override
+  set(COVERAGE OFF CACHE BOOL "Enable code coverage instrumentation" FORCE)
+endif()
+
+if(COVERAGE)
+    set(COVERAGE_FLAGS
+        -fprofile-instr-generate
+        -fcoverage-mapping
+    )
+    add_compile_options(${COVERAGE_FLAGS})
+    add_link_options(${COVERAGE_FLAGS})
+    message(STATUS "Enabling Clang/LLVM coverage flags")
 endif()
 
 # JUSTIFY: Deprecated declarations off
 #  - Rapidcheck contains cpp23 deprecated features
 add_compile_options(-Wno-deprecated-declarations)
-add_compile_options(${COVERAGE_FLAGS})
-add_link_options(${COVERAGE_FLAGS})
 
+# Externals
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
@@ -30,43 +41,49 @@ FetchContent_MakeAvailable(rapidcheck)
 
 include(GoogleTest)
 
-file(GLOB_RECURSE TEST_CPP_FILES CONFIGURE_DEPENDS *.cpp)
+# Tests
+# JUSTIFY: Test per cpp executable
+#  - To be able to build tests in parallel, so a binary per structure/test suite.
+file(GLOB_RECURSE TEST_CPP_FILES CONFIGURE_DEPENDS test.cpp fuzz.cpp)
 set(ALL_TEST_EXECUTABLES)
 
-# JUSTIFY: Test per cpp executable
-#  - To be able to run all tests in parallel, so a binary per structure/test suite.
 foreach(TEST_FILE ${TEST_CPP_FILES})
   file(RELATIVE_PATH REL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${TEST_FILE})
-  string(REPLACE "/" "_" TEST_NAME ${REL_PATH})
-  string(REPLACE ".cpp" "" TEST_NAME ${TEST_NAME})
-  
-  add_executable(${TEST_NAME} ${TEST_FILE})
-  target_compile_definitions(${TEST_NAME} PRIVATE ENABLE_MOCKING)
-  target_link_libraries(${TEST_NAME}
+  string(REPLACE "/" "_" TEST_TARGET_SAFE ${REL_PATH})
+  get_filename_component(test_hierarchy "${REL_PATH}" DIRECTORY)
+
+  add_executable(${TEST_TARGET_SAFE} ${TEST_FILE})
+  set_target_properties(${TEST_TARGET_SAFE} PROPERTIES 
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    OUTPUT_NAME "${TEST_TARGET_SAFE}"
+  )
+  target_compile_definitions(${TEST_TARGET_SAFE} PRIVATE ENABLE_MOCKING)
+  target_link_libraries(${TEST_TARGET_SAFE}
     PRIVATE
       derivec
+      derivecpp
       gtest
       gmock
       gtest_main
       rapidcheck
       rapidcheck_gtest
   )
-  
-  gtest_discover_tests(${TEST_NAME}
+
+  gtest_discover_tests(${TEST_TARGET_SAFE}
+    TEST_PREFIX "tests/${test_hierarchy}/"
     DISCOVERY_TIMEOUT 30
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES LABELS "correctness"
     ENVIRONMENT
       "RC_PARAMS=max_success=20000"
   )
-  
-  list(APPEND ALL_TEST_EXECUTABLES ${TEST_NAME})
+
+  list(APPEND ALL_TEST_EXECUTABLES ${TEST_TARGET_SAFE})
 endforeach()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(COVERAGE)
   find_program(LLVM_COV_EXECUTABLE NAMES llvm-cov)
   find_program(LLVM_PROFDATA_EXECUTABLE NAMES llvm-profdata)
-  find_program(GENHTML_EXECUTABLE NAMES genhtml)
 
   set(COVERAGE_OBJECTS)
   foreach(TEST_EXEC ${ALL_TEST_EXECUTABLES})
@@ -79,7 +96,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     "--ignore-filename-regex=(^|.*/)(test|build)/.*" # Regex not cmake syntax
   )
 
-  if(DEVELOP AND LLVM_COV_EXECUTABLE AND LLVM_PROFDATA_EXECUTABLE AND GENHTML_EXECUTABLE)    
+  if(LLVM_COV_EXECUTABLE AND LLVM_PROFDATA_EXECUTABLE)
     add_custom_target(coverage
       DEPENDS ${ALL_TEST_EXECUTABLES}
       COMMENT "🔍 Running llvm-cov → HTML coverage report (Clang/LLVM)"

@@ -1,3 +1,5 @@
+#include <derive-c/core/prelude/placeholder.h>
+
 #undef SELF
 
 #if defined SELF_PUSHED
@@ -9,6 +11,6 @@
     #undef INTERNAL_NAME
 #elif defined NAME
     #undef NAME
-#elif !defined __clang_analyzer__
+#elif !defined PLACEHOLDERS
     #error "If `INTERNAL_NAME` is not defined, `NAME` must be defined"
 #endif

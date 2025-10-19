@@ -16,9 +16,11 @@ Checks: >
   -readability-magic-numbers,
   -readability-avoid-const-params-in-decls,
   -readability-implicit-bool-conversion,
+  -bugprone-macro-parentheses,
+  -misc-non-private-member-variables-in-classes,
   -clang-diagnostic-*
 
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
 
 HeaderFilterRegex: '.*(src|test|examples)/.*'
 

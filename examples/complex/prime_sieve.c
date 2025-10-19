@@ -3,24 +3,25 @@
  * @example complex/prime_sieve.c
  * @brief Using a vector in implementing a basic prime sieve.
  */
-// #include <errno.h>
-#include <assert.h>
+
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <derive-c/core/prelude.h>
 
 #define MAX_UP_TO 100000
 
 // to store values, plus room for realloc
 #define CAPACITY 300000
 #define NAME bump_alloc
-#include <derive-c/allocs/staticbump/template.h>
+#include <derive-c/alloc/staticbump/template.h>
 
 #define ITEM bool
 #define ALLOC bump_alloc
 #define NAME sieve_vec
-#include <derive-c/structures/vector/template.h>
+#include <derive-c/container/vector/dynamic/template.h>
 
 size_t sqrt_size_t(size_t n) {
     if (n == 0 || n == 1) {
@@ -79,9 +80,10 @@ void compute(sieve_vec* sieve) {
 
 int main() {
     size_t up_to = 28;
-    assert(up_to < MAX_UP_TO);
+    ASSERT(up_to < MAX_UP_TO);
     printf("Listing primes up to: %zu\n", up_to);
-    bump_alloc alloc = bump_alloc_new();
+    bump_alloc_buffer buf;
+    bump_alloc alloc = bump_alloc_new(&buf);
     sieve_vec values = sieve_vec_new_with_defaults(up_to, false, &alloc);
     compute(&values);
     display(&values);
