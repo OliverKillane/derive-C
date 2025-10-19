@@ -128,7 +128,7 @@ TEST(StringBuilder, FailedAlloc) {
     EXPECT_EQ(s.size(), fprintf(string_builder_static_stream(&sb), "%s", s.c_str()));
 
     errno = 0;
-    EXPECT_EQ(-1, fprintf(string_builder_static_stream(&sb), s.c_str()));
+    EXPECT_EQ(-1, fprintf(string_builder_static_stream(&sb), "%s", s.c_str()));
     EXPECT_EQ(errno, ENOMEM);
 
     string_builder_static_delete(&sb);

@@ -1,8 +1,8 @@
-#include <derive-c/alloc/std.h>
 #include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
 
 extern "C" {
+#include <derive-c/alloc/std.h>
 
 #define ITEM int
 #define NAME int_vec
