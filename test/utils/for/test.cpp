@@ -1,4 +1,5 @@
-#include "derive-c/alloc/std.h"
+#include <derive-c/alloc/std.h>
+#include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
 
 extern "C" {

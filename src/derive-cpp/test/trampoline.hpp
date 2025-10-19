@@ -1,6 +1,6 @@
 #pragma once
-#include <type_traits>
 #include <stdexcept>
+#include <type_traits>
 
 #include <derive-cpp/meta/member_ptr_class.hpp>
 
@@ -10,10 +10,9 @@ namespace derivecpp {
 /// Enabled by default.
 /// - Runtime checks ensure only one trampoline is active at once.
 /// - Not thread safe.
-/// - Allows for bouncing calls to google mock methods. 
-template<auto* Function, auto MockFunction>
-class Trampoline {
-public:
+/// - Allows for bouncing calls to google mock methods.
+template <auto* Function, auto MockFunction> class Trampoline {
+  public:
     using FunctionLocationType = decltype(Function);
     using FunctionPtrType = std::remove_pointer_t<FunctionLocationType>;
     using MockFunctionType = decltype(MockFunction);
@@ -23,9 +22,10 @@ public:
     static constexpr MockFunctionType mockFunc = MockFunction;
     static inline FunctionPtrType realFunc = *func;
     static inline MockType* sMock = nullptr;
-    
-    template<typename... Args>
-    static auto trampolineImpl(Args... args) -> decltype((std::declval<MockType*>()->*mockFunc)(args...)) {
+
+    template <typename... Args>
+    static auto trampolineImpl(Args... args)
+        -> decltype((std::declval<MockType*>()->*mockFunc)(args...)) {
         return (sMock->*mockFunc)(args...);
     }
 
@@ -51,8 +51,8 @@ public:
         *func = realFunc;
         sMock = nullptr;
     }
-    
-private:
+
+  private:
     void CheckOwnership() {
         if (sMock != &mMock) {
             throw std::runtime_error("Trampoline not owned by this instance");
@@ -63,4 +63,4 @@ private:
     static_assert(std::is_member_function_pointer_v<MockFunctionType>);
     static_assert(std::is_function_v<std::remove_pointer_t<FunctionPtrType>>);
 };
-}
+} // namespace derivecpp

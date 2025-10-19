@@ -8,7 +8,8 @@
 #include <derive-c/core/prelude.h>
 
 void foopool_raw_example() {
-    foopool pool = foopool_new();
+    foopool_buffer buf;
+    foopool pool = foopool_new(&buf);
 
     void* ptr1 = foopool_malloc(&pool, 100);
     ASSERT(ptr1 != NULL);

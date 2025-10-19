@@ -1,8 +1,7 @@
+#include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
 
 namespace testalloc {
-
-#define PANIC(...) throw std::runtime_error(std::format(__VA_ARGS__))
 
 extern "C" {
 #include <derive-c/alloc/std.h>

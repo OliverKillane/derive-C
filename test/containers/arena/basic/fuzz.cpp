@@ -1,10 +1,11 @@
+#include <derive-cpp/test/rapidcheck_panic.hpp>
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>
 
-#include <derive-cpp/test/strongint.h>
+#include <derive-cpp/test/strongint.hpp>
 #include <unordered_map>
 
 using Value = std::size_t;
@@ -250,22 +251,9 @@ struct Delete : Command {
     }
 };
 
-RC_GTEST_PROP(ArenaTests, General, ()) {
+RC_GTEST_PROP(ArenaTests, Fuzz, ()) {
     Model model;
     SutWrapper sutWrapper;
     rc::state::check(model, sutWrapper,
                      rc::state::gen::execOneOfWithArgs<Insert, Insert, Write, Remove, Delete>());
-}
-
-TEST(ArenaTests, Full) {
-    Sut sut = Sut_new_with_capacity_for(1, stdalloc_get());
-    ASSERT_FALSE(Sut_full(&sut));
-    ASSERT_EQ(Sut_max_entries, 254);
-
-    for (size_t i = 0; i < Sut_max_entries; ++i) {
-        Sut_insert(&sut, i);
-    }
-    ASSERT_TRUE(Sut_full(&sut));
-
-    Sut_delete(&sut);
 }

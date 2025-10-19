@@ -1,3 +1,4 @@
+#include <derive-cpp/test/gtest_panic.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -29,7 +30,7 @@ struct MockTests : Test {
     derivecpp::Trampoline<&fn_ptr, &MockTests::fn_ptr_mock> fn_ptr_tramp{this};
 };
 
-TEST_F(MockTests, arg_types) {
+TEST_F(MockTests, ArgTypes) {
     {
         EXPECT_CALL(*this, none_mock()).Times(1);
         none();
@@ -55,7 +56,7 @@ TEST_F(MockTests, arg_types) {
     }
 }
 
-TEST_F(MockTests, enable_disable) {
+TEST_F(MockTests, EnableDisable) {
     EXPECT_CALL(*this, none_mock()).Times(1);
     none();
 

@@ -98,6 +98,8 @@ if(LINTING)
         file(GLOB_RECURSE SOURCE_FILES
             ${CMAKE_SOURCE_DIR}/src/*.h
             ${CMAKE_SOURCE_DIR}/src/*.c
+            ${CMAKE_SOURCE_DIR}/src/*.hpp
+            ${CMAKE_SOURCE_DIR}/src/*.cpp
             ${CMAKE_SOURCE_DIR}/examples/*.c
             ${CMAKE_SOURCE_DIR}/examples/*.h
             ${CMAKE_SOURCE_DIR}/test/*.cpp
@@ -154,10 +156,16 @@ if(LINTING)
         COMMAND ${CLANG_TIDY} 
           -p ${CMAKE_BINARY_DIR}
           --extra-arg-before=-xc 
+          --extra-arg-before=-std=c23
           --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} 
           --extra-arg=-I${CMAKE_SOURCE_DIR}/src 
           --header-filter="^${CMAKE_SOURCE_DIR}/src/" 
           ${TIDY_C_HDRS}
+          --                          # everything after this is appended to the FE
+          -xc                         # force C language (wins because it's last)
+          -std=c23                    # match your C standard
+          -resource-dir=${CLANGC_RESOURCE_DIR}
+          -I${CMAKE_SOURCE_DIR}/src
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} 
         VERBATIM
       )

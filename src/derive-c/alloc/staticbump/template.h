@@ -33,24 +33,30 @@
     #define USED uint64_t
 #endif
 
+typedef char NS(SELF, buffer)[CAPACITY];
+
 typedef struct {
     size_t used;
-    char buffer[CAPACITY];
+    NS(SELF, buffer) * buffer;
     gdb_marker derive_c_staticbumpalloc;
 } SELF;
 
 static size_t NS(SELF, metadata_size) = sizeof(USED);
 
-static SELF NS(SELF, new)() {
-    SELF self = {.used = 0, .derive_c_staticbumpalloc = {}};
+static SELF NS(SELF, new)(NS(SELF, buffer) * buffer) {
+    SELF self = {
+        .used = 0,
+        .buffer = buffer,
+        .derive_c_staticbumpalloc = {},
+    };
     // JUSTIFY: Zeroed buffer
     //           - For easier debugging & view in gdb.
     //           - Additionally allows for calloc to be malloc.
-    memset(self.buffer, 0, CAPACITY);
+    memset(*self.buffer, 0, CAPACITY);
 
     // JUSTIFY: no capabilities on init
     //  - Protect access by users outside of malloc/calloc
-    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_NONE, &self.buffer, CAPACITY);
+    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_NONE, self.buffer, CAPACITY);
 
     return self;
 }
@@ -61,18 +67,19 @@ static void NS(SELF, clear)(SELF* self) {
 
 #if !defined NDEBUG
     // JUSTIFY: Allocations & sizes zeroed on free in debug, we check all data has been freed.
-    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_READ_WRITE, self->buffer,
+    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_READ_WRITE, (*self->buffer),
                        self->used);
     for (size_t i = 0; i < self->used; i++) {
-        if (self->buffer[i] != 0) {
+        if ((*self->buffer)[i] != 0) {
             PANIC("Data not freed before clearing the static bump allocator");
         }
     }
 #endif
-    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_WRITE, self->buffer,
+    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_WRITE, (*self->buffer),
                        self->used);
-    memset(self->buffer, 0, self->used);
-    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_NONE, self->buffer, CAPACITY);
+    memset((*self->buffer), 0, self->used);
+    memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_NONE, (*self->buffer),
+                       CAPACITY);
     self->used = 0;
 }
 
@@ -86,7 +93,7 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
     if (self->used + (size + sizeof(USED)) > CAPACITY) {
         return NULL;
     }
-    char* ptr = &self->buffer[self->used];
+    char* ptr = &(*self->buffer)[self->used];
     USED* used_ptr = (USED*)ptr;
 
     memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_WRITE, used_ptr, sizeof(USED));
@@ -129,7 +136,7 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
     USED* old_size = (USED*)(byte_ptr - sizeof(USED));
     memory_tracker_set(MEMORY_TRACKER_LVL_ALLOC, MEMORY_TRACKER_CAP_READ_WRITE, old_size,
                        sizeof(USED));
-    const bool was_last_alloc = (byte_ptr + *old_size == self->buffer + self->used);
+    const bool was_last_alloc = (byte_ptr + *old_size == &(*self->buffer)[self->used]);
 
     if (was_last_alloc) {
         if (new_size > *old_size) {

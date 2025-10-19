@@ -1,3 +1,4 @@
+#include <derive-cpp/test/rapidcheck_panic.hpp>
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -5,9 +6,6 @@
 #include <rapidcheck/state.h>
 
 #include <deque>
-
-// #define PANIC(fmt, ...) RC_FAIL(fmt)
-#define PANIC(...) throw std::runtime_error(std::format(__VA_ARGS__))
 
 using Data = int;
 using Model = std::deque<Data>;
@@ -133,7 +131,7 @@ struct PopBack : Command {
     void show(std::ostream& os) const override { os << "PopBack()"; }
 };
 
-RC_GTEST_PROP(CircularTests, General, ()) {
+RC_GTEST_PROP(CircularTests, Fuzz, ()) {
     Model model;
     SutWrapper sut;
     rc::state::check(model, sut,

@@ -1,3 +1,4 @@
+#include <derive-cpp/test/rapidcheck_panic.hpp>
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -265,7 +266,7 @@ struct DeleteEntry : Command {
     void show(std::ostream& os) const override { os << "DeleteEntry(" << key.value() << ")"; }
 };
 
-RC_GTEST_PROP(HashMapTests, General, ()) {
+RC_GTEST_PROP(HashMapTests, Fuzz, ()) {
     Model model;
     SutWrapper sutWrapper;
     rc::state::check(

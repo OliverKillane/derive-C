@@ -10,7 +10,8 @@
 #include <derive-c/container/vector/dynamic/template.h>
 
 int main() {
-    alloc_2048 alloc = alloc_2048_new();
+    alloc_2048_buffer buf;
+    alloc_2048 alloc = alloc_2048_new(&buf);
     vec_char vec = vec_char_new(&alloc);
 
     for (char x = 1; x <= 9; x++) {

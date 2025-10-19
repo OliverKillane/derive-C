@@ -2,10 +2,6 @@
 #include <derive-c/core/prelude/macros.h>
 
 #if defined __cplusplus
-    #define CPP_COMPAIBILITY
-#endif
-
-#if defined CPP_COMPAIBILITY
     #include <type_traits> // NOLINT(misc-include-cleaner)
     #define REQUIRE_METHOD_EXPR(ret, obj, name, args)                                              \
         std::is_same_v<decltype(&NS(obj, name)), ret(*) args>
@@ -25,9 +21,9 @@
 #define REQUIRE_TYPE(obj, name)                                                                    \
     STATIC_ASSERT(sizeof(NS(obj, name)), "Type " #obj "." #name " must exist")
 
-#define REQUIRE_CONSTANT_TYPE(obj, name, Type)                                                     \
-    STATIC_ASSERT(REQUIRE_CONSTANT_TYPE_EXPR(obj, name, Type),                                     \
-                  "Method " #obj "." #name " must exist and be of type " #Type)
+#define REQUIRE_CONSTANT_TYPE(obj, name, type)                                                     \
+    STATIC_ASSERT(REQUIRE_CONSTANT_TYPE_EXPR(obj, name, type),                                     \
+                  "Method " #obj "." #name " must exist and be of type " #type)
 
 #define REQUIRE_CONSTANT(obj, name)                                                                \
     STATIC_ASSERT(sizeof(NS(obj, name)), "Constant " #obj "." #name " must exist")

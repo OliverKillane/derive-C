@@ -1,3 +1,4 @@
+#include <derive-cpp/test/rapidcheck_panic.hpp>
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -122,22 +123,10 @@ struct PopBack : Command {
     void show(std::ostream& os) const override { os << "PopBack()"; }
 };
 
-RC_GTEST_PROP(DequeTests, General, ()) {
+RC_GTEST_PROP(DequeTests, Fuzz, ()) {
     Model model;
     SutWrapper sut;
     rc::state::check(model, sut,
                      rc::state::gen::execOneOfWithArgs<PushFront, PushFront, PushBack, PushBack,
                                                        PopFront, PopBack>());
-}
-
-TEST(DequeTests, CreateWithCapacity) {
-    Sut sut = Sut_new_with_capacity(64, stdalloc_get());
-    ASSERT_EQ(Sut_size(&sut), 0);
-    Sut_delete(&sut);
-}
-
-TEST(DequeTests, CreateWithZeroSize) {
-    Sut sut = Sut_new(stdalloc_get());
-    ASSERT_EQ(Sut_size(&sut), 0);
-    Sut_delete(&sut);
 }

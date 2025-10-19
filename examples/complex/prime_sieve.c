@@ -82,7 +82,8 @@ int main() {
     size_t up_to = 28;
     ASSERT(up_to < MAX_UP_TO);
     printf("Listing primes up to: %zu\n", up_to);
-    bump_alloc alloc = bump_alloc_new();
+    bump_alloc_buffer buf;
+    bump_alloc alloc = bump_alloc_new(&buf);
     sieve_vec values = sieve_vec_new_with_defaults(up_to, false, &alloc);
     compute(&values);
     display(&values);

@@ -25,6 +25,9 @@ typedef struct {
     ALLOC* alloc;
 } SELF;
 
+// Additional constant when extending the string allocation.
+static size_t const NS(SELF, additional_alloc_size) = 32;
+
 #define INVARIANT_CHECK(self)                                                                      \
     ASSUME(self);                                                                                  \
     ASSUME((self)->alloc);                                                                         \
@@ -32,36 +35,43 @@ typedef struct {
     ASSUME(WHEN((self)->capacity == 0, !(self)->buf));                                             \
     ASSUME(WHEN((self)->buf, (self)->size_without_null + 1 <= (self)->capacity));
 
-static ssize_t PRIV(NS(SELF, read))(void* cookie,
+static ssize_t PRIV(NS(SELF, read))(void* capture,
                                     char* buf /*NOLINT(readability-non-const-parameter)*/,
                                     size_t size) {
-    (void)cookie;
+    SELF* self = (SELF*)capture;
+    INVARIANT_CHECK(self);
+
     (void)buf;
     (void)size;
-    PANIC("Cannot read on a string builder");
+
+    PANIC("cookie set in write-only mode, but read was called.");
 }
 
 static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t size) {
     SELF* self = (SELF*)capture;
     INVARIANT_CHECK(self);
 
-    size_t const for_subsequent_small_inserts = 32;
-    if (self->buf != NULL) {
-        if (self->size_without_null + size + 1 > self->capacity) {
+    if (self->size_without_null + size + 1 > self->capacity) {
+        size_t new_capacity;
+        char* new_buf;
+        if (self->buf != NULL) {
             size_t const growth_factor = 2;
-
-            self->capacity = (self->capacity * growth_factor) + size + for_subsequent_small_inserts;
-            self->buf = (char*)NS(ALLOC, realloc)(self->alloc, self->buf, self->capacity);
+            new_capacity =
+                (self->capacity * growth_factor) + size + NS(SELF, additional_alloc_size);
+            new_buf = (char*)NS(ALLOC, realloc)(self->alloc, self->buf, new_capacity);
+        } else {
+            ASSUME(self->capacity == 0);
+            new_capacity = size + 1 + NS(SELF, additional_alloc_size);
+            new_buf = (char*)NS(ALLOC, malloc)(self->alloc, new_capacity);
         }
-    } else {
-        ASSUME(self->capacity == 0);
-        self->capacity = size + 1 + for_subsequent_small_inserts;
-        self->buf = (char*)NS(ALLOC, malloc)(self->alloc, self->capacity);
-    }
 
-    if (!self->buf) {
-        errno = ENOMEM;
-        return -1;
+        if (!new_buf) {
+            errno = ENOMEM; // NOLINT(misc-include-cleaner)
+            return -1;
+        }
+
+        self->capacity = new_capacity;
+        self->buf = new_buf;
     }
 
     memcpy(self->buf + self->size_without_null, data, size);
@@ -78,7 +88,7 @@ static int PRIV(NS(SELF, seek))(void* capture,
     (void)offset;
     (void)whence;
 
-    errno = ESPIPE;
+    errno = EPERM; // NOLINT(misc-include-cleaner)
     return -1;
 }
 

@@ -1,3 +1,4 @@
+#include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
 
 namespace staticbumpalloc {
@@ -11,7 +12,8 @@ extern "C" {
 }
 
 TEST(StaticBumpAlloc, BasicAllocation) {
-    staticbumpalloc alloc = staticbumpalloc_new();
+    staticbumpalloc_buffer buf;
+    staticbumpalloc alloc = staticbumpalloc_new(&buf);
 
     void* ptr1 = staticbumpalloc_malloc(&alloc, 100);
     ASSERT_NE(ptr1, nullptr);

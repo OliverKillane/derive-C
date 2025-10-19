@@ -44,7 +44,7 @@ include(GoogleTest)
 # Tests
 # JUSTIFY: Test per cpp executable
 #  - To be able to build tests in parallel, so a binary per structure/test suite.
-file(GLOB_RECURSE TEST_CPP_FILES CONFIGURE_DEPENDS tests.cpp)
+file(GLOB_RECURSE TEST_CPP_FILES CONFIGURE_DEPENDS test.cpp fuzz.cpp)
 set(ALL_TEST_EXECUTABLES)
 
 foreach(TEST_FILE ${TEST_CPP_FILES})

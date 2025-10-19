@@ -1,3 +1,4 @@
+#include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
 
 namespace debugalloc {

@@ -1,4 +1,8 @@
+#include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
+
+#include <cerrno>
+#include <cstdio>
 
 extern "C" {
 #include <derive-c/alloc/std.h>
@@ -25,7 +29,8 @@ TEST(StringBuilder, Basic) {
 }
 
 TEST(StringBuilder, BasicStatic) {
-    alloc_128 alloc = alloc_128_new();
+    alloc_128_buffer buf;
+    alloc_128 alloc = alloc_128_new(&buf);
     string_builder_static sb = string_builder_static_new(&alloc);
     std::string hello_world = "hello world";
     fprintf(string_builder_static_stream(&sb), "%s", hello_world.c_str());
@@ -52,6 +57,19 @@ TEST(StringBuilder, Release) {
     string_builder_delete(&sb);
 }
 
+TEST(StringBuilder, VeryLargeString) {
+    const auto repeat = "foooo!!!";
+    string_builder sb = string_builder_new(stdalloc_get());
+    std::string expected;
+    for (auto i = 0; i < 1024; i++) {
+        fprintf(string_builder_stream(&sb), "%s", repeat);
+        expected.append(repeat);
+    }
+
+    EXPECT_EQ(expected, string_builder_string(&sb));
+    string_builder_delete(&sb);
+}
+
 TEST(StringBuilder, Reset) {
     string_builder sb = string_builder_new(stdalloc_get());
     std::string hello_world = "hello world";
@@ -66,4 +84,52 @@ TEST(StringBuilder, Reset) {
     EXPECT_EQ(hello_world, string_builder_string(&sb));
 
     string_builder_delete(&sb);
+}
+
+TEST(StringBuilder, UnsupportedRead) {
+    string_builder sb = string_builder_new(stdalloc_get());
+
+    char buf[8];
+    errno = 0;
+
+    size_t n = fread(buf, 1, sizeof(buf), string_builder_stream(&sb));
+
+    EXPECT_EQ(n, 0);
+    // JUSTIFY: EBADF even though we panic on read.
+    //  - hence this errors before our read is ever called.
+    EXPECT_EQ(errno, EBADF);
+
+    string_builder_delete(&sb);
+}
+
+TEST(StringBuilder, UnsupportedSeek) {
+    string_builder sb = string_builder_new(stdalloc_get());
+
+    errno = 0;
+    int ret = fseek(string_builder_stream(&sb), 0, SEEK_SET);
+
+    EXPECT_EQ(ret, -1);
+    EXPECT_EQ(errno, EPERM);
+
+    string_builder_delete(&sb);
+}
+
+TEST(StringBuilder, FailedAlloc) {
+    alloc_128_buffer buf;
+    alloc_128 alloc = alloc_128_new(&buf);
+    string_builder_static sb = string_builder_static_new(&alloc);
+
+    // Write a string larger than the buffer size
+    // - buffer - (metadata, + the additional required + 1 for null),
+    size_t const largest_size =
+        sizeof(buf) - alloc_128_metadata_size - string_builder_additional_alloc_size - 1;
+    std::string s(largest_size, 'A');
+
+    EXPECT_EQ(s.size(), fprintf(string_builder_static_stream(&sb), "%s", s.c_str()));
+
+    errno = 0;
+    EXPECT_EQ(-1, fprintf(string_builder_static_stream(&sb), s.c_str()));
+    EXPECT_EQ(errno, ENOMEM);
+
+    string_builder_static_delete(&sb);
 }

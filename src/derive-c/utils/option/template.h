@@ -77,6 +77,14 @@ static ITEM const* NS(SELF, get_const_or)(SELF const* self, ITEM const* default_
     return default_value;
 }
 
+static ITEM NS(SELF, get_value_or)(SELF const* self, ITEM const default_value) {
+    ASSUME(self);
+    if (self->present) {
+        return self->item;
+    }
+    return default_value;
+}
+
 static bool NS(SELF, is_present)(SELF const* self) {
     ASSUME(self);
     return self->present;

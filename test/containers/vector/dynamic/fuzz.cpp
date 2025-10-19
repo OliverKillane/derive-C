@@ -1,3 +1,4 @@
+#include <derive-cpp/test/rapidcheck_panic.hpp>
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -11,15 +12,15 @@ using Data = std::size_t;
 using Model = std::vector<Data>;
 
 extern "C" {
-#define ITEM Data
-#define INPLACE_CAPACITY 10
 #define NAME Sut
-#include <derive-c/container/vector/static/template.h>
+#define ITEM Data
+#include <derive-c/container/vector/dynamic/template.h>
 }
 
 struct SutWrapper {
+    static const int MAX_SIZE = 100;
 
-    SutWrapper() : sut(Sut_new()) {}
+    SutWrapper() : sut(Sut_new_with_capacity(*rc::gen::inRange(0, MAX_SIZE), stdalloc_get())) {}
     SutWrapper(const SutWrapper& other) : sut(Sut_clone(other.getConst())) {}
     ~SutWrapper() { Sut_delete(&sut); }
 
@@ -85,25 +86,16 @@ struct Command : rc::state::Command<Model, SutWrapper> {
     }
 };
 
-struct TryPush : Command {
+struct Push : Command {
     Data value =
         *rc::gen::inRange(std::numeric_limits<size_t>::min(), std::numeric_limits<Data>::max());
 
-    void checkPreconditions(const Model& m) const override {}
-
-    void apply(Model& m) const override {
-        if (m.size() < Sut_max_size) {
-            m.push_back(value);
-        }
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(m.size() < std::numeric_limits<size_t>::max());
     }
-    void runAndCheck(const Model& m, SutWrapper& s) const override {
-        if (m.size() < Sut_max_size) {
-            Sut_push(s.get(), value);
-        } else {
-            RC_ASSERT(!Sut_try_push(s.get(), value));
-        }
-    }
-    void show(std::ostream& os) const override { os << "TryPush(" << value << ")"; }
+    void apply(Model& m) const override { m.push_back(value); }
+    void runAndCheck(const Model& m, SutWrapper& s) const override { Sut_push(s.get(), value); }
+    void show(std::ostream& os) const override { os << "Push(" << value << ")"; }
 };
 
 struct Write : Command {
@@ -120,9 +112,7 @@ struct Write : Command {
     void checkPreconditions(const Model& m) const override {
         RC_PRE(index.has_value());
         RC_PRE(index.value() < m.size());
-        RC_PRE(m.size() < Sut_max_size);
     }
-
     void apply(Model& m) const override { m[index.value()] = value; }
     void runAndCheck(const Model& m, SutWrapper& s) const override {
         Data* at = Sut_write(s.get(), index.value());
@@ -147,19 +137,15 @@ struct InsertAt : Command {
     void checkPreconditions(const Model& m) const override {}
 
     void apply(Model& m) const override {
-        if (values.size() > 0 && m.size() + values.size() <= Sut_max_size) {
-            m.insert(m.begin() + fromIndex, values.begin(), values.end());
-        }
+        m.insert(m.begin() + fromIndex, values.begin(), values.end());
     }
 
     void runAndCheck(const Model& m, SutWrapper& s) const override {
-        bool expectedResult = m.size() + values.size() <= Sut_max_size;
         if (values.empty()) {
             Data dummy;
-            RC_ASSERT(Sut_try_insert_at(s.get(), fromIndex, &dummy, 0) == expectedResult);
+            Sut_insert_at(s.get(), fromIndex, &dummy, 0);
         } else {
-            RC_ASSERT(Sut_try_insert_at(s.get(), fromIndex, values.data(), values.size()) ==
-                      expectedResult);
+            Sut_insert_at(s.get(), fromIndex, values.data(), values.size());
         }
     }
 
@@ -200,10 +186,10 @@ struct Pop : Command {
     void show(std::ostream& os) const override { os << "Pop()"; }
 };
 
-RC_GTEST_PROP(StaticVecTests, General, ()) {
+RC_GTEST_PROP(VectorTests, Fuzz, ()) {
     Model model;
     SutWrapper sut;
-    rc::state::check(model, sut,
-                     rc::state::gen::execOneOfWithArgs<TryPush, TryPush, TryPush, Write, InsertAt,
-                                                       RemoveAt, Pop>());
+    rc::state::check(
+        model, sut,
+        rc::state::gen::execOneOfWithArgs<Push, Push, Push, Write, InsertAt, RemoveAt, Pop>());
 }
