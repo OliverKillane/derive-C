@@ -5,4 +5,5 @@
 #include <derive-c/core/prelude/namespace.h>   // IWYU pragma: export
 #include <derive-c/core/prelude/placeholder.h> // IWYU pragma: export
 #include <derive-c/core/prelude/require.h>     // IWYU pragma: export
+#include <derive-c/core/prelude/scope.h>       // IWYU pragma: export
 #include <derive-c/core/prelude/zerosized.h>   // IWYU pragma: export
