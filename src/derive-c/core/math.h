@@ -3,7 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <derive-c/core/prelude/macros.h>
+#include <derive-c/core/attributes.h>
+#include <derive-c/core/panic.h>
 
 static INLINE CONST size_t next_power_of_2(size_t x) {
     if (x == 0)

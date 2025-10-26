@@ -9,7 +9,7 @@
 #include <derive-c/core/prelude.h>
 
 #define INDEX_BITS 32
-#define VALUE uint32_t
+#define VALUE
 #define NAME ints
 #include <derive-c/container/arena/basic/template.h>
 

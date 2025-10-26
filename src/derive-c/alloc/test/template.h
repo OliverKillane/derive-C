@@ -10,8 +10,10 @@
 //  - already done by the wrapper allocator
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include <derive-c/alloc/trait.h>
+#include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/prelude.h>
 
 #include <derive-c/core/alloc/def.h>
@@ -37,6 +39,14 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) { NS(ALLOC, free)(self->alloc, ptr); }
+
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, STRINGIFY(SELF) " @%p {", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "alloc: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
+}
 
 #else
     #include <derive-c/alloc/std.h>
@@ -135,6 +145,15 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
     }
 
     NS(ALLOC, free)(self->alloc, ptr);
+}
+
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, STRINGIFY(SELF) " @%p {", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
+    NS(ENTRIES_VECTOR, debug)(&self->entries, fmt, stream);
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
 }
 
     #undef ENTRIES_VECTOR

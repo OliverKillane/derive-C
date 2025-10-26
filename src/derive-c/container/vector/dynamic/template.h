@@ -2,11 +2,12 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <derive-c/container/vector/trait.h>
+#include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/debug/gdb_marker.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
@@ -17,7 +18,7 @@
 
 #if !defined ITEM
     #if !defined PLACEHOLDERS
-        #error "The contained type must be defined for a vector template"
+TEMPLATE_ERROR("No ITEM")
     #endif
 typedef struct {
     int x;
@@ -27,14 +28,24 @@ static void item_delete(item_t* t) { (void)t; }
     #define ITEM_DELETE item_delete
 static item_t item_clone(item_t const* i) { return *i; }
     #define ITEM_CLONE item_clone
+static void item_debug(item_t const* i, debug_fmt fmt, FILE* stream) {
+    (void)i;
+    (void)fmt;
+    (void)stream;
+}
+    #define ITEM_DEBUG item_debug
 #endif
 
 #if !defined ITEM_DELETE
-    #define ITEM_DELETE(value)
+    #define ITEM_DELETE NO_DELETE
 #endif
 
 #if !defined ITEM_CLONE
-    #define ITEM_CLONE(value) (*(value))
+    #define ITEM_CLONE COPY_CLONE
+#endif
+
+#if !defined ITEM_DEBUG
+    #define ITEM_DEBUG NO_DEBUG
 #endif
 
 typedef size_t NS(SELF, index_t);
@@ -426,6 +437,31 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
         .pos = 0,
         .vec_version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
+}
+
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, STRINGIFY(SELF) "@%p {", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "size: %lu,\n", self->size);
+    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+
+    debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    fprintf(stream, ",\n");
+
+    debug_fmt_print(fmt, stream, "items: @%p {\n", self->data);
+    fmt = debug_fmt_scope_begin(fmt);
+
+    ITER_CONST iter = NS(SELF, get_iter_const)(self);
+    ITEM const* item;
+    while ((item = NS(ITER_CONST, next)(&iter))) {
+        ITEM_DEBUG(item, fmt, stream);
+        fprintf(stream, ",\n");
+    }
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}\n");
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}\n");
 }
 
 #undef ITER_CONST

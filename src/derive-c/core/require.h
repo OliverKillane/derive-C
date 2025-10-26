@@ -1,5 +1,5 @@
 #pragma once
-#include <derive-c/core/prelude/macros.h>
+#include <derive-c/core/namespace.h>
 
 #if defined __cplusplus
     #include <type_traits> // NOLINT(misc-include-cleaner)

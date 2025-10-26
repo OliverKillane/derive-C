@@ -4,10 +4,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <derive-c/container/arena/trait.h>
+#include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/debug/gdb_marker.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
@@ -18,14 +20,14 @@
 
 #if !defined INDEX_BITS
     #if !defined PLACEHOLDERS
-        #error "The number of bits (8,16,32,64) to use for the arena's key"
+TEMPLATE_ERROR("The number of bits (8,16,32,64) to use for the arena's key")
     #endif
     #define INDEX_BITS 32
 #endif
 
 #if !defined VALUE
     #if !defined PLACEHOLDERS
-        #error "The value type to place in the arena must be defined"
+TEMPLATE_ERROR("The value type to place in the arena must be defined")
     #endif
 typedef struct {
     int x;
@@ -87,6 +89,15 @@ typedef ALLOC NS(SELF, alloc_t);
 typedef struct {
     INDEX_TYPE index;
 } INDEX;
+
+static bool NS(INDEX, eq)(INDEX const* idx_1, INDEX const* idx_2) {
+    return idx_1->index == idx_2->index;
+}
+
+static void NS(INDEX, debug)(INDEX const* idx, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, STRINGIFY(INDEX) " { %lu }", (size_t)idx->index);
+}
 
 typedef struct {
     union {

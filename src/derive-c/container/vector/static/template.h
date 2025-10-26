@@ -15,7 +15,7 @@
 
 #if !defined ITEM
     #if !defined PLACEHOLDERS
-        #error "ITEM must be defined"
+TEMPLATE_ERROR("No ITEM")
     #endif
 typedef struct {
     int x;
@@ -28,16 +28,16 @@ static item_t item_clone(item_t const* self) { return *self; }
 #endif
 
 #if !defined ITEM_DELETE
-    #define ITEM_DELETE(value)
+    #define ITEM_DELETE NO_DELETE
 #endif
 
 #if !defined ITEM_CLONE
-    #define ITEM_CLONE(value) (*(value))
+    #define ITEM_CLONE COPY_CLONE
 #endif
 
 #if !defined INPLACE_CAPACITY
     #if !defined PLACEHOLDERS
-        #error "The number of elements to store in-place must be defined"
+TEMPLATE_ERROR("The INPLACE_CAPACITY must be defined")
     #endif
     #define INPLACE_CAPACITY 8
 #endif
@@ -47,7 +47,7 @@ static item_t item_clone(item_t const* self) { return *self; }
 #elif INPLACE_CAPACITY <= 65535
     #define INDEX_TYPE uint16_t
 #else
-    #error "INPLACE_CAPACITY must be less than or equal to 65535"
+TEMPLATE_ERROR("INPLACE_CAPACITY must be less than or equal to 65535")
     #define INDEX_TYPE size_t
 #endif
 

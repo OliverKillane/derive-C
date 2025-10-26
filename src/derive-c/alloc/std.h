@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "derive-c/core/debug/fmt.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <derive-c/alloc/trait.h>
@@ -37,6 +39,11 @@ static void NS(stdalloc, free)(stdalloc* self, void* ptr) {
     ASSUME(self);
     ASSUME(ptr);
     free(ptr);
+}
+
+static void NS(stdalloc, debug)(stdalloc const* self, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "stdalloc@%p { }", self);
 }
 
 TRAIT_ALLOC(stdalloc);

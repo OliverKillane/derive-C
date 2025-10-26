@@ -1,11 +1,6 @@
 #include <stdint.h>
 
 #include <derive-c/core/prelude.h>
-#include <derive-c/derive/clone.h>
-#include <derive-c/derive/eq.h>
-#include <derive-c/derive/ord.h>
-#include <derive-c/derive/std.h>
-#include <derive-c/derive/struct.h>
 
 #define Foo_REFLECT(F)                                                                             \
     F(uint32_t, bing)                                                                              \

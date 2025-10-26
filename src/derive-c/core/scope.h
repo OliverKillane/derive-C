@@ -1,5 +1,5 @@
 #pragma once
-#include <derive-c/core/prelude/zerosized.h>
+#include <derive-c/core/zerosized.h>
 
 /// RAII in C. Call the destructor when the variable goes out of scope.
 #define SCOPED(type) __attribute__((cleanup(type##_delete))) type

@@ -1,4 +1,4 @@
-#include "derive-c/core/prelude/scope.h"
+#include "derive-c/core/scope.h"
 #include "gmock/gmock.h"
 #include <derive-cpp/test/gtest_panic.hpp>
 #include <gmock/gmock.h>
@@ -75,6 +75,7 @@ TEST_F(ScopeTest, DeleterOrder) {
 
 TEST_F(ScopeTest, DeferredCall) {
     InSequence s;
+
     {
         DEFER(some_fcn);
 

@@ -2,6 +2,7 @@
 /// @example container/vector/dynamic.c
 /// @brief Examples for inserting, iterating, and deleting from vectors.
 
+#include "derive-c/core/debug/fmt.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -46,10 +47,20 @@ struct complex_data {
     size_t score;
 };
 
+void complex_data_debug(struct complex_data const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, "complex_data@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "description: %s,\n", self->description);
+    debug_fmt_print(fmt, stream, "score: %lu,\n", self->score);
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
+}
+
 void complex_data_delete(struct complex_data* self) { free(self->description); }
 
 #define ITEM struct complex_data
 #define ITEM_DELETE complex_data_delete
+#define ITEM_DEBUG complex_data_debug
 #define NAME vec_complex_data
 #include <derive-c/container/vector/dynamic/template.h>
 

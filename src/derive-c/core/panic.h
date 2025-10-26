@@ -4,22 +4,6 @@
 
 #include <assert.h>
 
-#if !defined INLINE
-    #define INLINE inline __attribute__((always_inline))
-#endif
-
-#if !defined CONST
-    #define CONST __attribute__((const))
-#endif
-
-#if !defined PURE
-    #define PURE __attribute__((pure))
-#endif
-
-#if !defined NODISCARD
-    #define NODISCARD __attribute__((warn_unused_result))
-#endif
-
 #if !defined STATIC_ASSERT
     #if defined __cplusplus
         #define STATIC_ASSERT static_assert

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <derive-c/core/prelude/zerosized.h>
+#include <derive-c/core/zerosized.h>
 
 ZERO_SIZED(gdb_marker);
 

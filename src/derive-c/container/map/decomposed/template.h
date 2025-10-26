@@ -17,7 +17,7 @@
 
 #if !defined KEY
     #if !defined PLACEHOLDERS
-        #error "KEY must be defined"
+TEMPLATE_ERROR("No KEY")
     #endif
     #define KEY map_key_t
 typedef int KEY;
@@ -25,31 +25,27 @@ typedef int KEY;
 
 #if !defined KEY_HASH
     #if !defined PLACEHOLDERS
-        #error "KEY_HASH must be defined"
+TEMPLATE_ERROR("No KEY_HASH")
     #endif
 
-    #define KEY_HASH key_hash
 static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined KEY_EQ
-    #define KEY_EQ NS(SELF, key_eq_default)
-static bool KEY_EQ(KEY const* key_1, KEY const* key_2) { return *key_1 == *key_2; }
+    #define KEY_EQ(KEY_1, KEY_2) (*(KEY_1) == *(KEY_2))
 #endif
 
 #if !defined KEY_DELETE
-    #define KEY_DELETE NS(SELF, key_delete_default)
-static void KEY_DELETE(KEY* key /* NOLINT(readability-non-const-parameter) */) { (void)key; }
+    #define KEY_DELETE(KEY)
 #endif
 
 #if !defined KEY_CLONE
-    #define KEY_CLONE NS(SELF, key_clone_default)
-static KEY KEY_CLONE(KEY const* key) { return *key; }
+    #define KEY_CLONE(KEY) *(KEY)
 #endif
 
 #if !defined VALUE
     #if !defined PLACEHOLDERS
-        #error "VALUE must be defined"
+TEMPLATE_ERROR("No VALUE")
     #endif
 typedef struct {
     int x;
@@ -58,13 +54,11 @@ typedef struct {
 #endif
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NS(SELF, value_delete_default)
-static void VALUE_DELETE(VALUE* value) { (void)value; }
+    #define VALUE_DELETE(VALUE)
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE NS(SELF, value_clone_default)
-static VALUE VALUE_CLONE(VALUE const* value) { return *value; }
+    #define VALUE_CLONE(VALUE) *(VALUE)
 #endif
 
 typedef KEY NS(SELF, key_t);

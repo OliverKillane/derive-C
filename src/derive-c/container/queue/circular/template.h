@@ -16,7 +16,7 @@
 
 #if !defined ITEM
     #if !defined PLACEHOLDERS
-        #error "The contained type must be defined for a queue template"
+TEMPLATE_ERROR("No ITEM")
     #endif
 
 typedef struct {
@@ -30,11 +30,11 @@ static item_t item_clone(item_t const* self) { return *self; }
 #endif
 
 #if !defined ITEM_DELETE
-    #define ITEM_DELETE(value)
+    #define ITEM_DELETE NO_DELETE
 #endif
 
 #if !defined ITEM_CLONE
-    #define ITEM_CLONE(value) (*(value))
+    #define ITEM_CLONE COPY_CLONE
 #endif
 
 typedef ITEM NS(SELF, item_t);

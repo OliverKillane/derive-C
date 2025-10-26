@@ -6,6 +6,7 @@
 // JUSTIFY: No custom memory tracking
 //  - already done by the wrapper allocator
 
+#include "derive-c/core/debug/fmt.h"
 #include <stdio.h>
 
 #include <derive-c/alloc/trait.h>
@@ -59,6 +60,15 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
     ASSUME(self);
     printf("%s freeing memory at %p\n", self->name, ptr);
     NS(ALLOC, free)(self->base, ptr);
+}
+
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, STRINGIFY(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "name: %s,\n", self->name);
+    debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->base);
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
 }
 
 #include <derive-c/core/alloc/undef.h>

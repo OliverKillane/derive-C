@@ -3,9 +3,11 @@
 ///  - Useful when an upper bound for allocation size is known at compile time
 ///  - Can be used when no global allocator is available (e.g. embedded systems, kernel dev)
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <derive-c/alloc/trait.h>
+#include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/debug/gdb_marker.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/prelude.h>
@@ -190,6 +192,16 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
     // JUSTIFY:
     //  - We already zeroed the buffer in `new()`
     return NS(SELF, malloc)(self, count * size);
+}
+
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, STRINGIFY(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "capacity: %lu,\n", CAPACITY);
+    debug_fmt_print(fmt, stream, "used: %lu,\n", self->used);
+    debug_fmt_print(fmt, stream, "buffer: %p,\n", self->buffer);
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
 }
 
 #undef CAPACITY
