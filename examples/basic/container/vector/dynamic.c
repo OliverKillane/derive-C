@@ -38,6 +38,8 @@ void ints_example() {
     ASSERT(last_value == upto); // Last value should be 99 + 1
     ASSERT(vec_ints_size(&ints) == upto - 1);
 
+    vec_ints_debug(&ints, debug_fmt_new(), stdout);
+
     vec_ints_delete(&ints);
 }
 
@@ -46,10 +48,20 @@ struct complex_data {
     size_t score;
 };
 
+void complex_data_debug(struct complex_data const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, "complex_data@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "description: %s,\n", self->description);
+    debug_fmt_print(fmt, stream, "score: %lu,\n", self->score);
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
+}
+
 void complex_data_delete(struct complex_data* self) { free(self->description); }
 
 #define ITEM struct complex_data
 #define ITEM_DELETE complex_data_delete
+#define ITEM_DEBUG complex_data_debug
 #define NAME vec_complex_data
 #include <derive-c/container/vector/dynamic/template.h>
 
@@ -70,6 +82,8 @@ void complex_data_example() {
 
     struct complex_data popped = vec_complex_data_pop(&vec);
     ASSERT(popped.score == 40); // Last item's score should be 40
+
+    vec_complex_data_debug(&vec, debug_fmt_new(), stdout);
 
     vec_complex_data_delete(&vec);
     complex_data_delete(&popped);

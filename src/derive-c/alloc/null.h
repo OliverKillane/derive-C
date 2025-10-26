@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <derive-c/alloc/trait.h>
@@ -36,6 +37,11 @@ static void NS(nullalloc, free)(nullalloc* self, void* ptr) {
     (void)ptr;
     ASSUME(self);
     PANIC("Not possible to free memory from the null allocator, as it allocates nothing")
+}
+
+static void NS(nullalloc, debug)(nullalloc const* self, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "nullalloc@%p { }", self);
 }
 
 TRAIT_ALLOC(nullalloc);

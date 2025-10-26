@@ -1,6 +1,5 @@
 #pragma once
 
-#include <derive-c/core/object/trait.h>
 #include <derive-c/core/prelude.h>
 #include <derive-c/utils/iterator/trait.h>
 

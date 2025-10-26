@@ -12,7 +12,6 @@
 #include <derive-c/algorithm/hash/hashers.h>
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
-#include <derive-c/derive/std.h>
 
 #define KEY uint32_t
 #define KEY_EQ uint32_t_eq
@@ -50,6 +49,8 @@ void id_to_name_example() {
 
     print_map(&map);
 
+    id_to_name_debug(&map, debug_fmt_new(), stdout);
+
     id_to_name_delete(&map);
 }
 
@@ -57,6 +58,11 @@ struct report_id {
     char* name;
     uint32_t section;
 };
+
+void report_id_debug(struct report_id const* self, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, " report_id@%p { name: \"%s\", section: %d}", self, self->name, self->section);
+}
 
 bool report_id_equality(struct report_id const* report_1, struct report_id const* report_2) {
     return strcmp(report_1->name, report_2->name) == 0 && report_1->section == report_2->section;
@@ -74,14 +80,22 @@ struct report {
     int value;
 };
 
+void report_debug(struct report const* self, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, " report@%p { description: \"%s\", value: %d}", self, self->description,
+            self->value);
+}
+
 void report_delete(struct report* self) { free(self->description); }
 
 #define KEY struct report_id
 #define KEY_EQ report_id_equality
 #define KEY_HASH report_id_hash
 #define KEY_DELETE report_id_delete
+#define KEY_DEBUG report_id_debug
 #define VALUE struct report
 #define VALUE_DELETE report_delete
+#define VALUE_DEBUG report_debug
 #define NAME report_map
 #include <derive-c/container/map/decomposed/template.h>
 
@@ -110,8 +124,12 @@ void report_map_example() {
         }
     }
 
+    report_map_debug(&map, debug_fmt_new(), stdout);
+
     struct report entry = report_map_remove(&map, id1);
     report_delete(&entry);
+
+    report_map_debug(&map, debug_fmt_new(), stdout);
 
     report_map_delete(&map);
 }
@@ -119,6 +137,11 @@ void report_map_example() {
 struct fixed_string {
     char value[4];
 };
+
+void fixed_string_debug(struct fixed_string const* self, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "fixed_string@%p { value: \"%.*s\" }", self, 4, self->value);
+}
 
 bool fixed_string_eq(struct fixed_string const* str1, struct fixed_string const* str2) {
     return memcmp(str1->value, str2->value, sizeof(str1->value)) == 0;
@@ -131,6 +154,7 @@ size_t fixed_string_hash(struct fixed_string const* str) {
 #define KEY struct fixed_string
 #define KEY_EQ fixed_string_eq
 #define KEY_HASH fixed_string_hash
+#define KEY_DEBUG fixed_string_debug
 #define VALUE uint32_t
 #define NAME fixed_string_map
 #include <derive-c/container/map/decomposed/template.h>
@@ -159,6 +183,8 @@ void fixed_string_example() {
         printf("Position: %zu Key: %.3s Value: %u\n", pos, entry->key->value, *entry->value);
         pos++;
     }
+
+    fixed_string_map_debug(&map, debug_fmt_new(), stdout);
 
     fixed_string_map_delete(&map);
 }

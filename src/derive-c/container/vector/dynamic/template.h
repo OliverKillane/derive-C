@@ -1,8 +1,9 @@
 /// @brief A simple vector
 
+#include "derive-c/core/namespace.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,7 +18,7 @@
 
 #if !defined ITEM
     #if !defined PLACEHOLDERS
-        #error "The contained type must be defined for a vector template"
+TEMPLATE_ERROR("No ITEM")
     #endif
 typedef struct {
     int x;
@@ -27,14 +28,24 @@ static void item_delete(item_t* t) { (void)t; }
     #define ITEM_DELETE item_delete
 static item_t item_clone(item_t const* i) { return *i; }
     #define ITEM_CLONE item_clone
+static void item_debug(item_t const* i, debug_fmt fmt, FILE* stream) {
+    (void)i;
+    (void)fmt;
+    (void)stream;
+}
+    #define ITEM_DEBUG item_debug
 #endif
 
 #if !defined ITEM_DELETE
-    #define ITEM_DELETE(value)
+    #define ITEM_DELETE NO_DELETE
 #endif
 
 #if !defined ITEM_CLONE
-    #define ITEM_CLONE(value) (*(value))
+    #define ITEM_CLONE COPY_CLONE
+#endif
+
+#if !defined ITEM_DEBUG
+    #define ITEM_DEBUG DEFAULT_DEBUG
 #endif
 
 typedef size_t NS(SELF, index_t);
@@ -428,11 +439,38 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "size: %lu,\n", self->size);
+    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+
+    debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    fprintf(stream, ",\n");
+
+    debug_fmt_print(fmt, stream, "items: @%p [\n", self->data);
+    fmt = debug_fmt_scope_begin(fmt);
+
+    ITER_CONST iter = NS(SELF, get_iter_const)(self);
+    ITEM const* item;
+    while ((item = NS(ITER_CONST, next)(&iter))) {
+        debug_fmt_print_indents(fmt, stream);
+        ITEM_DEBUG(item, fmt, stream);
+        fprintf(stream, ",\n");
+    }
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "],\n");
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
+}
+
 #undef ITER_CONST
 
 #undef ITEM
 #undef ITEM_DELETE
 #undef ITEM_CLONE
+#undef ITEM_DEBUG
 
 #undef INVARIANT_CHECK
 

@@ -1,5 +1,5 @@
-#include <derive-c/core/prelude/macros.h> // NOLINT(misc-include-cleaner)
-#include <derive-c/core/prelude/placeholder.h>
+#include <derive-c/core/namespace.h> // NOLINT(misc-include-cleaner)
+#include <derive-c/core/placeholder.h>
 
 /// @brief Supporting templates that internally invoke new templates.
 ///
@@ -51,3 +51,6 @@
     #define NAME self_t
     #define SELF NAME
 #endif
+
+/// With the user provided name, even in nested templates
+#define TEMPLATE_ERROR(...) _Pragma(STRINGIFY(GCC error EXPAND_STRING(NAME) ": " __VA_ARGS__))

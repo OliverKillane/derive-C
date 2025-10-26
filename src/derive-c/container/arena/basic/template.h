@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -18,14 +19,14 @@
 
 #if !defined INDEX_BITS
     #if !defined PLACEHOLDERS
-        #error "The number of bits (8,16,32,64) to use for the arena's key"
+TEMPLATE_ERROR("The number of bits (8,16,32,64) to use for the arena's key")
     #endif
     #define INDEX_BITS 32
 #endif
 
 #if !defined VALUE
     #if !defined PLACEHOLDERS
-        #error "The value type to place in the arena must be defined"
+TEMPLATE_ERROR("The value type to place in the arena must be defined")
     #endif
 typedef struct {
     int x;
@@ -40,11 +41,15 @@ static value_t value_clone(value_t const* self) { return *self; }
 STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE(value) (void)value
+    #define VALUE_DELETE NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE(value) (*(value))
+    #define VALUE_CLONE COPY_CLONE
+#endif
+
+#if !defined VALUE_DEBUG
+    #define VALUE_DEBUG NO_DEBUG
 #endif
 
 #if INDEX_BITS == 8
@@ -87,6 +92,15 @@ typedef ALLOC NS(SELF, alloc_t);
 typedef struct {
     INDEX_TYPE index;
 } INDEX;
+
+static bool NS(INDEX, eq)(INDEX const* idx_1, INDEX const* idx_2) {
+    return idx_1->index == idx_2->index;
+}
+
+static void NS(INDEX, debug)(INDEX const* idx, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, EXPAND_STRING(INDEX) " { %lu }", (size_t)idx->index);
+}
 
 typedef struct {
     union {
@@ -477,6 +491,45 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+    debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
+    debug_fmt_print(fmt, stream, "slots: %p,\n", self->slots);
+
+    debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    fprintf(stream, ",\n");
+
+    debug_fmt_print(fmt, stream, "items: [");
+    fmt = debug_fmt_scope_begin(fmt);
+
+    ITER_CONST iter = NS(SELF, get_iter_const)(self);
+    IV_PAIR_CONST const* item;
+
+    while ((item = NS(ITER_CONST, next)(&iter))) {
+        debug_fmt_print(fmt, stream, "{\n");
+        fmt = debug_fmt_scope_begin(fmt);
+
+        debug_fmt_print(fmt, stream, "key: ");
+        NS(INDEX, debug)(&item->index, fmt, stream);
+        fprintf(stream, ",\n");
+
+        debug_fmt_print(fmt, stream, "value: ");
+        VALUE_DEBUG(item->value, fmt, stream);
+        fprintf(stream, ",\n");
+
+        fmt = debug_fmt_scope_end(fmt);
+        debug_fmt_print(fmt, stream, "},\n");
+    }
+
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "],\n");
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
+}
+
 #undef ITER_CONST
 #undef IV_PAIR_CONST
 
@@ -485,6 +538,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef VALUE
 #undef VALUE_DELETE
 #undef VALUE_CLONE
+#undef VALUE_DEBUG
 
 #undef INDEX_TYPE
 #undef CAPACITY_EXCLUSIVE_UPPER
