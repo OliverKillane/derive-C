@@ -34,6 +34,8 @@ void push_example() {
     ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY) == NULL);
     ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY + 1) == NULL);
 
+    staticvec_chars_debug(&vec, debug_fmt_new(), stdout);
+
     staticvec_chars_delete(&vec);
 }
 
@@ -52,6 +54,8 @@ void iter_example() {
         printf("%u ", *item);
     }
     printf("\n");
+
+    staticvec_chars_debug(&vec, debug_fmt_new(), stdout);
 
     staticvec_chars_delete(&vec);
 }

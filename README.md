@@ -85,7 +85,7 @@ container
         generational
 utils
     option // current option
-    result
+    result 
     string
         short
         intern
@@ -98,7 +98,7 @@ utils
         small
 algorithms
     sort
-        binarysort
+        mergesort
     search
         binarysearch
     hash

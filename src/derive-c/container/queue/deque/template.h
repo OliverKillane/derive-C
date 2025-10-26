@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "utils.h"
@@ -42,6 +43,10 @@ static item_t item_clone(item_t const* a) { return *a; }
     #define ITEM_CLONE COPY_CLONE
 #endif
 
+#if !defined ITEM_DEBUG
+    #define ITEM_DEBUG DEFAULT_DEBUG
+#endif
+
 typedef ITEM NS(SELF, item_t);
 typedef ALLOC NS(SELF, alloc_t);
 
@@ -64,20 +69,16 @@ typedef ALLOC NS(SELF, alloc_t);
 typedef struct {
     ITEM_VECTORS front;
     ITEM_VECTORS back;
-    ALLOC* alloc;
     gdb_marker derive_c_deque;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
-#define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME((self)->alloc);
+#define INVARIANT_CHECK(self) ASSUME(self);
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     return (SELF){
         .front = NS(ITEM_VECTORS, new)(alloc),
         .back = NS(ITEM_VECTORS, new)(alloc),
-        .alloc = alloc,
         .derive_c_deque = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -87,7 +88,6 @@ static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, ALLOC* a
     return (SELF){
         .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
         .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
-        .alloc = alloc,
         .derive_c_deque = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -98,7 +98,6 @@ static SELF NS(SELF, clone)(SELF const* other) {
     return (SELF){
         .front = NS(ITEM_VECTORS, clone)(&other->front),
         .back = NS(ITEM_VECTORS, clone)(&other->back),
-        .alloc = other->alloc,
         .derive_c_deque = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -334,6 +333,23 @@ static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     NS(ITEM_VECTORS, delete)(&self->front);
     NS(ITEM_VECTORS, delete)(&self->back);
+}
+
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
+
+    debug_fmt_print(fmt, stream, "front: ");
+    NS(ITEM_VECTORS, debug)(&self->front, fmt, stream);
+    fprintf(stream, ",\n");
+
+    debug_fmt_print(fmt, stream, "back: ");
+    NS(ITEM_VECTORS, debug)(&self->back, fmt, stream);
+    fprintf(stream, ",\n");
+
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}\n");
 }
 
 #undef INVARIANT_CHECK

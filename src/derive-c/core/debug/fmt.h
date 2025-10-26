@@ -11,9 +11,11 @@ typedef struct {
     size_t indent;
 } debug_fmt;
 
+static debug_fmt debug_fmt_new() { return (debug_fmt){.indent = 0}; }
+
 static void debug_fmt_print_indents(debug_fmt fmt, FILE* stream) {
     for (size_t i = 0; i < fmt.indent; i++) {
-        fprintf(stream, "\t");
+        fprintf(stream, "  ");
     }
 }
 
@@ -24,8 +26,6 @@ static void debug_fmt_print(debug_fmt fmt, FILE* stream, const char* format, ...
     va_start(args, format);
     vfprintf(stream, format, args);
     va_end(args);
-
-    fprintf(stream, "\n");
 }
 
 /// Starts a scope `{ ... }`

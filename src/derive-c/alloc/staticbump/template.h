@@ -7,7 +7,6 @@
 #include <string.h>
 
 #include <derive-c/alloc/trait.h>
-#include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/debug/gdb_marker.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/prelude.h>

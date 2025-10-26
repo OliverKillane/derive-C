@@ -10,7 +10,13 @@
 #define TRAIT_DEBUGABLE(SELF)                                                                      \
     REQUIRE_METHOD(void, SELF, debug, (SELF const*, debug_fmt fmt, FILE*));
 
-#define NO_DEBUG(SELF, FMT, STREAM) fprintf(STREAM, "(no debug provided)");
+#define NO_DEBUG PRIV(no_debug)
+
+static void PRIV(no_debug)(void const* self, debug_fmt fmt, FILE* stream) {
+    (void)self;
+    (void)fmt;
+    fprintf(stream, "(no debug provided)");
+}
 
 #define _DERIVE_DEBUG_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                             \
     debug_fmt_print(fmt, stream, STRINGIFY(MEMBER_NAME) ": ");                                     \
@@ -32,3 +38,41 @@
     }
 
 STD_REFLECT(_DERIVE_STD_DEBUG)
+
+static void string_debug(char const* const* string, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "char*@%p \"%s\"", *string, *string);
+}
+
+#if defined __cplusplus
+    #include <type_traits>
+
+    #define _DEFAULT_DEBUG_CASE(TYPE, _, FMT, STREAM)                                              \
+        if constexpr (std::is_same_v<                                                              \
+                          TYPE, std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {     \
+            NS(TYPE, debug)(item, FMT, STREAM);                                                    \
+        } else
+
+    #define _DEFAULT_DEBUG(SELF, FMT, STREAM)                                                      \
+        [&]<typename T>(T item) {                                                                  \
+            STD_REFLECT(_DEFAULT_DEBUG_CASE, FMT, STREAM)                                          \
+            if constexpr (std::is_same_v<char*, std::remove_cv_t<                                  \
+                                                    std::remove_reference_t<decltype(*item)>>>) {  \
+                string_debug(item, FMT, STREAM);                                                   \
+            } else {                                                                               \
+                NO_DEBUG(item, FMT, STREAM);                                                       \
+            }                                                                                      \
+        }(SELF)
+
+#else
+    #define _DEFAULT_DEBUG_CASE(TYPE, _, x)                                                        \
+    TYPE:                                                                                          \
+        NS(TYPE, debug),
+
+    #define _DEFAULT_DEBUG(SELF, FMT, STREAM)                                                      \
+        _Generic(*(SELF),                                                                          \
+            STD_REFLECT(_DEFAULT_DEBUG_CASE, f) char const*: string_debug,                         \
+            default: PRIV(no_debug))(SELF, FMT, STREAM);
+#endif
+
+#define DEFAULT_DEBUG _DEFAULT_DEBUG

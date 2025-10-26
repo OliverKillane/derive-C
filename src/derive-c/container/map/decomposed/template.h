@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "utils.h"
@@ -43,6 +44,10 @@ static size_t KEY_HASH(KEY const* key);
     #define KEY_CLONE(KEY) *(KEY)
 #endif
 
+#if !defined KEY_DEBUG
+    #define KEY_DEBUG DEFAULT_DEBUG
+#endif
+
 #if !defined VALUE
     #if !defined PLACEHOLDERS
 TEMPLATE_ERROR("No VALUE")
@@ -59,6 +64,10 @@ typedef struct {
 
 #if !defined VALUE_CLONE
     #define VALUE_CLONE(VALUE) *(VALUE)
+#endif
+
+#if !defined VALUE_DEBUG
+    #define VALUE_DEBUG DEFAULT_DEBUG
 #endif
 
 typedef KEY NS(SELF, key_t);
@@ -502,6 +511,48 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+
+    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+    debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
+
+    debug_fmt_print(fmt, stream, "keys: @%p,\n", self->keys);
+    debug_fmt_print(fmt, stream, "values: @%p,\n", self->values);
+
+    debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    fprintf(stream, ",\n");
+
+    debug_fmt_print(fmt, stream, "items: [");
+    fmt = debug_fmt_scope_begin(fmt);
+
+    ITER_CONST iter = NS(SELF, get_iter_const)(self);
+    KV_PAIR_CONST const* item;
+
+    while ((item = NS(ITER_CONST, next)(&iter))) {
+        debug_fmt_print(fmt, stream, "{\n");
+        fmt = debug_fmt_scope_begin(fmt);
+
+        debug_fmt_print(fmt, stream, "key: ");
+        KEY_DEBUG(item->key, fmt, stream);
+        fprintf(stream, ",\n");
+
+        debug_fmt_print(fmt, stream, "value: ");
+        VALUE_DEBUG(item->value, fmt, stream);
+        fprintf(stream, ",\n");
+
+        fmt = debug_fmt_scope_end(fmt);
+        debug_fmt_print(fmt, stream, "},\n");
+    }
+
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "],\n");
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
+}
+
 #undef ITER_CONST
 #undef KV_PAIR_CONST
 
@@ -512,9 +563,11 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 #undef KEY_EQ
 #undef KEY_DELETE
 #undef KEY_CLONE
+#undef KEY_DEBUG
 #undef VALUE
 #undef VALUE_DELETE
 #undef VALUE_CLONE
+#undef VALUE_DEBUG
 
 #undef INVARIANT_CHECK
 

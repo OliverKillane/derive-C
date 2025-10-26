@@ -6,7 +6,7 @@
 
 #define TRAIT_CLONEABLE(SELF) REQUIRE_METHOD(SELF, SELF, clone, (SELF const*));
 
-#define COPY_CLONE(SELF) *(SELF)
+#define COPY_CLONE(SELF) (*(SELF))
 
 #define _DERIVE_CLONE_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                             \
     .MEMBER_NAME = NS(MEMBER_TYPE, clone)(&self->MEMBER_NAME),

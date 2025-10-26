@@ -6,7 +6,7 @@
 
 #define TRAIT_DELETABLE(SELF) REQUIRE_METHOD(void, SELF, delete, (SELF*));
 
-#define NO_DELETE(SELF)
+#define NO_DELETE(SELF) (void)(SELF)
 
 #define _DERIVE_DELETE_MEMBER(MEMBER_TYPE, MEMBER_NAME) NS(MEMBER_TYPE, delete)(&self->MEMBER_NAME),
 

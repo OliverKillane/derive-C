@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <derive-c/container/queue/trait.h>
@@ -35,6 +36,10 @@ static item_t item_clone(item_t const* self) { return *self; }
 
 #if !defined ITEM_CLONE
     #define ITEM_CLONE COPY_CLONE
+#endif
+
+#if !defined ITEM_DEBUG
+    #define ITEM_DEBUG DEFAULT_DEBUG
 #endif
 
 typedef ITEM NS(SELF, item_t);
@@ -366,7 +371,7 @@ static void NS(SELF, delete)(SELF* self) {
             memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, item,
                                sizeof(ITEM));
         }
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, self->data,
+        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, self->data,
                            self->capacity * sizeof(ITEM));
         NS(ALLOC, free)(self->alloc, self->data);
     }
@@ -443,6 +448,34 @@ static SELF NS(SELF, clone)(SELF const* self) {
     };
     PRIV(NS(SELF, set_inaccessible_memory_caps))(&new_self, MEMORY_TRACKER_CAP_NONE);
     return new_self;
+}
+
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+    debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
+    debug_fmt_print(fmt, stream, "head: %lu,\n", self->head);
+    debug_fmt_print(fmt, stream, "tail: %lu,\n", self->tail);
+
+    debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    fprintf(stream, ",\n");
+
+    debug_fmt_print(fmt, stream, "queue: @%p [\n", self->data);
+    fmt = debug_fmt_scope_begin(fmt);
+
+    ITER_CONST iter = NS(SELF, get_iter_const)(self);
+    ITEM const* item;
+    while ((item = NS(ITER_CONST, next)(&iter))) {
+        debug_fmt_print_indents(fmt, stream);
+        ITEM_DEBUG(item, fmt, stream);
+        fprintf(stream, ",\n");
+    }
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "],\n");
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}\n");
 }
 
 #undef ITER_CONST

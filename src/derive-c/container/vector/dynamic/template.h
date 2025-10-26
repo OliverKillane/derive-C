@@ -1,5 +1,6 @@
 /// @brief A simple vector
 
+#include "derive-c/core/namespace.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -7,7 +8,6 @@
 #include <string.h>
 
 #include <derive-c/container/vector/trait.h>
-#include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/debug/gdb_marker.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/core/debug/mutation_tracker.h>
@@ -45,7 +45,7 @@ static void item_debug(item_t const* i, debug_fmt fmt, FILE* stream) {
 #endif
 
 #if !defined ITEM_DEBUG
-    #define ITEM_DEBUG NO_DEBUG
+    #define ITEM_DEBUG DEFAULT_DEBUG
 #endif
 
 typedef size_t NS(SELF, index_t);
@@ -440,7 +440,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
-    fprintf(stream, STRINGIFY(SELF) "@%p {", self);
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = debug_fmt_scope_begin(fmt);
     debug_fmt_print(fmt, stream, "size: %lu,\n", self->size);
     debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
@@ -449,19 +449,20 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "items: @%p {\n", self->data);
+    debug_fmt_print(fmt, stream, "items: @%p [\n", self->data);
     fmt = debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
     ITEM const* item;
     while ((item = NS(ITER_CONST, next)(&iter))) {
+        debug_fmt_print_indents(fmt, stream);
         ITEM_DEBUG(item, fmt, stream);
         fprintf(stream, ",\n");
     }
     fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}\n");
+    debug_fmt_print(fmt, stream, "],\n");
     fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}\n");
+    debug_fmt_print(fmt, stream, "}");
 }
 
 #undef ITER_CONST
@@ -469,6 +470,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef ITEM
 #undef ITEM_DELETE
 #undef ITEM_CLONE
+#undef ITEM_DEBUG
 
 #undef INVARIANT_CHECK
 

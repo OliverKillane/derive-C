@@ -2,7 +2,6 @@
 /// @example container/vector/dynamic.c
 /// @brief Examples for inserting, iterating, and deleting from vectors.
 
-#include "derive-c/core/debug/fmt.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -38,6 +37,8 @@ void ints_example() {
     int32_t last_value = vec_ints_pop(&ints);
     ASSERT(last_value == upto); // Last value should be 99 + 1
     ASSERT(vec_ints_size(&ints) == upto - 1);
+
+    vec_ints_debug(&ints, debug_fmt_new(), stdout);
 
     vec_ints_delete(&ints);
 }
@@ -81,6 +82,8 @@ void complex_data_example() {
 
     struct complex_data popped = vec_complex_data_pop(&vec);
     ASSERT(popped.score == 40); // Last item's score should be 40
+
+    vec_complex_data_debug(&vec, debug_fmt_new(), stdout);
 
     vec_complex_data_delete(&vec);
     complex_data_delete(&popped);

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "derive-c/core/debug/fmt.h"
 #include <stdio.h>
 #include <stdlib.h>
 

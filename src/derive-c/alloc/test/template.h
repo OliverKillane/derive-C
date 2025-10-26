@@ -13,7 +13,6 @@
 #include <stdio.h>
 
 #include <derive-c/alloc/trait.h>
-#include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/prelude.h>
 
 #include <derive-c/core/alloc/def.h>

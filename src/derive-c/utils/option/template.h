@@ -33,6 +33,10 @@ static bool item_eq(item_t const* a, item_t const* b) { return a->x == b->x; }
     #define ITEM_CLONE(value) (*(value))
 #endif
 
+#if !defined ITEM_DEBUG
+    #define ITEM_DEBUG DEFAULT_DEBUG
+#endif
+
 typedef struct {
     union {
         ITEM item;
@@ -111,8 +115,23 @@ static bool NS(SELF, replace)(SELF* self, ITEM value) {
     return was_present;
 }
 
+static void NS(SELF, debug)(SELF* self, debug_fmt fmt, FILE* stream) {
+    if (self->present) {
+        fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+        fmt = debug_fmt_scope_begin(fmt);
+        debug_fmt_print(fmt, stream, "value: ");
+        ITEM_DEBUG(&self->item, fmt, stream);
+        fprintf(stream, ",\n");
+        fmt = debug_fmt_scope_end(fmt);
+        debug_fmt_print(fmt, stream, "}");
+    } else {
+        fprintf(stream, EXPAND_STRING(SELF) "@%p { NONE }", self);
+    }
+}
+
 #undef ITEM
 #undef ITEM_DELETE
 #undef ITEM_CLONE
+#undef ITEM_DEBUG
 
 #include <derive-c/core/self/undef.h>

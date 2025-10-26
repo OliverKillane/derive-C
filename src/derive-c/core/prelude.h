@@ -18,3 +18,6 @@
 #include <derive-c/core/traits/delete.h> // IWYU pragma: export
 #include <derive-c/core/traits/eq.h>     // IWYU pragma: export
 #include <derive-c/core/traits/ord.h>    // IWYU pragma: export
+
+// Debug formatting
+#include <derive-c/core/debug/fmt.h> // IWYU pragma: export

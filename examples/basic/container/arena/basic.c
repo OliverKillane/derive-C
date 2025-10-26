@@ -9,7 +9,7 @@
 #include <derive-c/core/prelude.h>
 
 #define INDEX_BITS 32
-#define VALUE
+#define VALUE uint32_t
 #define NAME ints
 #include <derive-c/container/arena/basic/template.h>
 
@@ -39,6 +39,8 @@ void int_example() {
         }
     }
 
+    ints_debug(&arena, debug_fmt_new(), stdout);
+
     ints_delete(&arena);
 }
 
@@ -50,18 +52,31 @@ struct foo {
 
 void my_foo_delete(struct foo* self) { free(self->owned_data); }
 
+void foo_debug(struct foo const* self, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "foo@%p { x: %d, y: \"%s\", owned_data: @%p { %d }, }", self, self->x, self->y,
+            self->owned_data, *self->owned_data);
+}
+
+int* new_owned_int(int value) {
+    int* v = (int*)malloc(sizeof(int));
+    *v = value;
+    return v;
+}
+
 #define INDEX_BITS 8
 #define VALUE struct foo
 #define VALUE_DELETE my_foo_delete
+#define VALUE_DEBUG foo_debug
 #define NAME foo_arena
 #include <derive-c/container/arena/basic/template.h>
 
 void foo_example() {
     foo_arena arena = foo_arena_new_with_capacity_for(12, stdalloc_get());
-    foo_arena_index_t index_a = foo_arena_insert(
-        &arena, (struct foo){.x = 42, .y = "A", .owned_data = (int*)malloc(sizeof(int))});
-    foo_arena_index_t index_b = foo_arena_insert(
-        &arena, (struct foo){.x = 41, .y = "B", .owned_data = (int*)malloc(sizeof(int))});
+    foo_arena_index_t index_a =
+        foo_arena_insert(&arena, (struct foo){.x = 42, .y = "A", .owned_data = new_owned_int(3)});
+    foo_arena_index_t index_b =
+        foo_arena_insert(&arena, (struct foo){.x = 41, .y = "B", .owned_data = new_owned_int(5)});
 
     ASSERT(foo_arena_size(&arena) == 2);
     ASSERT(foo_arena_full(&arena) == false);
@@ -71,7 +86,9 @@ void foo_example() {
     foo_arena_write(&arena, index_b)->x = 100;
     ASSERT(foo_arena_read(&arena, index_b)->x == 100);
 
-    // we remove the entry, improtantly - we now own this data
+    foo_arena_debug(&arena, debug_fmt_new(), stdout);
+
+    // we remove the entry, importantly - we now own this data
     struct foo entry_a = foo_arena_remove(&arena, index_a);
 
     // entry_b was deleted

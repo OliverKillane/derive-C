@@ -22,12 +22,5 @@
     F(int32_t,            "%" PRId32 , __VA_ARGS__) \
     F(uint32_t,           "%" PRIu32 , __VA_ARGS__) \
     F(int64_t,            "%" PRId64 , __VA_ARGS__) \
-    F(uint64_t,           "%" PRIu64 , __VA_ARGS__) \
-    F(intptr_t,           "%" PRIdPTR, __VA_ARGS__) \
-    F(uintptr_t,          "%" PRIuPTR, __VA_ARGS__) \
-    F(intmax_t,           "%" PRIdMAX, __VA_ARGS__) \
-    F(uintmax_t,          "%" PRIuMAX, __VA_ARGS__) \
-    F(size_t,             "%zu"      , __VA_ARGS__) \
-    F(ssize_t,            "%zd"      , __VA_ARGS__) \
-    F(ptrdiff_t,          "%td"      , __VA_ARGS__)
+    F(uint64_t,           "%" PRIu64 , __VA_ARGS__)
 // clang-format on

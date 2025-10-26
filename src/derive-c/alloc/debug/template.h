@@ -6,7 +6,6 @@
 // JUSTIFY: No custom memory tracking
 //  - already done by the wrapper allocator
 
-#include "derive-c/core/debug/fmt.h"
 #include <stdio.h>
 
 #include <derive-c/alloc/trait.h>
