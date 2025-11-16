@@ -8,7 +8,7 @@ extern "C" {
 #define NAME int_vec
 #include <derive-c/container/vector/dynamic/template.h>
 
-#include <derive-c/utils/iterator/for.h>
+#include <derive-c/utils/for.h>
 }
 
 TEST(For, empty_iterator) {

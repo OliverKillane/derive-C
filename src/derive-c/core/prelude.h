@@ -17,6 +17,7 @@
 #include <derive-c/core/traits/debug.h>  // IWYU pragma: export
 #include <derive-c/core/traits/delete.h> // IWYU pragma: export
 #include <derive-c/core/traits/eq.h>     // IWYU pragma: export
+#include <derive-c/core/traits/iter.h>   // IWYU pragma: export
 #include <derive-c/core/traits/ord.h>    // IWYU pragma: export
 
 // Debug formatting

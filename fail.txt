@@ -1,0 +1,171 @@
+ninja: Entering directory `build'
+[0/2] Re-checking globbed directories...
+[1/5] Scanning /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp for CXX dependencies
+[2/5] Generating CXX dyndep file test/CMakeFiles/containers_arena_contiguous_fuzz.cpp.dir/CXX.dd
+[3/5] Building CXX object test/CMakeFiles/containers_arena_contiguous_fuzz.cpp.dir/containers/arena/contiguous/fuzz.cpp.o
+FAILED: test/CMakeFiles/containers_arena_contiguous_fuzz.cpp.dir/containers/arena/contiguous/fuzz.cpp.o 
+/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/bin/clang++ -DCUSTOM_MEMORY_TRACKING=2 -DENABLE_MOCKING -I/home/oliverkillane/files/derive-C/src/derive-c/.. -I/home/oliverkillane/files/derive-C/src/derive-cpp/.. -I/home/oliverkillane/files/derive-C/build/_deps/rapidcheck-src/include -I/home/oliverkillane/files/derive-C/build/_deps/rapidcheck-src/extras/gtest/include -isystem /home/oliverkillane/files/derive-C/build/_deps/googletest-src/googletest/include -isystem /home/oliverkillane/files/derive-C/build/_deps/googletest-src/googletest -isystem /home/oliverkillane/files/derive-C/build/_deps/googletest-src/googlemock/include -isystem /home/oliverkillane/files/derive-C/build/_deps/googletest-src/googlemock -g3 -O1 -std=c++23 -fsanitize=address,undefined -fprofile-instr-generate -fcoverage-mapping -Wno-deprecated-declarations -MD -MT test/CMakeFiles/containers_arena_contiguous_fuzz.cpp.dir/containers/arena/contiguous/fuzz.cpp.o -MF test/CMakeFiles/containers_arena_contiguous_fuzz.cpp.dir/containers/arena/contiguous/fuzz.cpp.o.d @test/CMakeFiles/containers_arena_contiguous_fuzz.cpp.dir/containers/arena/contiguous/fuzz.cpp.o.modmap -o test/CMakeFiles/containers_arena_contiguous_fuzz.cpp.dir/containers/arena/contiguous/fuzz.cpp.o -c /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:4:
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/assert.h:64:1: error: expected member name or ';' after declaration specifiers
+   64 | __BEGIN_DECLS
+      | ^~~~~~~~~~~~~
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/sys/cdefs.h:140:31: note: expanded from macro '__BEGIN_DECLS'
+  140 | # define __BEGIN_DECLS  extern "C" {
+      |                         ~~~~~~ ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:12:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/trait.h:3:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/prelude.h:3:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/panic.h:5:
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/assert.h:64:1: error: expected member name or ';' after declaration specifiers
+   64 | __BEGIN_DECLS
+      | ^~~~~~~~~~~~~
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/sys/cdefs.h:140:31: note: expanded from macro '__BEGIN_DECLS'
+  140 | # define __BEGIN_DECLS  extern "C" {
+      |                         ~~~~~~ ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:13:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/debug/gdb_marker.h:5:12: error: unknown type name 'gdb_marker'; did you mean '_IO_marker'?
+    5 | ZERO_SIZED(gdb_marker);
+      |            ^~~~~~~~~~
+      |            _IO_marker
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/zerosized.h:13:30: note: expanded from macro 'ZERO_SIZED'
+   13 |         static_assert(sizeof(TYPE) == 1)
+      |                              ^
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/bits/types/struct_FILE.h:36:8: note: '_IO_marker' declared here
+   36 | struct _IO_marker;
+      |        ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:13:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/debug/gdb_marker.h:5:1: error: invalid application of 'sizeof' to an incomplete type '_IO_marker'
+    5 | ZERO_SIZED(gdb_marker);
+      | ^~~~~~~~~~~~~~~~~~~~~~
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/zerosized.h:13:23: note: expanded from macro 'ZERO_SIZED'
+   13 |         static_assert(sizeof(TYPE) == 1)
+      |                       ^     ~~~~~~
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/bits/types/struct_FILE.h:36:8: note: forward declaration of '_IO_marker'
+   36 | struct _IO_marker;
+      |        ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:13:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/debug/gdb_marker.h:7:8: error: unknown type name 'gdb_marker'; did you mean '_IO_marker'?
+    7 | static gdb_marker gdb_marker_new() { return (gdb_marker){}; }
+      |        ^~~~~~~~~~
+      |        _IO_marker
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/bits/types/struct_FILE.h:36:8: note: '_IO_marker' declared here
+   36 | struct _IO_marker;
+      |        ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:15:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/debug/mutation_tracker.h:5:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/prelude.h:3:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/panic.h:5:
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/assert.h:64:1: error: expected member name or ';' after declaration specifiers
+   64 | __BEGIN_DECLS
+      | ^~~~~~~~~~~~~
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/sys/cdefs.h:140:31: note: expanded from macro '__BEGIN_DECLS'
+  140 | # define __BEGIN_DECLS  extern "C" {
+      |                         ~~~~~~ ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:15:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/debug/mutation_tracker.h:6:
+In file included from /nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root/include/stddef.h:93:
+/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root/include/__stddef_size_t.h:18:23: error: redefinition of 'size_t'
+   18 | typedef __SIZE_TYPE__ size_t;
+      |                       ^
+/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root/include/stddef.h:93:10: note: '/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root/include/__stddef_size_t.h' included multiple times, additional include site here
+   93 | #include <__stddef_size_t.h>
+      |          ^
+/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root/include/stddef.h:93:10: note: '/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root/include/__stddef_size_t.h' included multiple times, additional include site here
+   93 | #include <__stddef_size_t.h>
+      |          ^
+/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root/include/__stddef_size_t.h:18:23: note: unguarded header; consider using #ifdef guards or #pragma once
+   18 | typedef __SIZE_TYPE__ size_t;
+      |                       ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:16:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/prelude.h:3:
+In file included from /home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/panic.h:5:
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/assert.h:64:1: error: expected member name or ';' after declaration specifiers
+   64 | __BEGIN_DECLS
+      | ^~~~~~~~~~~~~
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/sys/cdefs.h:140:31: note: expanded from macro '__BEGIN_DECLS'
+  140 | # define __BEGIN_DECLS  extern "C" {
+      |                         ~~~~~~ ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:69:9: error: unknown type name 'Value'
+   69 | typedef VALUE NS(SELF, value_t);
+      |         ^
+/home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:16:15: note: expanded from macro 'VALUE'
+   16 | #define VALUE Value
+      |               ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:87:9: error: unknown type name 'Value'
+   87 |         VALUE value;
+      |         ^
+/home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:16:15: note: expanded from macro 'VALUE'
+   16 | #define VALUE Value
+      |               ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:132:5: error: unknown type name 'gdb_marker'; did you mean '_IO_marker'?
+  132 |     gdb_marker derive_c_arena_basic;
+      |     ^~~~~~~~~~
+      |     _IO_marker
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/bits/types/struct_FILE.h:36:8: note: '_IO_marker' declared here
+   36 | struct _IO_marker;
+      |        ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:132:16: error: field has incomplete type '_IO_marker'
+  132 |     gdb_marker derive_c_arena_basic;
+      |                ^
+/nix/store/1ycjq6h047qqwp3fm9sbl805xnrxlh2h-glibc-2.40-66-dev/include/bits/types/struct_FILE.h:36:8: note: forward declaration of '_IO_marker'
+   36 | struct _IO_marker;
+      |        ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:142:13: error: a type specifier is required for all declarations
+  142 | static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
+      | ~~~~~~      ^
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/namespace.h:4:23: note: expanded from macro 'NS'
+    4 | #define NS(pre, post) NS_EXPANDED(pre, post)
+      |                       ^
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/core/namespace.h:3:37: note: expanded from macro 'NS_EXPANDED'
+    3 | #define NS_EXPANDED(pre, post) pre##_##post
+      |                                     ^
+<scratch space>:5:1: note: expanded from here
+    5 | _new_with_capacity_for
+      | ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:165:37: error: a type specifier is required for all declarations
+  165 | static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
+      |                                     ^
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:165:43: error: unknown type name 'Value'
+  165 | static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
+      |                                           ^
+/home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:16:15: note: expanded from macro 'VALUE'
+   16 | #define VALUE Value
+      |               ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:204:8: error: unknown type name 'Value'
+  204 | static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
+      |        ^
+/home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:16:15: note: expanded from macro 'VALUE'
+   16 | #define VALUE Value
+      |               ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:204:41: error: a type specifier is required for all declarations
+  204 | static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
+      |                                         ^
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:216:8: error: unknown type name 'Value'
+  216 | static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
+      |        ^
+/home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:16:15: note: expanded from macro 'VALUE'
+   16 | #define VALUE Value
+      |               ^
+In file included from /home/oliverkillane/files/derive-C/test/containers/arena/contiguous/fuzz.cpp:18:
+/home/oliverkillane/files/derive-C/src/derive-c/../derive-c/container/arena/contiguous/template.h:216:37: error: a type specifier is required for all declarations
+  216 | static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
+      |                                     ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+20 errors generated.
+ninja: build stopped: subcommand failed.

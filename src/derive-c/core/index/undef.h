@@ -1,0 +1,4 @@
+#undef INDEX_BITS
+#undef CAPACITY_EXCLUSIVE_UPPER
+#undef MAX_INDEX
+#undef INDEX_NONE

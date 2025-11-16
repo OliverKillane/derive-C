@@ -11,7 +11,7 @@
 #define INDEX_BITS 32
 #define VALUE uint32_t
 #define NAME ints
-#include <derive-c/container/arena/basic/template.h>
+#include <derive-c/container/arena/contiguous/template.h>
 
 void int_example() {
     ints arena = ints_new_with_capacity_for(12, stdalloc_get());
@@ -69,7 +69,7 @@ int* new_owned_int(int value) {
 #define VALUE_DELETE my_foo_delete
 #define VALUE_DEBUG foo_debug
 #define NAME foo_arena
-#include <derive-c/container/arena/basic/template.h>
+#include <derive-c/container/arena/contiguous/template.h>
 
 void foo_example() {
     foo_arena arena = foo_arena_new_with_capacity_for(12, stdalloc_get());

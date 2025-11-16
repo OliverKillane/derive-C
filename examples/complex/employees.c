@@ -73,7 +73,7 @@ void employee_debug(employee const* self, debug_fmt fmt, FILE* stream) {
 #define VALUE employee
 #define VALUE_DEBUG employee_debug
 #define NAME employees
-#include <derive-c/container/arena/basic/template.h>
+#include <derive-c/container/arena/contiguous/template.h>
 
 #define ITEM employees_index_t
 #define ITEM_DEBUG employees_index_t_debug

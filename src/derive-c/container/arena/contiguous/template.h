@@ -1,18 +1,11 @@
 /// @brief A vector-backed arena, with support for small indices.
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include <derive-c/container/arena/trait.h>
-#include <derive-c/core/debug/gdb_marker.h>
-#include <derive-c/core/debug/memory_tracker.h>
-#include <derive-c/core/debug/mutation_tracker.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include <derive-c/container/arena/contiguous/includes.h>
+#endif
+
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -49,31 +42,10 @@ STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG NO_DEBUG
+    #define VALUE_DEBUG DEFAULT_DEBUG
 #endif
 
-#if INDEX_BITS == 8
-    #define INDEX_TYPE uint8_t
-    #define CAPACITY_EXCLUSIVE_UPPER (UINT8_MAX + 1ULL)
-    #define MAX_INDEX (UINT8_MAX - 1ULL)
-    #define INDEX_NONE UINT8_MAX
-#elif INDEX_BITS == 16
-    #define INDEX_TYPE uint16_t
-    #define CAPACITY_EXCLUSIVE_UPPER (UINT16_MAX + 1ULL)
-    #define MAX_INDEX (UINT16_MAX - 1ULL)
-    #define INDEX_NONE UINT16_MAX
-#elif INDEX_BITS == 32
-    #define INDEX_TYPE uint32_t
-    #define CAPACITY_EXCLUSIVE_UPPER (UINT32_MAX + 1ULL)
-    #define MAX_INDEX (UINT32_MAX - 1ULL)
-    #define INDEX_NONE UINT32_MAX
-#elif INDEX_BITS == 64
-    #define INDEX_TYPE uint64_t
-    // JUSTIFY: Special case, we cannot store the max capacity as a size_t integer
-    #define CAPACITY_EXCLUSIVE_UPPER UINT64_MAX
-    #define MAX_INDEX (UINT64_MAX - 1ULL)
-    #define INDEX_NONE UINT64_MAX
-#endif
+#include <derive-c/core/index/def.h>
 
 #define SLOT NS(SELF, slot)
 
@@ -301,7 +273,7 @@ static bool NS(SELF, full)(SELF const* self) {
     return false;
 }
 
-static size_t NS(SELF, max_entries) = MAX_INDEX;
+static const size_t NS(SELF, max_entries) = MAX_INDEX;
 
 static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     INVARIANT_CHECK(self);
@@ -434,11 +406,6 @@ typedef struct {
     VALUE const* value;
 } IV_PAIR_CONST;
 
-static IV_PAIR_CONST NS(SELF, iv_const_empty) = {
-    .index = {.index = INDEX_NONE},
-    .value = NULL,
-};
-
 #define ITER_CONST NS(SELF, iter_const)
 typedef IV_PAIR_CONST const* NS(ITER_CONST, item);
 
@@ -533,17 +500,12 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef ITER_CONST
 #undef IV_PAIR_CONST
 
-#undef ALLOC
-#undef INDEX_BITS
 #undef VALUE
 #undef VALUE_DELETE
 #undef VALUE_CLONE
 #undef VALUE_DEBUG
 
-#undef INDEX_TYPE
-#undef CAPACITY_EXCLUSIVE_UPPER
-#undef MAX_INDEX
-#undef INDEX_NONE
+#include <derive-c/core/index/undef.h>
 
 #undef SLOT
 #undef CHECK_ACCESS_INDEX
@@ -556,3 +518,4 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 TRAIT_ARENA(SELF);
 
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/includes/undef.h>

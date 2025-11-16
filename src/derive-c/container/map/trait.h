@@ -1,7 +1,6 @@
 #pragma once
 
 #include <derive-c/core/prelude.h>
-#include <derive-c/utils/iterator/trait.h>
 
 #define TRAIT_MAP(SELF)                                                                            \
     REQUIRE_TYPE(SELF, key_t);                                                                     \
@@ -19,4 +18,5 @@
     REQUIRE_METHOD(size_t, SELF, size, (SELF const*));                                             \
     TRAIT_ITERABLE(SELF);                                                                          \
     TRAIT_CLONEABLE(SELF);                                                                         \
-    TRAIT_DELETABLE(SELF);
+    TRAIT_DELETABLE(SELF);                                                                         \
+    TRAIT_DEBUGABLE(SELF);

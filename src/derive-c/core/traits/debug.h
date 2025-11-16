@@ -1,3 +1,10 @@
+/// @brief The debug trait
+/// Inspired by rust's `{:?}` pretty print, any data structure can be dumped to a stream.
+///  - For debugging (not display) (so contains ptr information, internals)
+///  - Prints the types (so users can cross reference)
+///  - Print allocators (for debugging memory issues)
+///  - Overrideable per data structure
+
 #pragma once
 
 #include <stdio.h>

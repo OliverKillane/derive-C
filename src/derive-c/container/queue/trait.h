@@ -1,7 +1,6 @@
 #pragma once
 
 #include <derive-c/core/prelude.h>
-#include <derive-c/utils/iterator/trait.h>
 
 #define TRAIT_QUEUE(SELF)                                                                          \
     REQUIRE_TYPE(SELF, item_t);                                                                    \
@@ -13,4 +12,5 @@
     REQUIRE_METHOD(NS(SELF, item_t), SELF, pop_back, (SELF*));                                     \
     TRAIT_ITERABLE(SELF);                                                                          \
     TRAIT_DELETABLE(SELF);                                                                         \
-    TRAIT_CLONEABLE(SELF);
+    TRAIT_CLONEABLE(SELF);                                                                         \
+    TRAIT_DEBUGABLE(SELF);

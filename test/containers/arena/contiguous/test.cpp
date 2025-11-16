@@ -8,7 +8,7 @@ extern "C" {
 #define NAME Sut
 #define VALUE size_t
 #define INDEX_BITS 8
-#include <derive-c/container/arena/basic/template.h>
+#include <derive-c/container/arena/contiguous/template.h>
 }
 
 TEST(ArenaTests, Full) {

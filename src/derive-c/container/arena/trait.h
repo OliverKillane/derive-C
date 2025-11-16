@@ -1,7 +1,6 @@
 #pragma once
 
 #include <derive-c/core/prelude.h>
-#include <derive-c/utils/iterator/trait.h>
 
 #define TRAIT_ARENA(SELF)                                                                          \
     REQUIRE_TYPE(SELF, index_t);                                                                   \
@@ -15,4 +14,5 @@
     REQUIRE_METHOD(NS(SELF, value_t), SELF, remove, (SELF*, NS(SELF, index_t)));                   \
     TRAIT_ITERABLE(SELF);                                                                          \
     TRAIT_CLONEABLE(SELF);                                                                         \
-    TRAIT_DELETABLE(SELF);
+    TRAIT_DELETABLE(SELF);                                                                         \
+    TRAIT_DEBUGABLE(SELF);

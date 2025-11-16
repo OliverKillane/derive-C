@@ -67,6 +67,13 @@ In development, remaining tasks:
  - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
 
 To be added in this PR
+
+hashmap plan:
+ - use separate arenas for backing storage and the map
+ - use staticbumpalloc
+ - use small indices (8 bit)
+ - switch to linear map below threshold
+
 ```
 container
     vector 
@@ -82,6 +89,7 @@ container
         deque    // current: double ended queue
     arena
         basic // current implementation
+        blocks
         generational
 utils
     option // current option
@@ -115,3 +123,13 @@ test
 
 ## References
 - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)
+
+TODO later / evening fun:
+1. block based arena
+2. linear map
+3. ankerl hashmap
+4. debug printing
+5. namespacing DC
+6. comparative benchmarks
+7. cleanup iterators
+8. rename vectors (contig, blocks, )

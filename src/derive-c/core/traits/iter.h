@@ -1,5 +1,7 @@
 #pragma once
-#include <derive-c/core/prelude.h>
+
+#include <derive-c/core/require.h>
+#include <derive-c/core/namespace.h>
 
 #define TRAIT_ITER(SELF)                                                                           \
     REQUIRE_TYPE(SELF, item);                                                                      \
