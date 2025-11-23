@@ -3,15 +3,10 @@
 ///     different instances of data structures, only see the allocations we want
 ///     to.
 
-// JUSTIFY: No custom memory tracking
-//  - already done by the wrapper allocator
-
-#include <stdio.h>
-
-#include <derive-c/alloc/trait.h>
-#include <derive-c/core/alloc/def.h>
-#include <derive-c/core/prelude.h>
-#include <derive-c/core/self/def.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 typedef struct {
     char const* name;
@@ -73,4 +68,5 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #include <derive-c/core/alloc/undef.h>
 
 TRAIT_ALLOC(SELF);
+#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>

@@ -1,17 +1,9 @@
 /// @brief A simple vector
 
-#include "derive-c/core/namespace.h"
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <derive-c/container/vector/trait.h>
-#include <derive-c/core/debug/gdb_marker.h>
-#include <derive-c/core/debug/memory_tracker.h>
-#include <derive-c/core/debug/mutation_tracker.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -477,4 +469,5 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #include <derive-c/core/alloc/undef.h>
 TRAIT_VECTOR(SELF);
 
+#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>

@@ -1,11 +1,9 @@
 /// @brief A vector-backed arena, with support for small indices.
 
-
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
-    #include <derive-c/container/arena/contiguous/includes.h>
+    #include "includes.h"
 #endif
-
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -55,24 +53,8 @@ STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 //           - Avoids the need to cast to the INDEX_TYPE
 #define RESIZE_FACTOR 2
 
-// INVARIANT: < CAPACITY_EXCLUSIVE_UPPER
-#define INDEX NS(SELF, index_t)
-
 typedef VALUE NS(SELF, value_t);
 typedef ALLOC NS(SELF, alloc_t);
-
-typedef struct {
-    INDEX_TYPE index;
-} INDEX;
-
-static bool NS(INDEX, eq)(INDEX const* idx_1, INDEX const* idx_2) {
-    return idx_1->index == idx_2->index;
-}
-
-static void NS(INDEX, debug)(INDEX const* idx, debug_fmt fmt, FILE* stream) {
-    (void)fmt;
-    fprintf(stream, EXPAND_STRING(INDEX) " { %lu }", (size_t)idx->index);
-}
 
 typedef struct {
     union {
@@ -174,7 +156,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     if (self->exclusive_end == self->capacity) {
         ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR));
         self->capacity *= RESIZE_FACTOR;
-        SLOT* new_alloc = (SLOT*)realloc(self->slots, self->capacity * sizeof(SLOT));
+        SLOT* new_alloc =
+            (SLOT*)NS(ALLOC, realloc)(self->alloc, self->slots, self->capacity * sizeof(SLOT));
         ASSERT(new_alloc);
         self->slots = new_alloc;
 
@@ -305,42 +288,25 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     return value;
 }
 
-static bool NS(SELF, delete_entry)(SELF* self, INDEX index) {
-    INVARIANT_CHECK(self);
-    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-
-    if (!CHECK_ACCESS_INDEX(self, index)) {
-        return false;
-    }
-
-    SLOT* entry = &self->slots[index.index];
-    if (entry->present) {
-        VALUE_DELETE(&entry->value);
-        entry->present = false;
-        NS(SLOT, memory_tracker_empty)(entry);
-        entry->next_free = self->free_list;
-        self->free_list = index.index;
-        self->count--;
-        return true;
-    }
-    return false;
-}
-
 #define IV_PAIR NS(SELF, iv)
 typedef struct {
     INDEX index;
     VALUE* value;
 } IV_PAIR;
 
-#define ITER NS(SELF, iter)
-typedef IV_PAIR const* NS(ITER, item);
+// Provide an empty IV_PAIR sentinel
+static IV_PAIR NS(SELF, iv_empty)() {
+    return (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL};
+}
 
-static bool NS(ITER, empty_item)(IV_PAIR const* const* item) { return *item == NULL; }
+#define ITER NS(SELF, iter)
+typedef IV_PAIR NS(ITER, item);
+
+static bool NS(ITER, empty_item)(IV_PAIR const* item) { return item->value == NULL; }
 
 typedef struct {
     SELF* arena;
     INDEX_TYPE next_index;
-    IV_PAIR curr;
     mutation_version version;
 } ITER;
 
@@ -353,22 +319,30 @@ static bool NS(ITER, empty)(ITER const* iter) {
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-static IV_PAIR const* NS(ITER, next)(ITER* iter) {
+static IV_PAIR NS(ITER, next)(ITER* iter) {
     ASSUME(iter);
     mutation_version_check(&iter->version);
 
-    if (NS(ITER, empty)(iter)) {
-        return NULL;
-    }
-    iter->curr = (IV_PAIR){.index = (INDEX){.index = iter->next_index},
-                           .value = &iter->arena->slots[iter->next_index].value};
-    iter->next_index++;
-    while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
-           !iter->arena->slots[iter->next_index].present) {
+    while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end) {
+        IV_PAIR result = {
+            .index = (INDEX){.index = iter->next_index},
+            .value = &iter->arena->slots[iter->next_index].value,
+        };
+
         iter->next_index++;
+        // advance to next present entry
+        while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
+               !iter->arena->slots[iter->next_index].present) {
+            iter->next_index++;
+        }
+
+        if (result.value && result.value == &iter->arena->slots[result.index.index].value &&
+            iter->arena->slots[result.index.index].present) {
+            return result;
+        }
     }
 
-    return &iter->curr;
+    return NS(SELF, iv_empty)();
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
@@ -381,7 +355,6 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     return (ITER){
         .arena = self,
         .next_index = index,
-        .curr = (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
         .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
@@ -389,9 +362,10 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     ITER iter = NS(SELF, get_iter)(self);
-    IV_PAIR const* entry;
-    while ((entry = NS(ITER, next)(&iter))) {
-        VALUE_DELETE(entry->value);
+
+    for (IV_PAIR entry = NS(ITER, next)(&iter); NS(ITER, empty_item)(&entry);
+         entry = NS(ITER, next)(&iter)) {
+        VALUE_DELETE(entry.value);
     }
 
     NS(ALLOC, free)(self->alloc, self->slots);
@@ -406,10 +380,17 @@ typedef struct {
     VALUE const* value;
 } IV_PAIR_CONST;
 
-#define ITER_CONST NS(SELF, iter_const)
-typedef IV_PAIR_CONST const* NS(ITER_CONST, item);
+// Provide an empty IV_PAIR_CONST sentinel
+static IV_PAIR_CONST NS(SELF, iv_const_empty)() {
+    return (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL};
+}
 
-static bool NS(ITER_CONST, empty_item)(IV_PAIR_CONST const* const* item) { return *item == NULL; }
+#define ITER_CONST NS(SELF, iter_const)
+// Item is now a value (not pointer)
+typedef IV_PAIR_CONST NS(ITER_CONST, item);
+
+// Empty-item predicate takes a pointer-to-value
+static bool NS(ITER_CONST, empty_item)(IV_PAIR_CONST const* item) { return item->value == NULL; }
 
 typedef struct {
     SELF const* arena;
@@ -424,23 +405,27 @@ static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-static IV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     ASSUME(iter);
     mutation_version_check(&iter->version);
 
-    if (NS(ITER_CONST, empty)(iter)) {
-        return NULL;
-    }
-
-    iter->curr = (IV_PAIR_CONST){.index = (INDEX){.index = iter->next_index},
-                                 .value = &iter->arena->slots[iter->next_index].value};
-    iter->next_index++;
-    while (iter->next_index != INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
-           !iter->arena->slots[iter->next_index].present) {
+    while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end) {
+        IV_PAIR_CONST result = {
+            .index = (INDEX){.index = iter->next_index},
+            .value = &iter->arena->slots[iter->next_index].value,
+        };
         iter->next_index++;
+        while (iter->next_index != INDEX_NONE && iter->next_index < iter->arena->exclusive_end &&
+               !iter->arena->slots[iter->next_index].present) {
+            iter->next_index++;
+        }
+
+        if (result.value && iter->arena->slots[result.index.index].present) {
+            return result;
+        }
     }
 
-    return &iter->curr;
+    return NS(SELF, iv_const_empty)();
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
@@ -453,7 +438,6 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .arena = self,
         .next_index = index,
-        .curr = (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL},
         .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
@@ -473,18 +457,17 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     fmt = debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
-    IV_PAIR_CONST const* item;
-
-    while ((item = NS(ITER_CONST, next)(&iter))) {
+    for (IV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
+         item = NS(ITER_CONST, next)(&iter)) {
         debug_fmt_print(fmt, stream, "{\n");
         fmt = debug_fmt_scope_begin(fmt);
 
         debug_fmt_print(fmt, stream, "key: ");
-        NS(INDEX, debug)(&item->index, fmt, stream);
+        NS(INDEX, debug)(&item.index, fmt, stream);
         fprintf(stream, ",\n");
 
         debug_fmt_print(fmt, stream, "value: ");
-        VALUE_DEBUG(item->value, fmt, stream);
+        VALUE_DEBUG(item.value, fmt, stream);
         fprintf(stream, ",\n");
 
         fmt = debug_fmt_scope_end(fmt);
@@ -510,12 +493,11 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef SLOT
 #undef CHECK_ACCESS_INDEX
 #undef RESIZE_FACTOR
-#undef INDEX
 
 #undef INVARIANT_CHECK
 
 #include <derive-c/core/alloc/undef.h>
 TRAIT_ARENA(SELF);
 
-#include <derive-c/core/self/undef.h>
 #include <derive-c/core/includes/undef.h>
+#include <derive-c/core/self/undef.h>

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <derive-c/core/require.h>
 #include <derive-c/core/namespace.h>
+#include <derive-c/core/require.h>
 
 #define TRAIT_ITER(SELF)                                                                           \
     REQUIRE_TYPE(SELF, item);                                                                      \
     REQUIRE_METHOD(NS(SELF, item), SELF, next, (SELF*));                                           \
-    REQUIRE_METHOD(bool, SELF, empty, (SELF const*));                                              \
     REQUIRE_METHOD(bool, SELF, empty_item, (NS(SELF, item) const*));
 
 #define TRAIT_ITERABLE(SELF)                                                                       \

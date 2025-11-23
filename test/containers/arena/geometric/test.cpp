@@ -1,17 +1,11 @@
-
 #include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
 
 extern "C" {
 #include <derive-c/container/arena/geometric/utils.h>
-
-#define NAME arena_blocks_test
-#define INDEX_BITS 32
-#define VALUE int32_t
-#include <derive-c/container/arena/geometric/template.h>
 }
 
-TEST(ArenaBlockTest, MostSignificantBit) {
+TEST(ArenaGeometricUtils, MostSignificantBit) {
     EXPECT_EQ(0, MSB_INDEX((uint8_t)0));
     EXPECT_EQ(0, MSB_INDEX((uint8_t)1));
     EXPECT_EQ(1, MSB_INDEX((uint8_t)2));
@@ -20,7 +14,7 @@ TEST(ArenaBlockTest, MostSignificantBit) {
     EXPECT_EQ(7, MSB_INDEX((uint8_t)128));
 }
 
-TEST(ArenaBlockTest, IndexToBlock) {
+TEST(ArenaGeometricUtils, IndexToBlock) {
     EXPECT_EQ(0, INDEX_TO_BLOCK((uint8_t)0, 3));
     EXPECT_EQ(0, INDEX_TO_BLOCK((uint8_t)7, 3));
     EXPECT_EQ(1, INDEX_TO_BLOCK((uint8_t)8, 3));
@@ -35,7 +29,7 @@ TEST(ArenaBlockTest, IndexToBlock) {
     EXPECT_EQ(5, INDEX_TO_BLOCK((uint8_t)255, 3));
 }
 
-TEST(ArenaBlockTest, BlockToSize) {
+TEST(ArenaGeometricUtils, BlockToSize) {
     EXPECT_EQ(8ULL, BLOCK_TO_SIZE(0, 3));
     EXPECT_EQ(8ULL, BLOCK_TO_SIZE(1, 3));
     EXPECT_EQ(16ULL, BLOCK_TO_SIZE(2, 3));
@@ -44,15 +38,14 @@ TEST(ArenaBlockTest, BlockToSize) {
     EXPECT_EQ(128ULL, BLOCK_TO_SIZE(5, 3));
 }
 
-TEST(ArenaBlockTest, MaxBlocks) {
+TEST(ArenaGeometricUtils, MaxBlocks) {
     EXPECT_EQ(6, MAX_NUM_BLOCKS(8, 3));
     EXPECT_EQ(14, MAX_NUM_BLOCKS(16, 3));
     EXPECT_EQ(30, MAX_NUM_BLOCKS(32, 3));
     EXPECT_EQ(62, MAX_NUM_BLOCKS(64, 3));
 }
 
-
-TEST(ArenaBlockTest, BlockOffsetToIndex) {
+TEST(ArenaGeometricUtils, BlockOffsetToIndex) {
     EXPECT_EQ(0, BLOCK_OFFSET_TO_INDEX(0, 0, 3));
     EXPECT_EQ(7, BLOCK_OFFSET_TO_INDEX(0, 7, 3));
 
@@ -72,7 +65,7 @@ TEST(ArenaBlockTest, BlockOffsetToIndex) {
     EXPECT_EQ(255, BLOCK_OFFSET_TO_INDEX(5, 127, 3));
 }
 
-TEST(ArenaBlockTest, IndexToOffset) {
+TEST(ArenaGeometricUtils, IndexToOffset) {
     EXPECT_EQ(0, INDEX_TO_OFFSET(0, 0, 3));
     EXPECT_EQ(1, INDEX_TO_OFFSET(1, 0, 3));
     EXPECT_EQ(7, INDEX_TO_OFFSET(7, 0, 3));

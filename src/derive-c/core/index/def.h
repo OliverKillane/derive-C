@@ -24,3 +24,21 @@
     #define MAX_INDEX (UINT64_MAX - 1ULL)
     #define INDEX_NONE UINT64_MAX
 #endif
+
+#if defined INDEX_TYPE
+    #define INDEX NS(SELF, index_t)
+
+// INVARIANT: < CAPACITY_EXCLUSIVE_UPPER
+typedef struct {
+    INDEX_TYPE index;
+} INDEX;
+
+static bool NS(INDEX, eq)(INDEX const* idx_1, INDEX const* idx_2) {
+    return idx_1->index == idx_2->index;
+}
+
+static void NS(INDEX, debug)(INDEX const* idx, debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, EXPAND_STRING(INDEX) " { %lu }", (size_t)idx->index);
+}
+#endif

@@ -2,10 +2,10 @@
 /// @example utils/option.c
 /// @brief Examples for using the optional type.
 
+#include <derive-c/core/prelude.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <derive-c/core/prelude.h>
 
 struct complex_data {
     int x;

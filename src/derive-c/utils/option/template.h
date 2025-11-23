@@ -1,11 +1,10 @@
 /// @brief A simple optional type, using the (already) optional pointer type
 // for access
 
-#include <stdbool.h>
-#include <stddef.h>
-
-#include <derive-c/core/debug/gdb_marker.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 #include <derive-c/core/self/def.h>
 
@@ -134,4 +133,5 @@ static void NS(SELF, debug)(SELF* self, debug_fmt fmt, FILE* stream) {
 #undef ITEM_CLONE
 #undef ITEM_DEBUG
 
+#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>

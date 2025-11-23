@@ -71,18 +71,22 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
         typename SutNS::Sut_iter_const iter_const = SutNS::Sut_get_iter_const(w.getConst());
         typename SutNS::Sut_iter iter = SutNS::Sut_get_iter(wMut.get());
 
-        while (!SutNS::Sut_iter_const_empty(&iter_const)) {
-            RC_ASSERT(!SutNS::Sut_iter_empty(&iter));
-            typename SutNS::Sut_iv_const const* item_const = SutNS::Sut_iter_const_next(&iter_const);
-            typename SutNS::Sut_iv const* item = SutNS::Sut_iter_next(&iter);
-            RC_ASSERT(item_const->index == item->index);
-            ModelIndex modelIndex = w.mSutToModel.at(item_const->index);
-            RC_ASSERT(m.mValues.at(modelIndex) == *item_const->value);
-            RC_ASSERT(*item->value == *item_const->value);
+        typename SutNS::Sut_iter_const_item item_const = SutNS::Sut_iter_const_next(&iter_const);
+        typename SutNS::Sut_iter_item item = SutNS::Sut_iter_next(&iter);
+
+        while (!SutNS::Sut_iter_const_empty_item(&item_const)) {
+            RC_ASSERT(item_const.index == item.index);
+            ModelIndex modelIndex = w.mSutToModel.at(item_const.index);
+            RC_ASSERT(m.mValues.at(modelIndex) == *item_const.value);
+            RC_ASSERT(*item.value == *item_const.value);
+            item_const = SutNS::Sut_iter_const_next(&iter_const);
+            item = SutNS::Sut_iter_next(&iter);
         }
-        RC_ASSERT(SutNS::Sut_iter_empty(&iter));
-        RC_ASSERT(SutNS::Sut_iter_next(&iter) == nullptr);
-        RC_ASSERT(SutNS::Sut_iter_const_next(&iter_const) == nullptr);
+
+        item = SutNS::Sut_iter_next(&iter);
+        item_const = SutNS::Sut_iter_const_next(&iter_const);
+        RC_ASSERT(SutNS::Sut_iter_empty_item(&item));
+        RC_ASSERT(SutNS::Sut_iter_const_empty_item(&item_const));
     }
 
     void CheckFailedAccess(const Model& m, const Wrapper& w) const {
@@ -98,7 +102,6 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
         RC_ASSERT(SutNS::Sut_try_write(wMut.get(), invalid_index) == nullptr);
         typename SutNS::Sut_value_t removed;
         RC_ASSERT(!SutNS::Sut_try_remove(wMut.get(), invalid_index, &removed));
-        RC_ASSERT(!SutNS::Sut_delete_entry(wMut.get(), invalid_index));
     }
 
     void run(const Model& m, Wrapper& w) const override {
@@ -229,47 +232,4 @@ template <typename SutNS> struct Remove : Command<SutNS> {
     }
 };
 
-template <typename SutNS> struct Delete : Command<SutNS> {
-    using Base = Command<SutNS>;
-    using typename Base::Model;
-    using typename Base::Wrapper;
-
-    std::optional<ModelIndex> mIndex = std::nullopt;
-
-    explicit Delete(const Model& m) {
-        if (!m.mValues.empty()) {
-            std::vector<ModelIndex> indices;
-            indices.reserve(m.mValues.size());
-            for (const auto& [k, _] : m.mValues) {
-                indices.push_back(k);
-            }
-            mIndex = *rc::gen::elementOf(indices);
-        }
-    }
-
-    void checkPreconditions(const Model& m) const override {
-        RC_PRE(mIndex.has_value());
-        RC_PRE(m.mValues.find(mIndex.value()) != m.mValues.end());
-    }
-
-    void apply(Model& m) const override { m.mValues.erase(mIndex.value()); }
-
-    virtual void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        typename SutNS::Sut_index_t sut_index = w.mModelToSut.at(mIndex.value());
-        w.mModelToSut.erase(mIndex.value());
-        w.mSutToModel.erase(sut_index);
-
-        typename SutNS::Sut_value_t const* entry_ptr = SutNS::Sut_read(w.getConst(), sut_index);
-        bool was_removed = SutNS::Sut_delete_entry(w.get(), sut_index);
-        RC_ASSERT(was_removed);
-
-        memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, entry_ptr,
-                             sizeof(typename SutNS::Sut_value_t));
-    }
-
-    void show(std::ostream& os) const override {
-        os << "Delete(" << (mIndex.has_value() ? std::to_string(mIndex.value()) : "none") << ")";
-    }
-};
-
-} // namespace derivecpp::containers::arena
+} // namespace containers::arena

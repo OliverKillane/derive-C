@@ -10,14 +10,15 @@
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
-#include <derive-c/container/arena/contiguous/includes.h>
+#include <derive-c/container/arena/geometric/includes.h>
 
 struct SutSmall {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
 #define VALUE size_t
+#define INITIAL_BLOCK_INDEX_BITS 3
 #define INDEX_BITS 8
-#include <derive-c/container/arena/contiguous/template.h>
+#include <derive-c/container/arena/geometric/template.h>
 
     static size_t max_size() { return Sut_max_entries; }
 };
@@ -45,7 +46,7 @@ struct SutMedium {
 #define NAME Sut
 #define VALUE uint8_t
 #define INDEX_BITS 16
-#include <derive-c/container/arena/contiguous/template.h>
+#include <derive-c/container/arena/geometric/template.h>
 
     static size_t max_size() { return Sut_max_entries; }
 };
@@ -70,8 +71,8 @@ template <> struct hash<SutMedium::Sut_index_t> {
 
 namespace containers::arena::contiguous {
 
-RC_GTEST_PROP(ContiguousArena, FuzzSmall, ()) {
-    SutWrapper<SutSmall> sutWrapper(SutSmall::Sut_new_with_capacity_for(1, stdalloc_get()));
+RC_GTEST_PROP(GeometricArena, FuzzSmall, ()) {
+    SutWrapper<SutSmall> sutWrapper(SutSmall::Sut_new(stdalloc_get()));
     SutModel<SutSmall> sutModel;
 
     rc::state::check(sutModel, sutWrapper,
@@ -79,8 +80,8 @@ RC_GTEST_PROP(ContiguousArena, FuzzSmall, ()) {
                                                        Write<SutSmall>, Remove<SutSmall>>());
 }
 
-RC_GTEST_PROP(ContiguousArena, FuzzMedium, ()) {
-    SutWrapper<SutMedium> sutWrapper(SutMedium::Sut_new_with_capacity_for(1, stdalloc_get()));
+RC_GTEST_PROP(GeometricArena, FuzzMedium, ()) {
+    SutWrapper<SutMedium> sutWrapper(SutMedium::Sut_new(stdalloc_get()));
     SutModel<SutMedium> sutModel;
 
     rc::state::check(sutModel, sutWrapper,

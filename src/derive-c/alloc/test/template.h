@@ -6,14 +6,10 @@
 /// As this is entirely C, we do not get the niceties of a C++ RAII allocator guard shebang.
 /// However, this is usable inside unit tests written in C.
 
-// JUSTIFY: No custom memory tracking
-//  - already done by the wrapper allocator
-
-#include <stddef.h>
-#include <stdio.h>
-
-#include <derive-c/alloc/trait.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -162,4 +158,5 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #include <derive-c/core/alloc/undef.h>
 
 TRAIT_ALLOC(SELF);
+#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>

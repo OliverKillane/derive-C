@@ -1,13 +1,10 @@
 /// @brief A simple result type, using the (already) optional pointer type
 // for access  to errors or successes
 
-#include "derive-c/core/debug/fmt.h"
-#include "derive-c/core/namespace.h"
-#include <stdbool.h>
-#include <stddef.h>
-
-#include <derive-c/core/debug/gdb_marker.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 #include <derive-c/core/self/def.h>
 
@@ -142,4 +139,18 @@ static void NS(SELF, delete)(SELF* self) {
     }
 }
 
+#undef OK
+#undef OK_DELETE
+#undef OK_EQ
+#undef OK_CLONE
+#undef OK_DEBUG
+#undef OK_DELETE
+#undef ERROR
+#undef ERROR_THROW
+#undef ERROR_DELETE
+#undef ERROR_EQ
+#undef ERROR_CLONE
+#undef ERROR_DEBUG
+
+#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>

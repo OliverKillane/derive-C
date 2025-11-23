@@ -2,3 +2,5 @@
 #undef CAPACITY_EXCLUSIVE_UPPER
 #undef MAX_INDEX
 #undef INDEX_NONE
+#undef INDEX_TYPE
+#undef INDEX

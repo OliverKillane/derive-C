@@ -26,21 +26,10 @@
 /// | 11111111 |   255 |         |    127 |     5 |
 ///
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <derive-c/container/arena/trait.h>
-#include <derive-c/core/debug/gdb_marker.h>
-#include <derive-c/core/debug/memory_tracker.h>
-#include <derive-c/core/debug/mutation_tracker.h>
-#include <derive-c/core/prelude.h>
-
-#include "utils.h"
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -92,14 +81,8 @@ STATIC_ASSERT(INITIAL_BLOCK_INDEX_BITS > 0, "INITIAL_BLOCK_INDEX_BITS must be gr
 
 static const size_t NS(SELF, max_entries) = MAX_INDEX;
 
-#define INDEX NS(SELF, index_t)
-
 typedef VALUE NS(SELF, value_t);
 typedef ALLOC NS(SELF, alloc_t);
-
-typedef struct {
-    INDEX_TYPE index;
-} INDEX;
 
 #define SLOT NS(SELF, slot)
 
@@ -244,7 +227,6 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         ASSERT(block_slots);
 
         self->blocks[self->block_current] = block_slots;
-        self->block_current++;
         self->block_current_exclusive_end = 0;
     }
 
@@ -407,10 +389,12 @@ typedef struct {
     VALUE const* value;
 } IV_PAIR_CONST;
 
-static const IV_PAIR_CONST NS(SELF, iv_const_empty) = {
-    .index = {.index = INDEX_NONE},
-    .value = NULL,
-};
+static IV_PAIR_CONST NS(SELF, iv_const_empty)() {
+    return (IV_PAIR_CONST){
+        .index = {.index = INDEX_NONE},
+        .value = NULL,
+    };
+}
 
 #define ITER_CONST NS(SELF, iter_const)
 typedef IV_PAIR_CONST NS(ITER_CONST, item);
@@ -431,14 +415,15 @@ static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
         uint8_t block = INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
         size_t offset = INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
 
-        if (block == iter->arena->block_current &&
-            offset >= iter->arena->block_current_exclusive_end) {
+        if ((block == iter->arena->block_current &&
+             offset >= iter->arena->block_current_exclusive_end) ||
+            (block > iter->arena->block_current)) {
             break;
         }
 
         SLOT* slot = &iter->arena->blocks[block][offset];
         if (slot->present) {
-            IV_PAIR_CONST result = {
+            IV_PAIR_CONST const result = {
                 .index = (INDEX){.index = iter->next_index},
                 .value = &slot->value,
             };
@@ -449,7 +434,7 @@ static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
         iter->next_index++;
     }
 
-    return NS(SELF, iv_const_empty);
+    return NS(SELF, iv_const_empty)();
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
@@ -462,6 +447,73 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
+static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fmt = debug_fmt_scope_begin(fmt);
+    debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
+
+    if (self->free_list == INDEX_NONE) {
+        debug_fmt_print(fmt, stream, "free_list: INDEX_NONE,\n");
+    } else {
+        debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);
+    }
+
+    debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    fprintf(stream, ",\n");
+
+    debug_fmt_print(fmt, stream, "blocks: [");
+    fmt = debug_fmt_scope_begin(fmt);
+    {
+    }
+    for (size_t block = 0; block <= self->block_current; block++) {
+        debug_fmt_print(fmt, stream, "{\n");
+        fmt = debug_fmt_scope_begin(fmt);
+
+        size_t const capacity = BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS);
+        size_t const to_offset =
+            block == self->block_current ? self->block_current_exclusive_end : capacity;
+
+        debug_fmt_print(fmt, stream, "block_index: %lu,\n", block);
+        debug_fmt_print(fmt, stream, "block_ptr: %p,\n", self->blocks[block]);
+        debug_fmt_print(fmt, stream, "capacity: %lu,\n", capacity);
+        debug_fmt_print(fmt, stream, "size: %lu,\n", to_offset);
+        debug_fmt_print(fmt, stream, "slots: [\n");
+        fmt = debug_fmt_scope_begin(fmt);
+
+        for (size_t offset = 0; offset < to_offset; offset++) {
+            SLOT* slot = &self->blocks[block][offset];
+            debug_fmt_print(fmt, stream, "{\n");
+            fmt = debug_fmt_scope_begin(fmt);
+
+            debug_fmt_print(fmt, stream, "present: %s,\n", slot->present ? "true" : "false");
+            if (slot->present) {
+                debug_fmt_print(fmt, stream, "value: ");
+                VALUE_DEBUG(&slot->value, fmt, stream);
+                fprintf(stream, ",\n");
+            } else {
+                debug_fmt_print(fmt, stream, "next_free: %lu,\n", (size_t)slot->next_free);
+            }
+
+            fmt = debug_fmt_scope_end(fmt);
+            debug_fmt_print(fmt, stream, "},\n");
+        }
+
+        fmt = debug_fmt_scope_end(fmt);
+        debug_fmt_print(fmt, stream, "],\n");
+
+        /* Close the block's scope and print its closing brace */
+        fmt = debug_fmt_scope_end(fmt);
+        debug_fmt_print(fmt, stream, "},\n");
+    }
+
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "],\n");
+
+    fmt = debug_fmt_scope_end(fmt);
+    debug_fmt_print(fmt, stream, "}");
+}
+
 #undef IV_PAIR_CONST
 #undef ITER_CONST
 
@@ -471,10 +523,12 @@ typedef struct {
     VALUE const* value;
 } IV_PAIR;
 
-static IV_PAIR NS(SELF, iv_empty) = {
-    .index = {.index = INDEX_NONE},
-    .value = NULL,
-};
+static IV_PAIR NS(SELF, iv_empty)() {
+    return (IV_PAIR){
+        .index = {.index = INDEX_NONE},
+        .value = NULL,
+    };
+}
 
 #define ITER NS(SELF, iter)
 typedef IV_PAIR NS(ITER, item);
@@ -495,8 +549,9 @@ static IV_PAIR NS(ITER, next)(ITER* iter) {
         uint8_t block = INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
         size_t offset = INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
 
-        if (block == iter->arena->block_current &&
-            offset >= iter->arena->block_current_exclusive_end) {
+        if ((block == iter->arena->block_current &&
+             offset >= iter->arena->block_current_exclusive_end) ||
+            (block > iter->arena->block_current)) {
             break;
         }
 
@@ -513,7 +568,7 @@ static IV_PAIR NS(ITER, next)(ITER* iter) {
         iter->next_index++;
     }
 
-    return NS(SELF, iv_empty);
+    return NS(SELF, iv_empty)();
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
@@ -538,9 +593,9 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef VALUE_DEBUG
 
 #undef SLOT
-#undef INDEX
 
 #include <derive-c/core/alloc/undef.h>
-// TRAIT_ARENA(SELF);
+TRAIT_ARENA(SELF);
 
+#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>

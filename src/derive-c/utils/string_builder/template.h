@@ -1,21 +1,13 @@
 /// @brief A simple, portable string builder that can be templated by allocator.
 ///  - Uses GNU additional feature fopencookie, so not available without glibc.
 
-#if !defined _GNU_SOURCE
-    // Enable gnu specific features for fopencookie
-    //  - Must be set before stdio include
-    //  - see: https://www.man7.org/linux/man-pages/man7/feature_test_macros.7.html
-    #define _GNU_SOURCE
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
 #endif
-
-#include <derive-c/core/prelude.h>
-
-#include <errno.h>
-#include <stdio.h>
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
-#include <string.h>
 
 typedef struct {
     FILE* stream;
@@ -177,4 +169,5 @@ static void NS(SELF, delete)(SELF* self) {
 #undef INVARIANT_CHECK
 
 #include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>

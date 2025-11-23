@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <derive-c/utils/for.h>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
 
@@ -22,20 +24,14 @@ void int_example() {
 
     ASSERT(ints_size(&arena) == 4);
     {
-        ints_iter_const print_ints = ints_get_iter_const(&arena);
-        ints_iv_const const* entry = NULL;
-        while ((entry = ints_iter_const_next(&print_ints))) {
-            printf("entry for %d at %d\n", *entry->value, entry->index.index);
-        }
+        FOR(ints, arena, entry) { printf("entry for %d at %d\n", *entry.value, entry.index.index); }
     }
 
     {
-        ints_iter inc_ints = ints_get_iter(&arena);
-        ints_iv const* entry = NULL;
-        while ((entry = ints_iter_next(&inc_ints))) {
-            printf("incrementing for %d = %d + 1 at %d\n", *entry->value, *entry->value,
-                   entry->index.index);
-            *entry->value += 1;
+        FOR(ints, arena, entry) {
+            printf("incrementing for %d = %d + 1 at %d\n", *entry.value, *entry.value,
+                   entry.index.index);
+            *entry.value += 1;
         }
     }
 
@@ -98,6 +94,8 @@ void foo_example() {
     ASSERT(entry_a.x == 42);
 
     my_foo_delete(&entry_a);
+
+    foo_arena_delete(&arena);
 }
 
 int main() {
