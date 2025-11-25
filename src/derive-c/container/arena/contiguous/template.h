@@ -23,10 +23,12 @@ typedef struct {
     int x;
 } value_t;
     #define VALUE value_t
-static void value_delete(value_t* self) { (void)self; }
     #define VALUE_DELETE value_delete
-static value_t value_clone(value_t const* self) { return *self; }
+static void VALUE_DELETE(value_t* self);
     #define VALUE_CLONE value_clone
+static value_t VALUE_CLONE(value_t const* self);
+    #define VALUE_DEBUG value_debug
+static void VALUE_DEBUG(VALUE const* self, debug_fmt fmt, FILE* stream);
 #endif
 
 STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
@@ -45,8 +47,6 @@ STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #include <derive-c/core/index/def.h>
 
-#define SLOT NS(SELF, slot)
-
 #define CHECK_ACCESS_INDEX(self, index) ((index).index < (self)->exclusive_end)
 
 // JUSTIFY: Macro rather than static
@@ -56,36 +56,15 @@ STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 typedef VALUE NS(SELF, value_t);
 typedef ALLOC NS(SELF, alloc_t);
 
-typedef struct {
-    union {
-        VALUE value;
-        INDEX_TYPE next_free;
-    };
+#define SLOT NS(NAME, slot)
 
-    // JUSTIFY: Present flag last
-    //           - Reduces size, C ABI orders fields, placing it before a larger
-    //             (aligned) value would add (alignment - 1 byte) of unecessary
-    //             padding
-    bool present;
-} SLOT;
-
-static void NS(SLOT, memory_tracker_empty)(SLOT const* slot) {
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->value,
-                       sizeof(VALUE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->next_free,
-                       sizeof(INDEX_TYPE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
-                       sizeof(bool));
-}
-
-static void NS(SLOT, memory_tracker_present)(SLOT const* slot) {
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->next_free,
-                       sizeof(INDEX_TYPE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->value,
-                       sizeof(VALUE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
-                       sizeof(bool));
-}
+#define SLOT_INDEX_TYPE INDEX_TYPE
+#define SLOT_VALUE VALUE
+#define SLOT_VALUE_CLONE VALUE_CLONE
+#define SLOT_VALUE_CLONE VALUE_CLONE
+#define SLOT_VALUE_DELETE VALUE_DELETE
+#define INTERNAL_NAME SLOT
+#include <derive-c/utils/slot/template.h>
 
 typedef struct {
     SLOT* slots;

@@ -49,10 +49,12 @@ typedef struct {
     int x;
 } value_t;
     #define VALUE value_t
-static void value_delete(value_t* self) { (void)self; }
     #define VALUE_DELETE value_delete
-static value_t value_clone(value_t const* self) { return *self; }
+static void VALUE_DELETE(value_t* self);
     #define VALUE_CLONE value_clone
+static value_t VALUE_CLONE(value_t const* self);
+    #define VALUE_DEBUG value_debug
+static void VALUE_DEBUG(VALUE const* self, debug_fmt fmt, FILE* stream);
 #endif
 
 STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");

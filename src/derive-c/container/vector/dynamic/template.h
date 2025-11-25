@@ -16,16 +16,12 @@ typedef struct {
     int x;
 } item_t;
     #define ITEM item_t
-static void item_delete(item_t* t) { (void)t; }
     #define ITEM_DELETE item_delete
-static item_t item_clone(item_t const* i) { return *i; }
+static void ITEM_DELETE(item_t* self);
     #define ITEM_CLONE item_clone
-static void item_debug(item_t const* i, debug_fmt fmt, FILE* stream) {
-    (void)i;
-    (void)fmt;
-    (void)stream;
-}
+static item_t ITEM_CLONE(item_t const* self);
     #define ITEM_DEBUG item_debug
+static void ITEM_DEBUG(ITEM const* self, debug_fmt fmt, FILE* stream);
 #endif
 
 #if !defined ITEM_DELETE
