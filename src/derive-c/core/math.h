@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include <derive-c/core/attributes.h>
 #include <derive-c/core/panic.h>

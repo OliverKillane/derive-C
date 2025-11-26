@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Self
+from typing import Dict, Self, TypeAlias
 from concurrent.futures import ThreadPoolExecutor
 
 @dataclass(frozen=True)
@@ -27,23 +27,19 @@ class Result:
     status: CheckStatus
     message: str
 
-    def __str__(self) -> str:
-        return f"{self.location} {self.status}: {self.message}"
-
     @property
     def successful(self) -> bool:
         return self.status == CheckStatus.PASS
 
+
 @dataclass(frozen=True)
 class SubLints:
     results: dict[str, LintTree]
-
-    def __str__(self) -> str:
-        return "\n".join(str(result) for result in self.results.values())
     
     @property
     def successful(self) -> bool:
         return all(result.successful for result in self.results.values())
+
 
 LintTree: TypeAlias = Result | SubLints
 
@@ -89,10 +85,12 @@ class LintResults:
             futures = {executor.submit(check.run, ctx): check for check in checks}
             results = {check: future.result() for future, check in futures.items()}
         return cls(results)
-
-    def __str__(self) -> str:
-        return "\n".join(str(result) for result in self.results.values())
     
     @property
     def successful(self) -> bool:
         return all(result.successful for result in self.results.values())
+
+class LintOutput(ABC):
+    @abstractmethod
+    def write(self, results: LintResults) -> None:
+        pass

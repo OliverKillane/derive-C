@@ -8,6 +8,9 @@
     #include "includes.h"
 #endif
 
+#include <derive-c/core/self/def.h>
+#include <derive-c/core/alloc/def.h>
+
 typedef struct {
     char const* name;
     ALLOC* base;
@@ -68,5 +71,5 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #include <derive-c/core/alloc/undef.h>
 
 TRAIT_ALLOC(SELF);
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/includes/undef.h>

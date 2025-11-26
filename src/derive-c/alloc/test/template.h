@@ -151,12 +151,11 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     debug_fmt_print(fmt, stream, "}");
 }
 
-    #undef ENTRIES_VECTOR
     #undef TRACKED_ENTRY
+    #undef ENTRIES_VECTOR
 #endif
 
-#include <derive-c/core/alloc/undef.h>
-
 TRAIT_ALLOC(SELF);
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>

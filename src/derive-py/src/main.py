@@ -8,8 +8,7 @@ from src.linter import LinterCheck, LintContext, SubLints, LintResults
 from src.lints.template_defines import TemplateDefines
 from src.lints.template_clangd import TemplateClangd
 from src.lints.def_undef_match import DefUndefIncludes
-from src.lints.def_undef_match import DefUndefIncludes
-
+from src.output.console import ConsoleOutput
 
 LINTS: list[LinterCheck] = [
     TemplateDefines(),
@@ -36,7 +35,9 @@ def main():
             LINTS,
         )
 
-    print(f"results:\n{results}")
+    # Write results using console output
+    output = ConsoleOutput()
+    output.write(results)
 
     if not results.successful:
         sys.exit(1)
