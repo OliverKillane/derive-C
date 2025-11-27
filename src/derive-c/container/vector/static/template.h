@@ -318,17 +318,16 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 }
 
 #undef ITER_CONST
-
+#undef INVARIANT_CHECK
 #undef INDEX_TYPE
 #undef INPLACE_CAPACITY
-
-#undef ITEM
-#undef ITEM_DELETE
-#undef ITEM_CLONE
 #undef ITEM_DEBUG
+#undef ITEM_CLONE
+#undef ITEM_DELETE
+#undef ITEM
 
-#undef INVARIANT_CHECK
 
 TRAIT_VECTOR(SELF);
-#include <derive-c/core/includes/undef.h>
+
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/includes/undef.h>

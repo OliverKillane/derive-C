@@ -86,45 +86,15 @@ static const size_t NS(SELF, max_entries) = MAX_INDEX;
 typedef VALUE NS(SELF, value_t);
 typedef ALLOC NS(SELF, alloc_t);
 
-#define SLOT NS(SELF, slot)
+#define SLOT NS(NAME, slot)
 
-typedef struct {
-    union {
-        VALUE value;
-        INDEX_TYPE next_free;
-    };
-    bool present;
-} SLOT;
-
-static void PRIV(NS(SLOT, memory_tracker_empty))(SLOT const* slot) {
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->value,
-                       sizeof(VALUE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->next_free,
-                       sizeof(INDEX_TYPE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
-                       sizeof(bool));
-}
-
-static void PRIV(NS(SLOT, set_empty))(SLOT* slot, INDEX_TYPE next_free) {
-    PRIV(NS(SLOT, memory_tracker_empty))(slot);
-    slot->present = false;
-    slot->next_free = next_free;
-}
-
-static void PRIV(NS(SLOT, memory_tracker_full))(SLOT const* slot) {
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->next_free,
-                       sizeof(INDEX_TYPE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->value,
-                       sizeof(VALUE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
-                       sizeof(bool));
-}
-
-static void PRIV(NS(SLOT, fill))(SLOT* slot, VALUE value) {
-    PRIV(NS(SLOT, memory_tracker_full))(slot);
-    slot->present = true;
-    slot->value = value;
-}
+#define SLOT_INDEX_TYPE INDEX_TYPE // for template
+#define SLOT_VALUE VALUE // for template 
+#define SLOT_VALUE_CLONE VALUE_CLONE // for template
+#define SLOT_VALUE_CLONE VALUE_CLONE // for template
+#define SLOT_VALUE_DELETE VALUE_DELETE // for template
+#define INTERNAL_NAME SLOT // for template
+#include <derive-c/utils/slot/template.h>
 
 typedef struct {
     // INVARIANT: If free_list == EMPTY_INDEX, then all values from [0, count)
@@ -152,9 +122,9 @@ static void PRIV(NS(SELF, set_memory_tracking))(SELF const* self) {
         for (size_t offset = 0; offset < block_items; offset++) {
             SLOT* slot = &self->blocks[block_index][offset];
             if (slot->present) {
-                PRIV(NS(SLOT, memory_tracker_full))(slot);
+                NS(SLOT, memory_tracker_present)(slot);
             } else {
-                PRIV(NS(SLOT, memory_tracker_empty))(slot);
+                NS(SLOT, memory_tracker_empty)(slot);
             }
         }
     }
@@ -213,7 +183,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         self->free_list = free_slot->next_free;
 
         free_slot->present = true;
-        PRIV(NS(SLOT, fill))(free_slot, value);
+        NS(SLOT, fill)(free_slot, value);
         self->count++;
 
         return (INDEX){.index = free_index};
@@ -233,7 +203,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     }
 
     size_t offset = self->block_current_exclusive_end;
-    PRIV(NS(SLOT, fill))(&self->blocks[self->block_current][offset], value);
+    NS(SLOT, fill)(&self->blocks[self->block_current][offset], value);
     INDEX_TYPE new_index =
         (INDEX_TYPE)(BLOCK_OFFSET_TO_INDEX(self->block_current, offset, INITIAL_BLOCK_INDEX_BITS));
 
@@ -347,7 +317,7 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     if (slot->present) {
         *destination = slot->value;
         slot->present = false;
-        PRIV(NS(SLOT, set_empty))(slot, self->free_list);
+        NS(SLOT, set_empty)(slot, self->free_list);
         self->free_list = index.index;
         self->count--;
         return true;
@@ -516,8 +486,8 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     debug_fmt_print(fmt, stream, "}");
 }
 
-#undef IV_PAIR_CONST
 #undef ITER_CONST
+#undef IV_PAIR_CONST
 
 #define IV_PAIR NS(SELF, iv)
 typedef struct {
@@ -583,21 +553,23 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     };
 }
 
-#undef IV_PAIR
 #undef ITER
-
-#include <derive-c/core/index/undef.h>
+#undef IV_PAIR
+#undef INVARIANT_CHECK
+#undef SLOT
 #undef INITIAL_BLOCK_INDEX_BITS
 
-#undef VALUE
-#undef VALUE_DELETE
-#undef VALUE_CLONE
+#include <derive-c/core/index/undef.h>
+
 #undef VALUE_DEBUG
+#undef VALUE_CLONE
+#undef VALUE_DELETE
+#undef VALUE
+#undef INDEX_BITS
 
-#undef SLOT
 
-#include <derive-c/core/alloc/undef.h>
 TRAIT_ARENA(SELF);
 
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>

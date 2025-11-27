@@ -58,12 +58,12 @@ typedef ALLOC NS(SELF, alloc_t);
 
 #define SLOT NS(NAME, slot)
 
-#define SLOT_INDEX_TYPE INDEX_TYPE
-#define SLOT_VALUE VALUE
-#define SLOT_VALUE_CLONE VALUE_CLONE
-#define SLOT_VALUE_CLONE VALUE_CLONE
-#define SLOT_VALUE_DELETE VALUE_DELETE
-#define INTERNAL_NAME SLOT
+#define SLOT_INDEX_TYPE INDEX_TYPE // for template
+#define SLOT_VALUE VALUE // for template
+#define SLOT_VALUE_CLONE VALUE_CLONE // for template
+#define SLOT_VALUE_CLONE VALUE_CLONE // for template
+#define SLOT_VALUE_DELETE VALUE_DELETE // for template
+#define INTERNAL_NAME SLOT // for template
 #include <derive-c/utils/slot/template.h>
 
 typedef struct {
@@ -462,21 +462,22 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef ITER_CONST
 #undef IV_PAIR_CONST
 
-#undef VALUE
-#undef VALUE_DELETE
-#undef VALUE_CLONE
-#undef VALUE_DEBUG
+#undef INVARIANT_CHECK
+#undef SLOT
+#undef RESIZE_FACTOR
+#undef CHECK_ACCESS_INDEX
 
 #include <derive-c/core/index/undef.h>
 
-#undef SLOT
-#undef CHECK_ACCESS_INDEX
-#undef RESIZE_FACTOR
+#undef VALUE_DEBUG
+#undef VALUE_CLONE
+#undef VALUE_DELETE
+#undef VALUE
 
-#undef INVARIANT_CHECK
+#undef INDEX_BITS
 
-#include <derive-c/core/alloc/undef.h>
 TRAIT_ARENA(SELF);
 
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>

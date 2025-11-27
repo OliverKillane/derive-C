@@ -50,14 +50,7 @@ class LintContext:
 
 class LinterCheck(ABC):
     def execute(self, ctx: LintContext) -> LintTree:
-        try:
-            return self.run(ctx)
-        except Exception as e:
-            return Result(
-                location=Location(file=ctx.source_dir, line=None),
-                status=CheckStatus.FAIL,
-                message=str(e)
-            )
+        return self.run(ctx)
 
     @abstractmethod
     def run(self, ctx: LintContext) -> Result:

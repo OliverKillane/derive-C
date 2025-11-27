@@ -3,7 +3,9 @@ name = "derive-py"
 requires-python = ">=3.12"
 version = "0.1.0"
 readme = "README.md"
-dependencies = []
+dependencies = [
+    "pytest>=8.0.0",
+]
 classifiers = ["Private :: Do Not Upload"]
 
 [build-system]
@@ -16,4 +18,3 @@ module-root = ""
 
 [project.scripts]
 lints = "src.main:main"
-foo = "foo:main"

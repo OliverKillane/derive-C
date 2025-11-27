@@ -60,12 +60,12 @@ typedef ALLOC NS(SELF, alloc_t);
 
 #define SLOT NS(NAME, slot)
 
-#define SLOT_INDEX_TYPE INDEX_TYPE
-#define SLOT_VALUE VALUE
-#define SLOT_VALUE_CLONE VALUE_CLONE
-#define SLOT_VALUE_CLONE VALUE_CLONE
-#define SLOT_VALUE_DELETE VALUE_DELETE
-#define INTERNAL_NAME SLOT
+#define SLOT_INDEX_TYPE INDEX_TYPE // for template
+#define SLOT_VALUE VALUE // for template
+#define SLOT_VALUE_CLONE VALUE_CLONE // for template
+#define SLOT_VALUE_CLONE VALUE_CLONE // for template
+#define SLOT_VALUE_DELETE VALUE_DELETE // for template
+#define INTERNAL_NAME SLOT // for template
 #include <derive-c/utils/slot/template.h>
 
 typedef SLOT PRIV(NS(SELF, block))[BLOCK_SIZE(BLOCK_INDEX_BITS)];
@@ -376,9 +376,9 @@ static void NS(SELF, delete)(SELF* self) {
     NS(ALLOC, free)(self->alloc, (void*)self->blocks);
 }
 
-#undef ITER
-#undef IV_PAIR
 #undef ITER_INVARIANT_CHECK
+#undef IV_PAIR
+#undef ITER
 
 #define ITER_CONST NS(SELF, iter_const)
 #define IV_PAIR_CONST NS(ITER_CONST, item)
@@ -496,23 +496,25 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     debug_fmt_print(fmt, stream, "}");
 }
 
-#undef ITER_CONST
-#undef IV_PAIR_CONST
 #undef ITER_CONST_INVARIANT_CHECK
+#undef IV_PAIR_CONST
+#undef ITER_CONST
 
-#undef VALUE
-#undef VALUE_DELETE
-#undef VALUE_CLONE
-#undef VALUE_DEBUG
-#undef BLOCK_INDEX_BITS
+#undef INVARIANT_CHECK
+#undef SLOT
 
 #include <derive-c/core/index/undef.h>
 
-#undef SLOT
-#undef INVARIANT_CHECK
+#undef VALUE_DEBUG
+#undef VALUE_CLONE
+#undef VALUE_DELETE
+#undef VALUE
 
-#include <derive-c/core/alloc/undef.h>
+#undef BLOCK_INDEX_BITS
+#undef INDEX_BITS
+
 TRAIT_ARENA(SELF);
 
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>

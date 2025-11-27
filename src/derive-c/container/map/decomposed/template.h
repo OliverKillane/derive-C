@@ -1,5 +1,6 @@
 /// @brief A simple open-addressed hashmap using robin-hood hashing.
 
+#include "derive-c/core/traits/clone.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -21,19 +22,20 @@ typedef int KEY;
 TEMPLATE_ERROR("No KEY_HASH")
     #endif
 
+    #define KEY_HASH key_hash
 static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined KEY_EQ
-    #define KEY_EQ(KEY_1, KEY_2) (*(KEY_1) == *(KEY_2))
+    #define KEY_EQ MEM_EQ
 #endif
 
 #if !defined KEY_DELETE
-    #define KEY_DELETE(KEY)
+    #define KEY_DELETE NO_DELETE
 #endif
 
 #if !defined KEY_CLONE
-    #define KEY_CLONE(KEY) *(KEY)
+    #define KEY_CLONE COPY_CLONE
 #endif
 
 #if !defined KEY_DEBUG
@@ -51,11 +53,11 @@ typedef struct {
 #endif
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE(VALUE)
+    #define VALUE_DELETE NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE(VALUE) *(VALUE)
+    #define VALUE_CLONE COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
@@ -548,25 +550,24 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef ITER_CONST
 #undef KV_PAIR_CONST
 
+#undef INVARIANT_CHECK
 #undef KEY_ENTRY
 
-#undef KEY
-#undef KEY_HASH
-#undef KEY_EQ
-#undef KEY_DELETE
-#undef KEY_CLONE
-#undef KEY_DEBUG
-#undef VALUE
-#undef VALUE_DELETE
-#undef VALUE_CLONE
 #undef VALUE_DEBUG
+#undef VALUE_CLONE
+#undef VALUE_DELETE
+#undef VALUE
 
-#undef INVARIANT_CHECK
+#undef KEY_DEBUG
+#undef KEY_CLONE
+#undef KEY_DELETE
+#undef KEY_EQ
+#undef KEY_HASH
+#undef KEY
 
-#include <derive-c/core/alloc/undef.h>
 
-#include <derive-c/container/map/trait.h>
 TRAIT_MAP(SELF);
 
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>
