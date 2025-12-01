@@ -1,22 +1,22 @@
 from pathlib import Path
 import pytest
-from src.lints.template_defines import TemplateDefines
-from src.linter import CheckStatus, SubLints, Result
+from src.linting.lints.template_defines import TemplateDefines, Event, Tracker, Location
+from src.linting.linter import ResultMultiple, ResultSingle
 
-def check_code(code: str) -> SubLints:
-    linter = TemplateDefines()
+def check_code(code: str) -> ResultSingle:
     lines = code.splitlines(keepends=True)
     path = Path("test_template.h")
-    parsed = linter.parse_file(lines, path)
-    return linter.validate_file(parsed, path)
+    events = []
+    for i, line in enumerate(lines):
+        event = Event.from_line(Location(path, i + 1), line)
+        if event:
+            events.append(event)
+    
+    errors = Tracker.process_events(events)
+    return ResultSingle(errors=errors)
 
-def assert_pass(results: SubLints):
-    for key, result in results.results.items():
-        if isinstance(result, Result):
-            assert result.status == CheckStatus.PASS, f"{key}: {result.message}"
-        else:
-            # Recurse if needed, but TemplateDefines returns flat SubLints
-            pass
+def assert_pass(result: ResultSingle):
+    assert result.successful, f"Failed with errors: {[e.describe() for e in result.errors]}"
 
 def test_simple_define_undef():
     code = """

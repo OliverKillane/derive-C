@@ -17,31 +17,29 @@ class Location:
             return str(self.file)
         return f"{self.file}:{self.line}"
 
-class CheckStatus(Enum):
-    PASS = "PASS"
-    FAIL = "FAIL"
+class Error(ABC):
+    @abstractmethod
+    def describe(self) -> str:
+        pass
 
 @dataclass(frozen=True)
-class Result:
-    location: Location
-    status: CheckStatus
-    message: str
+class ResultSingle:
+    errors: list[Error]
 
     @property
     def successful(self) -> bool:
-        return self.status == CheckStatus.PASS
+        return len(self.errors) == 0
 
 
 @dataclass(frozen=True)
-class SubLints:
-    results: dict[str, LintTree]
+class ResultMultiple:
+    results: dict[str, Result]
     
     @property
     def successful(self) -> bool:
         return all(result.successful for result in self.results.values())
 
-
-LintTree: TypeAlias = Result | SubLints
+Result: TypeAlias = ResultSingle | ResultMultiple
 
 @dataclass
 class LintContext:
@@ -49,9 +47,6 @@ class LintContext:
     executor: ThreadPoolExecutor
 
 class LinterCheck(ABC):
-    def execute(self, ctx: LintContext) -> LintTree:
-        return self.run(ctx)
-
     @abstractmethod
     def run(self, ctx: LintContext) -> Result:
         pass
@@ -66,7 +61,7 @@ class LinterCheck(ABC):
 
 @dataclass
 class LintResults:
-    results: dict[LinterCheck, LintTree]
+    results: dict[LinterCheck, Result]
 
     @classmethod
     def from_context(

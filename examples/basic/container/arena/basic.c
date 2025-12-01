@@ -94,8 +94,6 @@ void foo_example() {
     ASSERT(entry_a.x == 42);
 
     my_foo_delete(&entry_a);
-
-    foo_arena_delete(&arena);
 }
 
 int main() {

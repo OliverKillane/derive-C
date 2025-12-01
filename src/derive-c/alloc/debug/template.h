@@ -8,8 +8,8 @@
     #include "includes.h"
 #endif
 
-#include <derive-c/core/self/def.h>
 #include <derive-c/core/alloc/def.h>
+#include <derive-c/core/self/def.h>
 
 typedef struct {
     char const* name;
@@ -68,8 +68,9 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     debug_fmt_print(fmt, stream, "}");
 }
 
-#include <derive-c/core/alloc/undef.h>
 
 TRAIT_ALLOC(SELF);
+
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
 #include <derive-c/core/includes/undef.h>

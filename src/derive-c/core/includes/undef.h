@@ -1,2 +1,2 @@
 #undef SKIP_INCLUDES
-#undef EXPAND_IN_STRUCT
+#undef EXPAND_IN_STRUCT // argument

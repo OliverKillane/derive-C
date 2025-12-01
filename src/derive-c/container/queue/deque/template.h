@@ -344,9 +344,14 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 }
 
 #undef INVARIANT_CHECK
+#undef ITEM_VECTORS
+#undef ITEM_DEBUG
+#undef ITEM_CLONE
+#undef ITEM_DELETE
+#undef ITEM
 
-#include <derive-c/core/alloc/undef.h>
 TRAIT_QUEUE(SELF);
 
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>

@@ -125,11 +125,17 @@ test
 - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)
 
 TODO later / evening fun:
-1. block based arena
 2. linear map
 3. ankerl hashmap
-4. debug printing
 5. namespacing DC
 6. comparative benchmarks
-7. cleanup iterators
-8. rename vectors (contig, blocks, )
+
+
+TODO:
+undef / def pattern for utils
+check templates used in a template are included in the includes
+maybe work out a better way for nested templates? PREVIOUS_SELF?
+all constainers, alloc must implement a trait
+all header functions static
+
+

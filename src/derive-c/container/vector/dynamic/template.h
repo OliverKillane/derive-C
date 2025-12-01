@@ -460,7 +460,6 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef ITEM_DELETE
 #undef ITEM
 
-
 TRAIT_VECTOR(SELF);
 
 #include <derive-c/core/self/undef.h>

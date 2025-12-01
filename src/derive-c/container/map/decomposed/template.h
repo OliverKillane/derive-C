@@ -1,6 +1,5 @@
 /// @brief A simple open-addressed hashmap using robin-hood hashing.
 
-#include "derive-c/core/traits/clone.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -564,7 +563,6 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef KEY_EQ
 #undef KEY_HASH
 #undef KEY
-
 
 TRAIT_MAP(SELF);
 

@@ -1,21 +1,29 @@
 """Console output formatting for linter results."""
 
-from src.linter import Result, SubLints, LintTree, LintResults, CheckStatus, LinterCheck, LintOutput
+from src.linting.linter import ResultSingle, ResultMultiple, Result, LintResults, LinterCheck, LintOutput
 
 class ConsoleOutput(LintOutput):
     """Console output formatter with tree structure and colors."""
     
     def write(self, results: LintResults) -> None:
         """Write formatted results to console."""
-        print(f"results:\n{self._format_lint_results(results)}")
-    
-    def _format_result(self, result: Result) -> str:
-        """Format a single Result with colored status."""
-        color = "\033[92m" if result.status == CheckStatus.PASS else "\033[91m"
-        reset = "\033[0m"
-        return f"{color}[{result.status.value}]{reset}\n  {result.message}"
+        print(self.format(results))
 
-    def _format_sublints(self, sublints: SubLints) -> str:
+    def format(self, results: LintResults) -> str:
+        """Format results to string."""
+        return f"results:\n{self._format_lint_results(results)}"
+    
+    def _format_result(self, result: ResultSingle) -> str:
+        """Format a single Result with colored status."""
+        if result.successful:
+            return "\033[92m[PASS]\033[0m"
+        
+        lines = ["\033[91m[FAIL]\033[0m"]
+        for error in result.errors:
+            lines.append(f"  {error.describe()}")
+        return "\n".join(lines)
+
+    def _format_sublints(self, sublints: ResultMultiple) -> str:
         """Format SubLints with tree structure."""
         lines = []
         items = list(sublints.results.items())
@@ -24,14 +32,26 @@ class ConsoleOutput(LintOutput):
             prefix = "╰─ " if is_last else "╞═ "
             continuation = "   " if is_last else "│  "
             
-            lines.append(f"{prefix}{key}")
-            for line in self._format_lint_tree(result).splitlines():
-                lines.append(f"{continuation}{line}")
+            # Get status indicator
+            if isinstance(result, ResultSingle):
+                status = "\033[92m[PASS]\033[0m" if result.successful else "\033[91m[FAIL]\033[0m"
+                # For ResultSingle, we show status on the key line, not in nested output
+                lines.append(f"{prefix}{status} {key}")
+                # Only show error details if failed
+                if not result.successful:
+                    for error in result.errors:
+                        lines.append(f"{continuation}  {error.describe()}")
+            else:
+                # For nested ResultMultiple, determine status from all sub-results
+                status = "\033[92m[PASS]\033[0m" if result.successful else "\033[91m[FAIL]\033[0m"
+                lines.append(f"{prefix}{status} {key}")
+                for line in self._format_lint_tree(result).splitlines():
+                    lines.append(f"{continuation}{line}")
         return "\n".join(lines)
 
-    def _format_lint_tree(self, tree: LintTree) -> str:
+    def _format_lint_tree(self, tree: Result) -> str:
         """Format a LintTree (either Result or SubLints)."""
-        if isinstance(tree, Result):
+        if isinstance(tree, ResultSingle):
             return self._format_result(tree)
         else:
             return self._format_sublints(tree)

@@ -1,3 +1,5 @@
+#pragma once
+
 // stdlib includes
 #include <stdbool.h> // IWYU pragma: export
 #include <stddef.h>  // IWYU pragma: export

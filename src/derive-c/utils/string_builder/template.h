@@ -6,6 +6,10 @@
     #include "includes.h"
 #endif
 
+#if !defined _GNU_SOURCE
+    #error "_GNU_SOURCE must be defined (is in the src/derive-c CMakeLists.txt) to use cookie_io"
+#endif
+
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
 
@@ -17,7 +21,6 @@ typedef struct {
     ALLOC* alloc;
 } SELF;
 
-// Additional constant when extending the string allocation.
 static size_t const NS(SELF, additional_alloc_size) = 32;
 
 #define INVARIANT_CHECK(self)                                                                      \
@@ -168,6 +171,6 @@ static void NS(SELF, delete)(SELF* self) {
 
 #undef INVARIANT_CHECK
 
+#include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>
 #include <derive-c/core/includes/undef.h>
-#include <derive-c/core/self/undef.h>

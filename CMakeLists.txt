@@ -73,6 +73,8 @@ option(DOCS "Build documentation" ON)
 
 add_subdirectory(src)
 add_subdirectory(examples)
+add_subdirectory(scripts)
+
 if (TESTS)
     add_subdirectory(test)
 endif()

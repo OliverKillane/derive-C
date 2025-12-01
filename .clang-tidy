@@ -18,7 +18,8 @@ Checks: >
   -readability-implicit-bool-conversion,
   -bugprone-macro-parentheses,
   -misc-non-private-member-variables-in-classes,
-  -clang-diagnostic-*
+  -clang-diagnostic-*,
+  -misc-include-cleaner
 
 WarningsAsErrors: '*'
 

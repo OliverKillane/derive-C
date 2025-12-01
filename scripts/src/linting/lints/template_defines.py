@@ -4,8 +4,8 @@ import re
 from dataclasses import dataclass
 from typing import Self
 
-from src.linter import LinterCheck, Result, LintContext, Location, CheckStatus, SubLints, LintTree
-from src.utils import RED, GREEN, RESET
+from src.linting.linter import LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
+from src.linting.utils import RED, GREEN, RESET
 
 FOR_TEMPLATE: str = "// for template"
 
@@ -102,7 +102,7 @@ class Event:
 
 
 @dataclass
-class UnexpectedUndef:
+class UnexpectedUndef(Error):
     expected: Define
     actual: Event
 
@@ -110,21 +110,14 @@ class UnexpectedUndef:
         return f"{RED}{self.actual.describe()} unexpected, next undef could only be: {self.expected.describe(Action.UNDEF)}{RESET}"
 
 @dataclass
-class ImpossibleUndef:
+class ImpossibleUndef(Error):
     actual: Event
 
     def describe(self) -> str:
         return f"{RED}{self.actual.describe()} impossible as it is not defined at this point{RESET}"
 
 @dataclass
-class Correct:
-    event: Event
-
-    def describe(self) -> str:
-        return f"{GREEN}{self.event.describe()}{RESET}"
-
-@dataclass
-class MissingUndef:
+class MissingUndef(Error):
     expected: Define
 
     def describe(self) -> str:
@@ -133,21 +126,15 @@ class MissingUndef:
 @dataclass
 class Tracker:
     stack: list[Define]
-    diagnostics: list[Correct | ImpossibleUndef | UnexpectedUndef | MissingUndef]
+    diagnostics: list[Error]
 
     @classmethod
-    def process_events(cls, events: list[Event]) -> list[Correct | ImpossibleUndef | UnexpectedUndef | MissingUndef]: 
-        state = cls(
-            stack=[],
-            diagnostics=[],
-        )
-
+    def process_events(cls, events: list[Event]) -> list[Error]: 
+        state = cls(stack=[],diagnostics=[])
         for event in events:
             state._process_event(event)
-
         for define in state.stack[::-1]:
             state.diagnostics.append(MissingUndef(define))
-
         return state.diagnostics
 
     def _process_event(self, event: Event) -> None:
@@ -162,12 +149,10 @@ class Tracker:
                 else:
                     # duplicate define, we ignore these
                     pass
-                self.diagnostics.append(Correct(event))
             case Action.UNDEF:
                 if len(self.stack) > 0:
                     if self.stack[-1] == event.define:
                         self.stack.pop()
-                        self.diagnostics.append(Correct(event))
                     else:
                         self.diagnostics.append(UnexpectedUndef(self.stack[-1], event))
                 else:
@@ -180,37 +165,14 @@ class TemplateDefines(LinterCheck):
      - no defines leaked
     """
     
-    def run(self, ctx: LintContext) -> LintTree:
+    def run(self, ctx: LintContext) -> Result:
         files = list(ctx.source_dir.rglob("template.h"))
-        futures = {ctx.executor.submit(self.check_file, f): f for f in files}
-        
-        results = {}
-        for future in futures:
-            f = futures[future]
-            rel_path = str(f.relative_to(ctx.source_dir))
-            results[rel_path] = future.result()
-        
-        return SubLints(results) if results else Result(
-            location=Location(file=ctx.source_dir, line=None),
-            status=CheckStatus.PASS,
-            message="No template.h files found"
-        )
+        futures = {f: ctx.executor.submit(self.check_file, f) for f in files}
+        return ResultMultiple({f: future.result() for f, future in futures.items()})
 
-    def check_file(self, file_path: Path) -> SubLints:
+    def check_file(self, file_path: Path) -> ResultSingle:
         with open(file_path, "r", encoding="utf-8") as f:
             events = Event.from_file(file_path)
-            diagnostics = Tracker.process_events(events)
-            
-            if all(isinstance(d, Correct) for d in diagnostics):
-                return Result(
-                    location=Location(file=file_path, line=None),
-                    status=CheckStatus.PASS,
-                    message="No errors"
-                )
-            else:
-                return Result(
-                        location=Location(file=file_path, line=None),
-                        status=CheckStatus.FAIL,
-                        message=f"""
-Failed to validate, with diagnostics:
-{'\n'.join(d.describe() for d in diagnostics)}""")
+        return ResultSingle(
+            errors=Tracker.process_events(events),
+        )

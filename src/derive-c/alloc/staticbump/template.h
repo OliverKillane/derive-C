@@ -204,5 +204,6 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef CAPACITY
 
 TRAIT_ALLOC(SELF);
+
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/includes/undef.h>

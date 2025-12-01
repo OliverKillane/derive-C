@@ -7,7 +7,7 @@
 #include <stdio.h>   // IWYU pragma: export
 #include <string.h>  // IWYU pragma: export
 
-// drive-c includes
+// derive-c includes
 #include <derive-c/container/queue/trait.h>       // IWYU pragma: export
 #include <derive-c/core/debug/gdb_marker.h>       // IWYU pragma: export
 #include <derive-c/core/debug/memory_tracker.h>   // IWYU pragma: export

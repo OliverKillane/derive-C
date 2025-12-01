@@ -53,19 +53,20 @@ STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
     #define VALUE_DEBUG DEFAULT_DEBUG
 #endif
 
-#include <derive-c/core/index/def.h>
+#include <derive-c/core/index/bits_to_type/def.h>
+#include <derive-c/core/index/type_to_strong/def.h>
 
 typedef VALUE NS(SELF, value_t);
 typedef ALLOC NS(SELF, alloc_t);
 
 #define SLOT NS(NAME, slot)
 
-#define SLOT_INDEX_TYPE INDEX_TYPE // for template
-#define SLOT_VALUE VALUE // for template
-#define SLOT_VALUE_CLONE VALUE_CLONE // for template
-#define SLOT_VALUE_CLONE VALUE_CLONE // for template
+#define SLOT_INDEX_TYPE INDEX_TYPE     // for template
+#define SLOT_VALUE VALUE               // for template
+#define SLOT_VALUE_CLONE VALUE_CLONE   // for template
+#define SLOT_VALUE_CLONE VALUE_CLONE   // for template
 #define SLOT_VALUE_DELETE VALUE_DELETE // for template
-#define INTERNAL_NAME SLOT // for template
+#define INTERNAL_NAME SLOT             // for template
 #include <derive-c/utils/slot/template.h>
 
 typedef SLOT PRIV(NS(SELF, block))[BLOCK_SIZE(BLOCK_INDEX_BITS)];
@@ -503,7 +504,8 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef INVARIANT_CHECK
 #undef SLOT
 
-#include <derive-c/core/index/undef.h>
+#include <derive-c/core/index/type_to_strong/undef.h>
+#include <derive-c/core/index/bits_to_type/undef.h>
 
 #undef VALUE_DEBUG
 #undef VALUE_CLONE

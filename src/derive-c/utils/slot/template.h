@@ -106,11 +106,11 @@ static void NS(SELF, delete)(SELF* self) {
     }
 }
 
-#undef SLOT_INDEX_TYPE
-#undef SLOT_VALUE
-#undef SLOT_VALUE_DELETE
-#undef SLOT_VALUE_CLONE
 #undef SLOT_VALUE_DEBUG
+#undef SLOT_VALUE_CLONE
+#undef SLOT_VALUE_DELETE
+#undef SLOT_VALUE
+#undef SLOT_INDEX_TYPE
 
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/includes/undef.h>

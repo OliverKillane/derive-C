@@ -130,10 +130,11 @@ static void NS(SELF, debug)(SELF* self, debug_fmt fmt, FILE* stream) {
     }
 }
 
-#undef ITEM
-#undef ITEM_DELETE
-#undef ITEM_CLONE
 #undef ITEM_DEBUG
+#undef ITEM_EQ
+#undef ITEM_CLONE
+#undef ITEM_DELETE
+#undef ITEM
 
-#include <derive-c/core/includes/undef.h>
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/includes/undef.h>

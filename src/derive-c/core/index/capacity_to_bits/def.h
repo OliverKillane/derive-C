@@ -1,0 +1,12 @@
+
+#if EXCLUSIVE_END_INDEX <= 256
+    #define INDEX_BITS 8
+#elif EXCLUSIVE_END_INDEX <= 65536
+    #define INDEX_BITS 16
+#elif EXCLUSIVE_END_INDEX <= 4294967296
+    #define INDEX_BITS 32
+#elif EXCLUSIVE_END_INDEX <= 18446744073709551616
+    #define INDEX_BITS 64
+#else
+    #error "EXCLUSIVE_END_INDEX required"
+#endif

@@ -1,14 +1,10 @@
 {
   "clangd.path": "/nix/store/i8xw1b4wk0sp4drzkc2bifxr0kfnn0kj-clang-tools-20.1.0-rc3/bin/clangd",
   "clangd.arguments": [
-    "--query-driver=/nix/store/*-clang-wrapper-*/bin/clang*",
-    "--compile-commands-dir=build",
+    "--query-driver=/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/bin/clang",
     "--resource-dir=/nix/store/205a598g828rmpsvjgq4gdj1igl3f5l6-clang-wrapper-20.1.0-rc3/resource-root",
+    "--compile-commands-dir=build",
     "--log=verbose",
-     "--pch-storage=memory"
-  ],
-
-  "cmake.ctest.testSuiteDelimiter": "/",
-  "cmake.generator": "Ninja",
-  "cmake.buildDirectory": "${workspaceFolder}/build"
+    "--pch-storage=memory"
+  ]
 }

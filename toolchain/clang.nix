@@ -42,5 +42,15 @@ llvm20.stdenv.mkDerivation {
 
     echo "Sanitizer headers -> ${crt.dev}/include"
     echo "uv from nixpkgs-unstable: $(uv --version || echo 'not yet built')"
+
+    # Generate VSCode settings
+    (
+      cd scripts
+      uv run intellisense \
+        --vscode-dir=../.vscode \
+        --clangd-path="${llvm20.clang-tools}/bin/clangd" \
+        --clang-path="${llvm20.clang}/bin/clang" \
+        --resource-dir="$(${llvm20.clang}/bin/clang -print-resource-dir)"
+    )
   '';
 }

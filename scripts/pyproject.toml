@@ -17,4 +17,5 @@ module-name = "src"
 module-root = ""
 
 [project.scripts]
-lints = "src.main:main"
+linting = "src.linting.main:main"
+intellisense = "src.intellisense.main:main"

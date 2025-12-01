@@ -4,17 +4,16 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict
 
-from src.linter import LinterCheck, LintContext, SubLints, LintResults
-from src.lints.template_defines import TemplateDefines
-from src.lints.template_clangd import TemplateClangd
-from src.lints.def_undef_match import DefUndefIncludes
-from src.output.console import ConsoleOutput
+from src.linting.linter import LinterCheck, LintContext, ResultMultiple, LintResults
+from src.linting.lints.template_defines import TemplateDefines
+from src.linting.lints.def_undef_match import DefUndefIncludes
+from src.linting.lints.includes_export import IncludesExport
+from src.linting.output.console import ConsoleOutput
 
 LINTS: list[LinterCheck] = [
     TemplateDefines(),
-    TemplateClangd(),
     DefUndefIncludes(),
-    DefUndefIncludes(),
+    IncludesExport(),
 ]
 
 def main():
@@ -34,10 +33,8 @@ def main():
             ),
             LINTS,
         )
-
-    # Write results using console output
-    output = ConsoleOutput()
-    output.write(results)
+    
+    ConsoleOutput().write(results)
 
     if not results.successful:
         sys.exit(1)

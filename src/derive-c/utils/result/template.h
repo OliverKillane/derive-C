@@ -139,18 +139,18 @@ static void NS(SELF, delete)(SELF* self) {
     }
 }
 
-#undef OK
-#undef OK_DELETE
-#undef OK_EQ
-#undef OK_CLONE
-#undef OK_DEBUG
-#undef OK_DELETE
-#undef ERROR
-#undef ERROR_THROW
-#undef ERROR_DELETE
-#undef ERROR_EQ
-#undef ERROR_CLONE
 #undef ERROR_DEBUG
+#undef ERROR_CLONE
+#undef ERROR_EQ
+#undef ERROR_DELETE
+#undef ERROR_THROW
+#undef ERROR
 
-#include <derive-c/core/includes/undef.h>
+#undef OK_DEBUG
+#undef OK_CLONE
+#undef OK_EQ
+#undef OK_DELETE
+#undef OK
+
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/includes/undef.h>
