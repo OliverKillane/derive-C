@@ -63,6 +63,8 @@ typedef struct {
 typedef KEY NS(SELF, key_t);
 typedef VALUE NS(SELF, value_t);
 
+static size_t NS(SELF, capacity)() { return CAPACITY; };
+
 #define BITSET NS(NAME, bitset)
 
 #define EXCLUSIVE_END_INDEX CAPACITY // [DERIVE-C] for template
@@ -122,7 +124,7 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
-    if (NS(BITSET, size)(&self->presence) + 1 >= CAPACITY) {
+    if (NS(BITSET, size)(&self->presence) + 1 > CAPACITY) {
         return NULL;
     }
 
@@ -250,6 +252,10 @@ static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     mutation_version_check(&iter->version);
     INDEX_TYPE const next_index = iter->next_index;
 
+    if (next_index == CAPACITY) {
+        return (KV_PAIR_CONST){.key = NULL, .value = NULL};
+    }
+
     iter->next_index++;
     while (iter->next_index < CAPACITY &&
            !NS(BITSET, get)(&iter->map->presence, iter->next_index)) {
@@ -304,6 +310,10 @@ static bool NS(ITER, empty_item)(KV_PAIR const* item) {
 static KV_PAIR NS(ITER, next)(ITER* iter) {
     mutation_version_check(&iter->version);
     INDEX_TYPE const next_index = iter->next_index;
+
+    if (next_index == CAPACITY) {
+        return (KV_PAIR){.key = NULL, .value = NULL};
+    }
 
     iter->next_index++;
     while (iter->next_index < CAPACITY &&

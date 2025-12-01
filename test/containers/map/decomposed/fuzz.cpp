@@ -63,7 +63,7 @@ void apply(Model& m) const override {
 
 };
     
-RC_GTEST_PROP(HashMapTests, Fuzz, ()) {
+RC_GTEST_PROP(DecomposedTests, Fuzz, ()) {
     using SutNS = SutIntegers<size_t, size_t>;
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
     SutModel<SutNS> model;
