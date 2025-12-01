@@ -9,7 +9,7 @@
 #endif
 
 #if defined INTERNAL_NAME
-    #undef INTERNAL_NAME // argument
+    #undef INTERNAL_NAME // [DERIVE-C] argument
 #elif defined NAME
     #undef NAME
 #elif !defined PLACEHOLDERS

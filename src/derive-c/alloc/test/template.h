@@ -60,9 +60,9 @@ typedef struct {
     //           - Much easier to explore a vector, than a hashmap in gdb.
     // JUSTIFY: Always use the std allocator for test book keeping
     //          - keeps the observed behaviour (e.g. allocator usage) the same as in release
-    #define ITEM TRACKED_ENTRY           // for template
-    #define ALLOC stdalloc               // for template
-    #define INTERNAL_NAME ENTRIES_VECTOR // for template
+    #define ITEM TRACKED_ENTRY           // [DERIVE-C] for template
+    #define ALLOC stdalloc               // [DERIVE-C] for template
+    #define INTERNAL_NAME ENTRIES_VECTOR // [DERIVE-C] for template
     #include <derive-c/container/vector/dynamic/template.h>
 
     #pragma pop_macro("ALLOC")

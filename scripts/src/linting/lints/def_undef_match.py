@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from typing import Self
 from pathlib import Path
 from enum import Enum, auto
-from src.linting.linter import LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
+from src.linting.linter import DERIVE_C_TAG, LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
 import re
 
-ARGUMENT = f'// argument'
+ARGUMENT = f'// {DERIVE_C_TAG} argument'
 
 class Kind(Enum):
     NORMAL = auto()

@@ -111,8 +111,8 @@ def test_includes_for_templates():
     code = """
     #define FOO
 
-    #define BAR // for template
-    #define NAME // for template
+    #define BAR // [DERIVE-C] for template
+    #define NAME // [DERIVE-C] for template
     #include <bar/template.h>
 
     #undef FOO

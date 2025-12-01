@@ -49,7 +49,7 @@ typedef ALLOC NS(SELF, alloc_t);
 #pragma push_macro("ITEM_DELETE")
 
 // ITEM is already defined
-#define INTERNAL_NAME ITEM_VECTORS // for template
+#define INTERNAL_NAME ITEM_VECTORS // [DERIVE-C] for template
 #include <derive-c/container/vector/dynamic/template.h>
 
 #pragma pop_macro("ALLOC")

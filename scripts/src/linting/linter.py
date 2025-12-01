@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
-from typing import Dict, Self, TypeAlias
+from typing import Self, TypeAlias
 from concurrent.futures import ThreadPoolExecutor
+
+DERIVE_C_TAG: str = "[DERIVE-C]"
 
 @dataclass(frozen=True)
 class Location:

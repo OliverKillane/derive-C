@@ -5,4 +5,6 @@ UseTab: Never
 BreakBeforeBraces: Attach
 PointerAlignment: Left
 IndentPPDirectives: BeforeHash
-SortIncludes: false # Required as we have def.h/undef.h that rely on ordering 
+
+# Required as we have def.h/undef.h that rely on ordering
+SortIncludes: false 

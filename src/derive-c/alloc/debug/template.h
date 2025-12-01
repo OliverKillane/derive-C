@@ -68,7 +68,6 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     debug_fmt_print(fmt, stream, "}");
 }
 
-
 TRAIT_ALLOC(SELF);
 
 #include <derive-c/core/self/undef.h>

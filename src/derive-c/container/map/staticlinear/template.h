@@ -65,8 +65,8 @@ typedef VALUE NS(SELF, value_t);
 
 #define BITSET NS(NAME, bitset)
 
-#define EXCLUSIVE_END_INDEX CAPACITY // for template
-#define INTERNAL_NAME BITSET         // for template
+#define EXCLUSIVE_END_INDEX CAPACITY // [DERIVE-C] for template
+#define INTERNAL_NAME BITSET         // [DERIVE-C] for template
 #include <derive-c/container/bitset/static/template.h>
 
 #define INDEX_TYPE NS(BITSET, index_t)

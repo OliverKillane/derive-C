@@ -12,6 +12,7 @@
 #include <derive-c/algorithm/hash/hashers.h>
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
+#include <derive-c/utils/for.h>
 
 #define KEY uint32_t
 #define KEY_EQ uint32_t_eq
@@ -22,12 +23,9 @@
 
 void print_map(id_to_name const* map) {
     printf("Map has items:\n");
-    id_to_name_iter_const iter = id_to_name_get_iter_const(map);
-
-    id_to_name_kv_const const* entry = NULL;
     size_t pos = 0;
-    while ((entry = id_to_name_iter_const_next(&iter))) {
-        printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry->key, *entry->value);
+    FOR_CONST(id_to_name, map, iter, entry) {
+        printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry.key, *entry.value);
         pos++;
     }
 }
@@ -114,12 +112,10 @@ void report_map_example() {
     ASSERT(strcmp(report_map_read(&map, id1)->description, "Description A") == 0);
 
     {
-        report_map_iter_const iter = report_map_get_iter_const(&map);
-        report_map_kv_const const* entry = NULL;
         size_t pos = 0;
-        while ((entry = report_map_iter_const_next(&iter))) {
-            printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry->key->name,
-                   entry->key->section, entry->value->value);
+        FOR_CONST(report_map, &map, iter, entry) {
+            printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry.key->name,
+                   entry.key->section, entry.value->value);
             pos++;
         }
     }
@@ -175,12 +171,9 @@ void fixed_string_example() {
     ASSERT(*fixed_string_map_read(&map, key2) == 456);
     ASSERT(*fixed_string_map_read(&map, key3) == 789);
 
-    fixed_string_map_iter_const iter = fixed_string_map_get_iter_const(&map);
-
-    fixed_string_map_kv_const const* entry = NULL;
     size_t pos = 0;
-    while ((entry = fixed_string_map_iter_const_next(&iter))) {
-        printf("Position: %zu Key: %.3s Value: %u\n", pos, entry->key->value, *entry->value);
+    FOR_CONST(fixed_string_map, &map, iter, entry) {
+        printf("Position: %zu Key: %.3s Value: %u\n", pos, entry.key->value, *entry.value);
         pos++;
     }
 

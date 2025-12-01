@@ -135,7 +135,7 @@ template <typename SutNS> struct Insert : Command<SutNS> {
         s.mValues[model_index] = mValue;
     }
 
-    virtual void runCommand(const Model& /*m*/, Wrapper& w) const override {
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
         // The model parameter is unused here (same as old Insert::runAndCheck).
         typename SutNS::Sut_index_t sutIndex = SutNS::Sut_insert(w.get(), mValue);
 
@@ -175,7 +175,7 @@ template <typename SutNS> struct Write : Command<SutNS> {
 
     void apply(Model& m) const override { m.mValues.at(mIndex.value()) = mValue; }
 
-    virtual void runCommand(const Model& /*m*/, Wrapper& w) const override {
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
         // Same behaviour as old Write::runAndCheck
         typename SutNS::Sut_index_t sut_index = w.mModelToSut.at(mIndex.value());
         typename SutNS::Sut_value_t* p = SutNS::Sut_write(w.get(), sut_index);
@@ -213,7 +213,7 @@ template <typename SutNS> struct Remove : Command<SutNS> {
 
     void apply(Model& m) const override { m.mValues.erase(mIndex.value()); }
 
-    virtual void runCommand(const Model& m, Wrapper& w) const override {
+    void runCommand(const Model& m, Wrapper& w) const override {
         typename SutNS::Sut_index_t sut_index = w.mModelToSut.at(mIndex.value());
 
         w.mModelToSut.erase(mIndex.value());

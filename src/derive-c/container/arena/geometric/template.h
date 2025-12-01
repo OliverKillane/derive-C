@@ -89,12 +89,12 @@ typedef ALLOC NS(SELF, alloc_t);
 
 #define SLOT NS(NAME, slot)
 
-#define SLOT_INDEX_TYPE INDEX_TYPE     // for template
-#define SLOT_VALUE VALUE               // for template
-#define SLOT_VALUE_CLONE VALUE_CLONE   // for template
-#define SLOT_VALUE_CLONE VALUE_CLONE   // for template
-#define SLOT_VALUE_DELETE VALUE_DELETE // for template
-#define INTERNAL_NAME SLOT             // for template
+#define SLOT_INDEX_TYPE INDEX_TYPE     // [DERIVE-C] for template
+#define SLOT_VALUE VALUE               // [DERIVE-C] for template
+#define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
+#define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
+#define SLOT_VALUE_DELETE VALUE_DELETE // [DERIVE-C] for template
+#define INTERNAL_NAME SLOT             // [DERIVE-C] for template
 #include <derive-c/utils/slot/template.h>
 
 typedef struct {

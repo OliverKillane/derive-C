@@ -24,11 +24,11 @@ void int_example() {
 
     ASSERT(ints_size(&arena) == 4);
     {
-        FOR(ints, arena, entry) { printf("entry for %d at %d\n", *entry.value, entry.index.index); }
+        FOR(ints, &arena, iter, entry) { printf("entry for %d at %d\n", *entry.value, entry.index.index); }
     }
 
     {
-        FOR(ints, arena, entry) {
+        FOR(ints, &arena, iter, entry) {
             printf("incrementing for %d = %d + 1 at %d\n", *entry.value, *entry.value,
                    entry.index.index);
             *entry.value += 1;

@@ -164,38 +164,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     };
 }
 
-static void NS(SELF, delete)(SELF* self);
-
-static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value);
-
-static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
-    INVARIANT_CHECK(self);
-
-    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    size_t const target_capacity = apply_capacity_policy(expected_items);
-    if (target_capacity > self->capacity) {
-        SELF new_map = NS(SELF, new_with_capacity_for)(expected_items, self->alloc);
-        for (size_t index = 0; index < self->capacity; index++) {
-            KEY_ENTRY* entry = &self->keys[index];
-            if (entry->present) {
-                NS(SELF, insert)(&new_map, entry->key, self->values[index]);
-            }
-        }
-        NS(ALLOC, free)(self->alloc, (void*)self->keys);
-        NS(ALLOC, free)(self->alloc, (void*)self->values);
-
-        INVARIANT_CHECK(&new_map);
-        *self = new_map;
-    }
-}
-
-static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
-    INVARIANT_CHECK(self);
-    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    if (apply_capacity_policy(self->items) > self->capacity / 2) {
-        NS(SELF, extend_capacity_for)(self, self->items * 2);
-    }
-
+static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key, VALUE value) {
     uint16_t distance_from_desired = 0;
     size_t const hash = KEY_HASH(&key);
     size_t index = modulus_power_of_2_capacity(hash, self->capacity);
@@ -249,6 +218,38 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
             return inserted_to_entry;
         }
     }
+}
+
+static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+    INVARIANT_CHECK(self);
+
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+    size_t const target_capacity = apply_capacity_policy(expected_items);
+    if (target_capacity > self->capacity) {
+        SELF new_map = NS(SELF, new_with_capacity_for)(expected_items, self->alloc);
+        for (size_t index = 0; index < self->capacity; index++) {
+            KEY_ENTRY* entry = &self->keys[index];
+            if (entry->present) {
+                PRIV(NS(SELF, try_insert_no_extend_capacity))
+                (&new_map, entry->key, self->values[index]);
+            }
+        }
+        NS(ALLOC, free)(self->alloc, (void*)self->keys);
+        NS(ALLOC, free)(self->alloc, (void*)self->values);
+
+        INVARIANT_CHECK(&new_map);
+        *self = new_map;
+    }
+}
+
+static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
+    INVARIANT_CHECK(self);
+    mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+    if (apply_capacity_policy(self->items) > self->capacity / 2) {
+        NS(SELF, extend_capacity_for)(self, self->items * 2);
+    }
+
+    return PRIV(NS(SELF, try_insert_no_extend_capacity))(self, key, value);
 }
 
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
@@ -387,9 +388,11 @@ typedef struct {
 } KV_PAIR;
 
 #define ITER NS(SELF, iter)
-typedef KV_PAIR const* NS(ITER, item);
+typedef KV_PAIR NS(ITER, item);
 
-static bool NS(ITER, empty_item)(KV_PAIR const* const* item) { return *item == NULL; }
+static bool NS(ITER, empty_item)(KV_PAIR const* item) {
+    return item->key == NULL && item->value == NULL;
+}
 
 typedef struct {
     SELF* map;
@@ -398,7 +401,7 @@ typedef struct {
     mutation_version version;
 } ITER;
 
-static KV_PAIR const* NS(ITER, next)(ITER* iter) {
+static KV_PAIR NS(ITER, next)(ITER* iter) {
     ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
@@ -408,9 +411,9 @@ static KV_PAIR const* NS(ITER, next)(ITER* iter) {
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
         }
-        return &iter->curr;
+        return iter->curr;
     }
-    return NULL;
+    return (KV_PAIR){.key = NULL, .value = NULL};
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
@@ -458,9 +461,11 @@ typedef struct {
 } KV_PAIR_CONST;
 
 #define ITER_CONST NS(SELF, iter_const)
-typedef KV_PAIR_CONST const* NS(ITER_CONST, item);
+typedef KV_PAIR_CONST NS(ITER_CONST, item);
 
-static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* const* item) { return *item == NULL; }
+static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
+    return item->key == NULL && item->value == NULL;
+}
 
 typedef struct {
     SELF const* map;
@@ -469,7 +474,7 @@ typedef struct {
     mutation_version version;
 } ITER_CONST;
 
-static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
@@ -479,9 +484,9 @@ static KV_PAIR_CONST const* NS(ITER_CONST, next)(ITER_CONST* iter) {
         while (iter->index < iter->map->capacity && !iter->map->keys[iter->index].present) {
             iter->index++;
         }
-        return &iter->curr;
+        return iter->curr;
     }
-    return NULL;
+    return (KV_PAIR_CONST){.key = NULL, .value = NULL};
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
@@ -522,18 +527,19 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     fmt = debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
-    KV_PAIR_CONST const* item;
+    KV_PAIR_CONST item;
 
-    while ((item = NS(ITER_CONST, next)(&iter))) {
+    for (KV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
+         item = NS(ITER_CONST, next)(&iter)) {
         debug_fmt_print(fmt, stream, "{\n");
         fmt = debug_fmt_scope_begin(fmt);
 
         debug_fmt_print(fmt, stream, "key: ");
-        KEY_DEBUG(item->key, fmt, stream);
+        KEY_DEBUG(item.key, fmt, stream);
         fprintf(stream, ",\n");
 
         debug_fmt_print(fmt, stream, "value: ");
-        VALUE_DEBUG(item->value, fmt, stream);
+        VALUE_DEBUG(item.value, fmt, stream);
         fprintf(stream, ",\n");
 
         fmt = debug_fmt_scope_end(fmt);

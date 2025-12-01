@@ -1,11 +1,11 @@
 #pragma once
 
-// stdlib includes
+// [DERIVE-C] stdlib includes
 #include <stdint.h> // IWYU pragma: export
 #include <stdio.h>  // IWYU pragma: export
 #include <string.h> // IWYU pragma: export
 
-// derive-c includes
+// [DERIVE-C] lib includes
 #include <derive-c/alloc/trait.h>               // IWYU pragma: export
 #include <derive-c/core/debug/gdb_marker.h>     // IWYU pragma: export
 #include <derive-c/core/debug/memory_tracker.h> // IWYU pragma: export

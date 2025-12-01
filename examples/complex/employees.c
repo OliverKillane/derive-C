@@ -10,6 +10,7 @@
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
+#include <derive-c/utils/for.h>
 
 typedef struct {
     char const* forename;
@@ -144,10 +145,8 @@ void hr_system_debug(hr_system const* self, debug_fmt fmt, FILE* stream) {
 void hr_system_delete(hr_system* self) {
     employees_delete(&self->data);
 
-    employees_by_age_iter iter = employees_by_age_get_iter(&self->by_age);
-    employees_by_age_kv const* entry = NULL;
-    while ((entry = employees_by_age_iter_next(&iter))) {
-        same_age_employees_delete(entry->value);
+    FOR(employees_by_age, &self->by_age, iter, entry) {
+        same_age_employees_delete(entry.value);
     }
 
     employees_by_age_delete(&self->by_age);

@@ -4,10 +4,10 @@ import re
 from dataclasses import dataclass
 from typing import Self
 
-from src.linting.linter import LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
-from src.linting.utils import RED, GREEN, RESET
+from src.linting.linter import DERIVE_C_TAG, LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
+from src.linting.utils import RED, RESET
 
-FOR_TEMPLATE: str = "// for template"
+FOR_TEMPLATE: str = f"// {DERIVE_C_TAG} for template"
 
 class Action(Enum):
     DEFINE = auto()

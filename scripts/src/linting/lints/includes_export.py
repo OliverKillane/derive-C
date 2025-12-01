@@ -2,12 +2,12 @@ from pathlib import Path
 import re
 from typing import Self
 from dataclasses import dataclass
-from src.linting.linter import LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
+from src.linting.linter import DERIVE_C_TAG, LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
 
 EXPORT_COMMENT: str = r"// IWYU pragma: export"
-STDLIB_INCLUDES: str = r"// stdlib includes"
-DERIVE_C_INCLUDES: str = r"// derive-c includes"
-CONTAINER_SPECIFIC_INCLUDES: str = r"// container-specific includes"
+STDLIB_INCLUDES: str = fr"// {DERIVE_C_TAG} stdlib includes"
+DERIVE_C_INCLUDES: str = fr"// {DERIVE_C_TAG} lib includes"
+CONTAINER_SPECIFIC_INCLUDES: str = fr"// {DERIVE_C_TAG} container includes"
 INCLUDE_PATTERN: re.Pattern[str] = re.compile(r'#include\s+(<[^>]+>|"[^"]+")')
 
 @dataclass
