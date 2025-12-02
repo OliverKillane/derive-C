@@ -261,27 +261,6 @@ static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index)
     return NULL;
 }
 
-static ITEM const* NS(SELF, read_from_front)(SELF const* self, size_t index) {
-    ITEM const* item = NS(SELF, try_read_from_front)(self, index);
-    ASSERT(item);
-    return item;
-}
-
-static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
-    INVARIANT_CHECK(self);
-    if (index < NS(SELF, size)(self)) {
-        size_t const real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
-        return &self->data[real_index];
-    }
-    return NULL;
-}
-
-static ITEM* NS(SELF, write_from_front)(SELF* self, size_t index) {
-    ITEM* value = NS(SELF, try_write_from_front)(self, index);
-    ASSERT(value);
-    return value;
-}
-
 static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
     if (index >= NS(SELF, size)(self)) {
@@ -294,29 +273,12 @@ static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) 
     return &self->data[self->capacity - from_end];
 }
 
-static ITEM const* NS(SELF, read_from_back)(SELF const* self, size_t index) {
-    ITEM const* item = NS(SELF, try_read_from_back)(self, index);
-    ASSERT(item);
-    return item;
+static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
+    return (ITEM*)NS(SELF, try_read_from_front)(self, index);
 }
 
 static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
-    INVARIANT_CHECK(self);
-    if (index >= NS(SELF, size)(self)) {
-        return NULL;
-    }
-    if (index <= self->tail) {
-        return &self->data[self->tail - index];
-    }
-    size_t const from_end = index - self->tail;
-    return &self->data[self->capacity - from_end];
-}
-
-static ITEM* NS(SELF, write_from_back)(SELF* self, size_t index) {
-    INVARIANT_CHECK(self);
-    ITEM* value = NS(SELF, try_write_from_back)(self, index);
-    ASSERT(value);
-    return value;
+    return (ITEM*)NS(SELF, try_read_from_back)(self, index);
 }
 
 #define ITER NS(SELF, iter)

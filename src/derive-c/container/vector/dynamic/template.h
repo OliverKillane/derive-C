@@ -1,5 +1,6 @@
 /// @brief A simple vector
 
+#include <cstdint>
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -53,6 +54,10 @@ typedef struct {
     ASSUME((self)->size <= (self)->capacity);                                                      \
     ASSUME((self->alloc));                                                                         \
     ASSUME(WHEN(!((self)->data), (self)->capacity == 0 && (self)->size == 0));
+
+static size_t NS(SELF, max_size)() {
+    return SIZE_MAX;
+}
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     SELF self = (SELF){
@@ -173,14 +178,14 @@ static ITEM* NS(SELF, write)(SELF* self, size_t index) {
     return item;
 }
 
-static void NS(SELF, insert_at)(SELF* self, size_t at, ITEM const* items, size_t count) {
+static ITEM* NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const* items, size_t count) {
     INVARIANT_CHECK(self);
     ASSUME(items);
     ASSERT(at <= self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (count == 0) {
-        return;
+        return NULL;
     }
 
     NS(SELF, reserve)(self, self->size + count);
@@ -189,6 +194,7 @@ static void NS(SELF, insert_at)(SELF* self, size_t at, ITEM const* items, size_t
     memmove(&self->data[at + count], &self->data[at], (self->size - at) * sizeof(ITEM));
     memcpy(&self->data[at], items, count * sizeof(ITEM));
     self->size += count;
+    return &self->data[at];
 }
 
 static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {

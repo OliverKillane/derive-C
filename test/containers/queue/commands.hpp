@@ -1,3 +1,5 @@
+#pragma once
+
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>
@@ -58,18 +60,20 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
             RC_ASSERT(!SutNS::Sut_empty(w.getConst()));
             RC_ASSERT(!SutNS::Sut_empty(wrapperCopy.getConst()));
 
-            RC_ASSERT(*SutNS::Sut_peek_back_read(w.getConst()) == m.back());
-            RC_ASSERT(*SutNS::Sut_peek_back_write(wrapperCopy.get()) == m.back());
-            RC_ASSERT(*SutNS::Sut_peek_front_read(w.getConst()) == m.front());
-            RC_ASSERT(*SutNS::Sut_peek_front_write(wrapperCopy.get()) == m.front());
+            for (size_t index = 0; index < m.size(); ++index) {
+                RC_ASSERT(*SutNS::Sut_try_read_from_back(w.getConst(), index) == m[m.size() - 1 - index]);
+                RC_ASSERT(*SutNS::Sut_try_write_from_back(wrapperCopy.get(), index) == m[m.size() - 1 - index]);
+                RC_ASSERT(*SutNS::Sut_try_read_from_front(w.getConst(), index) == m[index]);
+                RC_ASSERT(*SutNS::Sut_try_write_from_front(wrapperCopy.get(), index) == m[index]);
+            }
         } else {
             RC_ASSERT(SutNS::Sut_empty(w.getConst()));
             RC_ASSERT(SutNS::Sut_empty(wrapperCopy.getConst()));
 
-            RC_ASSERT(SutNS::Sut_peek_back_read(w.getConst()) == nullptr);
-            RC_ASSERT(SutNS::Sut_peek_back_write(wrapperCopy.get()) == nullptr);
-            RC_ASSERT(SutNS::Sut_peek_front_read(w.getConst()) == nullptr);
-            RC_ASSERT(SutNS::Sut_peek_front_write(wrapperCopy.get()) == nullptr);
+            RC_ASSERT(SutNS::Sut_try_read_from_back(w.getConst(), 0) == nullptr);
+            RC_ASSERT(SutNS::Sut_try_write_from_back(wrapperCopy.get(), 0) == nullptr);
+            RC_ASSERT(SutNS::Sut_try_read_from_front(w.getConst(), 0) == nullptr);
+            RC_ASSERT(SutNS::Sut_try_write_from_front(wrapperCopy.get(), 0) == nullptr);
         }
     }
 

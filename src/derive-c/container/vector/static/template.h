@@ -42,8 +42,9 @@ TEMPLATE_ERROR("The INPLACE_CAPACITY must be defined")
     #endif
     #define INPLACE_CAPACITY 8
 #endif
-
-#if INPLACE_CAPACITY <= 255
+#if INPLACE_CAPACITY == 0
+TEMPLATE_ERROR("INPLACE_CAPACITY must be greater than 0")
+#elif INPLACE_CAPACITY <= 255
     #define INDEX_TYPE uint8_t
 #elif INPLACE_CAPACITY <= 65535
     #define INDEX_TYPE uint16_t
@@ -77,7 +78,7 @@ static SELF NS(SELF, new)() {
     return self;
 }
 
-static const INDEX_TYPE NS(SELF, max_size) = INPLACE_CAPACITY;
+static size_t NS(SELF, max_size)() { return INPLACE_CAPACITY; }
 
 static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
@@ -134,15 +135,19 @@ static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     return NULL;
 }
 
-static bool NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
-                                    INDEX_TYPE count) {
+static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
+                                     INDEX_TYPE count) {
     INVARIANT_CHECK(self);
     ASSUME(items);
     ASSERT(at <= self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (self->size + count > INPLACE_CAPACITY) {
-        return false;
+        return NULL;
+    }
+
+    if (count == 0) {
+        return NULL;
     }
 
     memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
@@ -150,7 +155,7 @@ static bool NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items
     memmove(&self->data[at + count], &self->data[at], (self->size - at) * sizeof(ITEM));
     memcpy(&self->data[at], items, count * sizeof(ITEM));
     self->size += count;
-    return true;
+    return &self->data[at];
 }
 
 static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {

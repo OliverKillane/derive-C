@@ -1,3 +1,5 @@
+#pragma once
+
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>

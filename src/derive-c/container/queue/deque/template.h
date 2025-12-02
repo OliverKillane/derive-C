@@ -94,6 +94,16 @@ static SELF NS(SELF, clone)(SELF const* other) {
     };
 }
 
+static size_t NS(SELF, size)(SELF const* self) {
+    INVARIANT_CHECK(self);
+    return NS(ITEM_VECTORS, size)(&self->front) + NS(ITEM_VECTORS, size)(&self->back);
+}
+
+static bool NS(SELF, empty)(SELF const* self) {
+    INVARIANT_CHECK(self);
+    return NS(ITEM_VECTORS, size)(&self->front) == 0 && NS(ITEM_VECTORS, size)(&self->back) == 0;
+}
+
 static void NS(SELF, rebalance)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
@@ -128,48 +138,28 @@ static void NS(SELF, rebalance)(SELF* self) {
     NS(ITEM_VECTORS, transfer_reverse)(source, target, to_move);
 }
 
-static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {
+static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
 
-    size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
-    if (front_size > 0) {
-        return NS(ITEM_VECTORS, read)(&self->front, front_size - 1);
+    if (index < NS(ITEM_VECTORS, size)(&self->front)) {
+        size_t front_index = NS(ITEM_VECTORS, size)(&self->front) - 1 - index;
+        return NS(ITEM_VECTORS, read)(&self->front, front_index);
     }
 
-    return NS(ITEM_VECTORS, try_read)(&self->back, 0);
+    size_t back_index = index - NS(ITEM_VECTORS, size)(&self->front);
+    return NS(ITEM_VECTORS, try_read)(&self->back, back_index);
 }
 
-static ITEM* NS(SELF, peek_front_write)(SELF* self) {
-    INVARIANT_CHECK(self);
-
-    size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
-    if (front_size > 0) {
-        return NS(ITEM_VECTORS, write)(&self->front, front_size - 1);
-    }
-
-    return NS(ITEM_VECTORS, try_write)(&self->back, 0);
+static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
+    return NS(SELF, try_read_from_front)(self, NS(SELF, size)(self) - 1 - index);
 }
 
-static ITEM const* NS(SELF, peek_back_read)(SELF const* self) {
-    INVARIANT_CHECK(self);
-
-    size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
-    if (back_size > 0) {
-        return NS(ITEM_VECTORS, read)(&self->back, back_size - 1);
-    }
-
-    return NS(ITEM_VECTORS, try_read)(&self->front, 0);
+static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
+    return (ITEM*)NS(SELF, try_read_from_front)(self, index);
 }
 
-static ITEM* NS(SELF, peek_back_write)(SELF* self) {
-    INVARIANT_CHECK(self);
-
-    size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
-    if (back_size > 0) {
-        return NS(ITEM_VECTORS, write)(&self->back, back_size - 1);
-    }
-
-    return NS(ITEM_VECTORS, try_write)(&self->front, 0);
+static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
+    return (ITEM*)NS(SELF, try_read_from_back)(self, index);
 }
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
@@ -212,16 +202,6 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
     ITEM result = NS(ITEM_VECTORS, pop_front)(&self->front);
     NS(SELF, rebalance)(self);
     return result;
-}
-
-static size_t NS(SELF, size)(SELF const* self) {
-    INVARIANT_CHECK(self);
-    return NS(ITEM_VECTORS, size)(&self->front) + NS(ITEM_VECTORS, size)(&self->back);
-}
-
-static bool NS(SELF, empty)(SELF const* self) {
-    INVARIANT_CHECK(self);
-    return NS(ITEM_VECTORS, size)(&self->front) == 0 && NS(ITEM_VECTORS, size)(&self->back) == 0;
 }
 
 #define ITER NS(SELF, iter)
