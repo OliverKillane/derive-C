@@ -7,8 +7,7 @@
 
 namespace containers::queue {
 
-template<typename SutNS>
-using SutModel = std::deque<typename SutNS::Sut_item_t>;
+template <typename SutNS> using SutModel = std::deque<typename SutNS::Sut_item_t>;
 
 template <typename SutNS> struct SutWrapper {
     SutWrapper(SutNS::Sut s) : mSut(s) {}
@@ -21,7 +20,6 @@ template <typename SutNS> struct SutWrapper {
     // System Under Test
     SutNS::Sut mSut;
 };
-
 
 template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, SutWrapper<SutNS>> {
     using Model = SutModel<SutNS>;
@@ -61,8 +59,10 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
             RC_ASSERT(!SutNS::Sut_empty(wrapperCopy.getConst()));
 
             for (size_t index = 0; index < m.size(); ++index) {
-                RC_ASSERT(*SutNS::Sut_try_read_from_back(w.getConst(), index) == m[m.size() - 1 - index]);
-                RC_ASSERT(*SutNS::Sut_try_write_from_back(wrapperCopy.get(), index) == m[m.size() - 1 - index]);
+                RC_ASSERT(*SutNS::Sut_try_read_from_back(w.getConst(), index) ==
+                          m[m.size() - 1 - index]);
+                RC_ASSERT(*SutNS::Sut_try_write_from_back(wrapperCopy.get(), index) ==
+                          m[m.size() - 1 - index]);
                 RC_ASSERT(*SutNS::Sut_try_read_from_front(w.getConst(), index) == m[index]);
                 RC_ASSERT(*SutNS::Sut_try_write_from_front(wrapperCopy.get(), index) == m[index]);
             }
@@ -97,7 +97,7 @@ template <typename SutNS> struct PushFront : Command<SutNS> {
 
     SutNS::Sut_item_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_item_t>();
 
-    void checkPreconditions(const Model& m) const override { }
+    void checkPreconditions(const Model& m) const override {}
     void apply(Model& m) const override { m.push_front(mValue); }
     void runCommand(const Model& /*m*/, Wrapper& w) const override {
         SutNS::Sut_push_front(w.get(), mValue);
@@ -140,10 +140,8 @@ template <typename SutNS> struct PopBack : Command<SutNS> {
 
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_back(); }
-    void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        SutNS::Sut_pop_back(w.get());
-    }
+    void runCommand(const Model& /*m*/, Wrapper& w) const override { SutNS::Sut_pop_back(w.get()); }
     void show(std::ostream& os) const override { os << "PopBack()"; }
 };
 
-}
+} // namespace containers::queue

@@ -102,9 +102,7 @@ template <typename SutNS> struct Insert : Command<SutNS> {
         *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
                           std::numeric_limits<typename SutNS::Sut_value_t>::max());
 
-    void checkPreconditions(const Model& s) const override { 
-        RC_PRE(s.find(mKey) == s.end());
-    }
+    void checkPreconditions(const Model& s) const override { RC_PRE(s.find(mKey) == s.end()); }
     void apply(Model& s) const override { s[mKey] = mValue; }
     void runCommand(const Model& /*m*/, Wrapper& w) const override {
         typename SutNS::Sut_value_t* foundValue = SutNS::Sut_insert(w.get(), mKey, mValue);
@@ -120,8 +118,9 @@ template <typename SutNS> struct Write : Command<SutNS> {
 
     std::optional<typename SutNS::Sut_key_t> mKey = std::nullopt;
     typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(), std::numeric_limits<typename SutNS::Sut_value_t>::max());
-    
+        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
+                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+
     explicit Write(const Model& m) {
         if (!m.empty()) {
             std::vector<typename SutNS::Sut_key_t> keys;
@@ -157,7 +156,8 @@ template <typename SutNS> struct DuplicateInsert : Command<SutNS> {
 
     std::optional<typename SutNS::Sut_key_t> mKey = std::nullopt;
     typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(), std::numeric_limits<typename SutNS::Sut_value_t>::max());
+        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
+                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
 
     explicit DuplicateInsert(const Model& m) {
         if (!m.empty()) {
@@ -249,7 +249,6 @@ template <typename SutNS> struct DeleteEntry : Command<SutNS> {
         }
     }
 
-
     void runCommand(const Model& /*m*/, Wrapper& w) const override {
         if (mKey.has_value()) {
             SutNS::Sut_delete_entry(w.get(), mKey.value());
@@ -259,4 +258,4 @@ template <typename SutNS> struct DeleteEntry : Command<SutNS> {
     void show(std::ostream& os) const override { os << "DeleteEntry(" << mKey.value() << ")"; }
 };
 
-} // namespace constainters::map
+} // namespace containers::map

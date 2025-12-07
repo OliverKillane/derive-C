@@ -230,8 +230,8 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
         for (size_t index = 0; index < self->capacity; index++) {
             KEY_ENTRY* entry = &self->keys[index];
             if (entry->present) {
-                PRIV(NS(SELF, try_insert_no_extend_capacity))
-                (&new_map, entry->key, self->values[index]);
+                PRIV(NS(SELF, try_insert_no_extend_capacity))(&new_map, entry->key,
+                                                              self->values[index]);
             }
         }
         NS(ALLOC, free)(self->alloc, (void*)self->keys);

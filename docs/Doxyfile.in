@@ -6,6 +6,7 @@ GENERATE_LATEX         = NO
 
 # Build
 QUIET                  = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
 
 # Source input
 INPUT                  = @CMAKE_SOURCE_DIR@/src/derive-c @CMAKE_SOURCE_DIR@/README.md @CMAKE_SOURCE_DIR@/examples 
@@ -20,7 +21,7 @@ MACRO_EXPANSION       = YES
 EXPAND_ONLY_PREDEF    = YES  
 EXPAND_AS_DEFINED     = NAME
 PREDEFINED           += NS(SELF,name)=name
-EXCLUDE_SYMBOLS       = derive_c_parameter* ITER ITER_CONST
+# EXCLUDE_SYMBOLS       = derive_c_parameter* ITER ITER_CONST
 
 # Documentation features
 EXTRACT_ALL            = YES
@@ -42,7 +43,7 @@ USE_MDFILE_AS_MAINPAGE = @CMAKE_SOURCE_DIR@/README.md
 HAVE_DOT               = YES
 CALL_GRAPH             = YES
 CALLER_GRAPH           = YES
-DOT_NUM_THREADS        = 2
+DOT_NUM_THREADS        = 32
 
 # Theme tweaks
 GENERATE_TREEVIEW      = YES

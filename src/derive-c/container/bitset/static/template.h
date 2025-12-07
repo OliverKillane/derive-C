@@ -22,7 +22,8 @@ TEMPLATE_ERROR("no EXCLUSIVE_END_INDEX")
 //  - Choose a uint8_t
 // For example, with an EXCLUSIVE_END_INDEX of 256:
 //  - Choose a uint16_t, so we can do index < EXCLUSIVE_END_INDEX
-//  - Otherwise out for(..; index < EXCLUSIVE_END_INDEX; index++) loops would hit 255, then loop back to zero and never complete.
+//  - Otherwise out for(..; index < EXCLUSIVE_END_INDEX; index++) loops would hit 255, then loop
+//  back to zero and never complete.
 #define INDICES_CAPACITY (EXCLUSIVE_END_INDEX + 1)
 
 #include <derive-c/core/index/capacity_to_bits/def.h>
@@ -30,13 +31,9 @@ TEMPLATE_ERROR("no EXCLUSIVE_END_INDEX")
 
 typedef INDEX_TYPE NS(SELF, index_t);
 
-static INDEX_TYPE NS(SELF, max_index)() {
-    return EXCLUSIVE_END_INDEX - 1;
-}
+static INDEX_TYPE NS(SELF, max_index)() { return EXCLUSIVE_END_INDEX - 1; }
 
-static INDEX_TYPE NS(SELF, min_index)() {
-    return 0;
-}
+static INDEX_TYPE NS(SELF, min_index)() { return 0; }
 
 typedef struct {
     uint8_t bits[CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX)];
@@ -81,8 +78,8 @@ static void NS(SELF, set)(SELF* self, INDEX_TYPE index, bool value) {
 
 static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
-    
-ASSERT(index < EXCLUSIVE_END_INDEX);
+
+    ASSERT(index < EXCLUSIVE_END_INDEX);
 
     INDEX_TYPE byte = INDEX_TO_BYTES(index);
     INDEX_TYPE offset = INDEX_TO_OFFSET(index);
@@ -147,7 +144,7 @@ static bool NS(ITER_CONST, empty_item)(INDEX_TYPE const* item) {
 static INDEX_TYPE NS(ITER_CONST, next)(ITER_CONST* iter) {
     ASSUME(iter);
     mutation_version_check(&iter->version);
-    
+
     if (iter->next_index == EXCLUSIVE_END_INDEX) {
         return EXCLUSIVE_END_INDEX;
     }
@@ -191,7 +188,7 @@ static bool NS(ITER, empty_item)(INDEX_TYPE const* item) { return *item == EXCLU
 static INDEX_TYPE NS(ITER, next)(ITER* iter) {
     ASSUME(iter);
     mutation_version_check(&iter->version);
-    
+
     if (iter->next_index == EXCLUSIVE_END_INDEX) {
         return EXCLUSIVE_END_INDEX;
     }

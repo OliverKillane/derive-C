@@ -343,7 +343,7 @@ static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     ITER iter = NS(SELF, get_iter)(self);
 
-    for (IV_PAIR entry = NS(ITER, next)(&iter); NS(ITER, empty_item)(&entry);
+    for (IV_PAIR entry = NS(ITER, next)(&iter); !NS(ITER, empty_item)(&entry);
          entry = NS(ITER, next)(&iter)) {
         VALUE_DELETE(entry.value);
     }

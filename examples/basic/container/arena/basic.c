@@ -24,7 +24,9 @@ void int_example() {
 
     ASSERT(ints_size(&arena) == 4);
     {
-        FOR(ints, &arena, iter, entry) { printf("entry for %d at %d\n", *entry.value, entry.index.index); }
+        FOR(ints, &arena, iter, entry) {
+            printf("entry for %d at %d\n", *entry.value, entry.index.index);
+        }
     }
 
     {

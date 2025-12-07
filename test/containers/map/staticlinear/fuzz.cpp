@@ -49,25 +49,25 @@ RC_GTEST_PROP(StaticLinearSmallTests, Fuzz, ()) {
     using SutNS = SutSmall;
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
     SutModel<SutNS> model;
-    
+
     rc::state::check(
         model, sutWrapper,
-        rc::state::gen::execOneOfWithArgs<
-            InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>,
-            Write<SutNS>,
-            Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
+        rc::state::gen::execOneOfWithArgs<InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>,
+                                          InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>,
+                                          Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>,
+                                          DuplicateInsert<SutNS>>());
 }
 
 RC_GTEST_PROP(StaticLinearMediumTests, Fuzz, ()) {
     using SutNS = SutMedium;
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
     SutModel<SutNS> model;
-    
+
     rc::state::check(
         model, sutWrapper,
-        rc::state::gen::execOneOfWithArgs<
-            InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>,
-            Write<SutNS>,
-            Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
+        rc::state::gen::execOneOfWithArgs<InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>,
+                                          InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>,
+                                          Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>,
+                                          DuplicateInsert<SutNS>>());
 }
-}
+} // namespace containers::map::staticlinear

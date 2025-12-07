@@ -98,8 +98,6 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))));
     ASSERT(first_block);
 
-    SLOT* x = first_block[0];
-
     PRIV(NS(SELF, block))** blocks =
         (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))*));
     ASSERT(blocks);
@@ -107,7 +105,8 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
     blocks[0] = first_block;
 
     for (INDEX_TYPE offset = 0; offset < BLOCK_SIZE(BLOCK_INDEX_BITS); offset++) {
-        NS(SLOT, memory_tracker_empty)(first_block[offset]);
+        /* Properly index the slots within the allocated block */
+        NS(SLOT, memory_tracker_empty)(&(*first_block)[offset]);
     }
 
     return (SELF){
@@ -146,6 +145,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     if (self->block_current_exclusive_end == BLOCK_SIZE(BLOCK_INDEX_BITS)) {
         self->block_current++;
         self->block_current_exclusive_end = 0;
+
         self->blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, realloc)(
             self->alloc, (void*)self->blocks,
             (self->block_current + 1) * sizeof(PRIV(NS(SELF, block))*));
@@ -153,6 +153,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
         PRIV(NS(SELF, block))* new_block =
             (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(self->alloc, sizeof(PRIV(NS(SELF, block))));
+
+        self->blocks[self->block_current] = new_block;
 
         for (size_t offset = 0; offset < BLOCK_SIZE(BLOCK_INDEX_BITS); offset++) {
             NS(SLOT, memory_tracker_empty)(&(*new_block)[offset]);
@@ -178,11 +180,16 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     INDEX_TYPE block = INDEX_TO_BLOCK(index.index, BLOCK_INDEX_BITS);
     INDEX_TYPE offset = INDEX_TO_OFFSET(index.index, BLOCK_INDEX_BITS);
 
-    if (block > self->block_current || offset >= self->block_current_exclusive_end) {
+    if (block > self->block_current ||
+        (block == self->block_current && offset >= self->block_current_exclusive_end)) {
         return NULL;
     }
 
-    SLOT* slot = &(*self->blocks[self->block_current])[self->block_current_exclusive_end];
+    SLOT* slot = &(*self->blocks[block])[offset];
+
+    if (!slot->present) {
+        return NULL;
+    }
     return &slot->value;
 }
 
@@ -217,14 +224,14 @@ static SELF NS(SELF, clone)(SELF const* self) {
         PRIV(NS(SELF, block))* to_block = blocks[b];
         PRIV(NS(SELF, block)) const* from_block = self->blocks[b];
         for (INDEX_TYPE i = 0; i < BLOCK_SIZE(BLOCK_INDEX_BITS); i++) {
-            NS(SLOT, clone_from)(from_block[i], to_block[i]);
+            NS(SLOT, clone_from)(&(*from_block)[i], &(*to_block)[i]);
         }
     }
 
     PRIV(NS(SELF, block))* to_current_block = blocks[self->block_current];
     PRIV(NS(SELF, block)) const* from_current_block = self->blocks[self->block_current];
     for (INDEX_TYPE i = 0; i < self->block_current_exclusive_end; i++) {
-        NS(SLOT, clone_from)(from_current_block[i], to_current_block[i]);
+        NS(SLOT, clone_from)(&(*from_current_block)[i], &(*to_current_block)[i]);
     }
 
     return (SELF){
@@ -258,11 +265,14 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     INDEX_TYPE block = INDEX_TO_BLOCK(index.index, BLOCK_INDEX_BITS);
     INDEX_TYPE offset = INDEX_TO_OFFSET(index.index, BLOCK_INDEX_BITS);
 
-    if (block > self->block_current || offset >= self->block_current_exclusive_end) {
+    /* Only treat offset vs block_current_exclusive_end for the last block */
+    if (block > self->block_current ||
+        (block == self->block_current && offset >= self->block_current_exclusive_end)) {
         return false;
     }
 
-    SLOT* entry = &(*self->blocks[self->block_current])[self->block_current_exclusive_end];
+    PRIV(NS(SELF, block))* current_block = self->blocks[block];
+    SLOT* entry = &(*current_block)[offset];
 
     if (entry->present) {
         *destination = entry->value;
@@ -290,11 +300,14 @@ static INDEX_TYPE PRIV(NS(SELF, next_index_value))(SELF const* self, INDEX_TYPE 
         INDEX_TYPE block = INDEX_TO_BLOCK(next_index, BLOCK_INDEX_BITS);
         INDEX_TYPE offset = INDEX_TO_OFFSET(next_index, BLOCK_INDEX_BITS);
 
-        if (block > self->block_current || offset >= self->block_current_exclusive_end) {
+        if (block > self->block_current ||
+            (block == self->block_current && offset >= self->block_current_exclusive_end)) {
             return INDEX_NONE;
         }
 
-        SLOT* slot = self->blocks[block][offset];
+        /* Fix wrong indexing: use &(*self->blocks[block])[offset] rather than
+           self->blocks[block][offset] which indexes by block-sized strides. */
+        SLOT* slot = &(*self->blocks[block])[offset];
         if (slot->present) {
             return next_index;
         }
@@ -311,12 +324,9 @@ typedef struct {
 } ITER;
 
 #define ITER_INVARIANT_CHECK(iter)                                                                 \
+    ASSUME(iter);                                                                                  \
     ASSUME(WHEN((iter)->next_index != INDEX_NONE,                                                  \
-                (iter)                                                                             \
-                    ->arena                                                                        \
-                    ->blocks[INDEX_TO_BLOCK((iter)->next_index, BLOCK_INDEX_BITS)]                 \
-                            [INDEX_TO_OFFSET((iter)->next_index, BLOCK_INDEX_BITS)]                \
-                    ->present),                                                                    \
+                NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
            "The next index is either valid, or the iterator is empty");
 
 typedef struct {
@@ -366,7 +376,7 @@ static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     ITER iter = NS(SELF, get_iter)(self);
 
-    for (IV_PAIR entry = NS(ITER, next)(&iter); NS(ITER, empty_item)(&entry);
+    for (IV_PAIR entry = NS(ITER, next)(&iter); !NS(ITER, empty_item)(&entry);
          entry = NS(ITER, next)(&iter)) {
         VALUE_DELETE(entry.value);
     }
@@ -391,12 +401,9 @@ typedef struct {
 } ITER_CONST;
 
 #define ITER_CONST_INVARIANT_CHECK(iter)                                                           \
+    ASSUME(iter);                                                                                  \
     ASSUME(WHEN((iter)->next_index != INDEX_NONE,                                                  \
-                (iter)                                                                             \
-                    ->arena                                                                        \
-                    ->blocks[INDEX_TO_BLOCK((iter)->next_index, BLOCK_INDEX_BITS)]                 \
-                            [INDEX_TO_OFFSET((iter)->next_index, BLOCK_INDEX_BITS)]                \
-                    ->present),                                                                    \
+                NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
            "The next index is either valid, or the iterator is empty");
 
 typedef struct {
@@ -469,7 +476,9 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
                                                    : BLOCK_SIZE(BLOCK_INDEX_BITS);
 
         for (INDEX_TYPE i = 0; i < block_entry_exclusive_end; i++) {
-            SLOT* entry = self->blocks[b][i];
+            /* Previously used self->blocks[b][i] which computes wrong address.
+               Use the dereference-then-index form to get the SLOT. */
+            SLOT* entry = &(*self->blocks[b])[i];
 
             if (entry->present) {
                 debug_fmt_print(fmt, stream, "[index=%lu]{\n",

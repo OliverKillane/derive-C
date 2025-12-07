@@ -99,9 +99,16 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
         while (w.mSutToModel.contains(invalid_index)) {
             invalid_index.index++;
         }
+        auto const* x = SutNS::Sut_try_read(w.getConst(), invalid_index);
+        if (x != nullptr) {
+            std::cout << "fooooo!!!" << "\n";
+            abort();
+        }
 
-        RC_ASSERT(SutNS::Sut_try_read(w.getConst(), invalid_index) == nullptr);
+        RC_ASSERT(x == nullptr);
+
         RC_ASSERT(SutNS::Sut_try_write(wMut.get(), invalid_index) == nullptr);
+
         typename SutNS::Sut_value_t removed;
         RC_ASSERT(!SutNS::Sut_try_remove(wMut.get(), invalid_index, &removed));
     }

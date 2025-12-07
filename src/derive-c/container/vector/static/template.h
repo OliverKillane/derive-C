@@ -6,6 +6,13 @@
     #include "includes.h"
 #endif
 
+// JUSTIFY: No memory tracking
+//  - The vector is in-place, inside the vector object itself
+//  - poisoning this makes memcopying the struct throw in asan
+// On balance, the likelihood of hitting frustrating issues (e.g. from cpp copying objects, C
+// structs trivially copyable) is high, and the benefit of catching improper usage of vector
+// elements is not high enough to overcome.
+
 #include <derive-c/core/self/def.h>
 
 #if !defined ITEM
@@ -73,8 +80,6 @@ static SELF NS(SELF, new)() {
         .derive_c_staticvec = gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &self.data,
-                       sizeof(ITEM) * INPLACE_CAPACITY);
     return self;
 }
 
@@ -84,8 +89,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
     new_self.size = self->size;
 
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &new_self.data,
-                       self->size * sizeof(ITEM));
     for (INDEX_TYPE i = 0; i < self->size; i++) {
         new_self.data[i] = ITEM_CLONE(&self->data[i]);
     }
@@ -126,8 +129,6 @@ static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->size < INPLACE_CAPACITY) {
         ITEM* slot = &self->data[self->size];
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, slot,
-                           sizeof(ITEM));
         *slot = item;
         self->size++;
         return slot;
@@ -150,8 +151,6 @@ static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* item
         return NULL;
     }
 
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
-                       &self->data[self->size], count * sizeof(ITEM));
     memmove(&self->data[at + count], &self->data[at], (self->size - at) * sizeof(ITEM));
     memcpy(&self->data[at], items, count * sizeof(ITEM));
     self->size += count;
@@ -172,8 +171,6 @@ static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
 
     memmove(&self->data[at], &self->data[at + count], (self->size - (at + count)) * sizeof(ITEM));
     self->size -= count;
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
-                       &self->data[self->size], count * sizeof(ITEM));
 }
 
 static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
@@ -188,8 +185,6 @@ static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     if (LIKELY(self->size > 0)) {
         self->size--;
         *destination = self->data[self->size];
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
-                           &self->data[self->size + 1], sizeof(ITEM));
         return true;
     }
     return false;
@@ -211,8 +206,6 @@ static void NS(SELF, delete)(SELF* self) {
     for (INDEX_TYPE i = 0; i < self->size; i++) {
         ITEM_DELETE(&self->data[i]);
     }
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &self->data,
-                       self->size * sizeof(ITEM));
 }
 
 #define ITER NS(SELF, iter)

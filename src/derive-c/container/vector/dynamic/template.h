@@ -1,6 +1,5 @@
 /// @brief A simple vector
 
-#include <cstdint>
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -55,9 +54,7 @@ typedef struct {
     ASSUME((self->alloc));                                                                         \
     ASSUME(WHEN(!((self)->data), (self)->capacity == 0 && (self)->size == 0));
 
-static size_t NS(SELF, max_size)() {
-    return SIZE_MAX;
-}
+static size_t NS(SELF, max_size)() { return SIZE_MAX; }
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     SELF self = (SELF){

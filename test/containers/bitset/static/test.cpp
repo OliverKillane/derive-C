@@ -81,7 +81,7 @@ TEST(BitsetStaticUtils, IterEmpty) {
 
     Sut_debug(&bitset, debug_fmt_new(), stdout);
 
-    FOR(Sut, &bitset, iter, item) { 
+    FOR(Sut, &bitset, iter, item) {
         // std::cout << static_cast<size_t>(item) << "\n";
         Sut_get(&bitset, item);
     }

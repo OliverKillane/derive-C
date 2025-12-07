@@ -23,3 +23,14 @@ TEST(ArenaTests, Full) {
 
     Sut_delete(&sut);
 }
+
+TEST(ArenaTests, Empty) {
+    Sut sut = Sut_new_with_capacity_for(1, stdalloc_get());
+    Sut_delete(&sut);
+}
+
+TEST(ArenaTests, Single) {
+    Sut sut = Sut_new_with_capacity_for(1, stdalloc_get());
+    Sut_insert(&sut, 1);
+    Sut_delete(&sut);
+}

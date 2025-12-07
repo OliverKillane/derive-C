@@ -47,9 +47,9 @@ template <typename SutNS> struct ExtendCapacity : Command<SutNS> {
     explicit ExtendCapacity(const Model& m)
         : oldCapacity(m.size()),
           newCapacity(*rc::gen::inRange(oldCapacity, oldCapacity * MAX_FACTOR)) {}
-    
+
     void checkPreconditions(const Model& s) const override {}
-void apply(Model& m) const override {
+    void apply(Model& m) const override {
         // No-op, just extending the capacity
     }
 
@@ -60,22 +60,17 @@ void apply(Model& m) const override {
     void show(std::ostream& os) const override {
         os << "ExtendCapacity(" << oldCapacity << " -> " << newCapacity << ")";
     }
-
 };
-    
+
 RC_GTEST_PROP(DecomposedTests, Fuzz, ()) {
     using SutNS = SutIntegers<size_t, size_t>;
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
     SutModel<SutNS> model;
-    
+
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<
-            Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, 
-            ExtendCapacity<SutNS>, 
-            Write<SutNS>,
-            Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
-
-
+            Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, ExtendCapacity<SutNS>,
+            Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
 }
-}
+} // namespace containers::map::decomposed

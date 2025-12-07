@@ -159,6 +159,7 @@ if(LINTING)
           -p ${CMAKE_BINARY_DIR}
           --extra-arg-before=-xc 
           --extra-arg-before=-std=c23
+          --extra-arg=-D_GNU_SOURCE # For cookie_io from stdio.h
           --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} 
           --extra-arg=-I${CMAKE_SOURCE_DIR}/src 
           --header-filter="^${CMAKE_SOURCE_DIR}/src/" 

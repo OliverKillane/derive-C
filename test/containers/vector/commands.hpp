@@ -93,7 +93,7 @@ template <typename SutNS> struct Push : Command<SutNS> {
                           std::numeric_limits<typename SutNS::Sut_item_t>::max());
 
     void checkPreconditions(const Model& s) const override {
-        RC_ASSERT(s.size() < SutNS::max_size());
+        RC_PRE(s.size() < SutNS::Sut_max_size());
     }
 
     void apply(Model& m) const override { m.push_back(mValue); }
@@ -149,7 +149,9 @@ template <typename SutNS> struct TryInsertAt : Command<SutNS> {
     explicit TryInsertAt(const Model& m)
         : mFromIndex(*rc::gen::inRange(static_cast<size_t>(0), m.size())) {}
 
-    void checkPreconditions(const Model& m) const override {}
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(m.size() + mValues.size() <= SutNS::Sut_max_size());
+    }
     void apply(Model& m) const override {
         m.insert(m.begin() + mFromIndex, mValues.begin(), mValues.end());
     }
@@ -203,9 +205,7 @@ template <typename SutNS> struct Pop : Command<SutNS> {
 
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_back(); }
-    void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        SutNS::Sut_pop(w.get());
-    }
+    void runCommand(const Model& /*m*/, Wrapper& w) const override { SutNS::Sut_pop(w.get()); }
     void show(std::ostream& os) const override { os << "Pop()"; }
 };
 
