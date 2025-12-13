@@ -75,8 +75,8 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
     if (capacity_for == 0) {
         return NS(SELF, new)(alloc);
     }
-    size_t const capacity = next_power_of_2(capacity_for);
-    ASSERT(is_power_of_2(capacity));
+    size_t const capacity = dc_math_next_power_of_2(capacity_for);
+    ASSERT(DC_MATH_IS_POWER_OF_2(capacity));
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
     ASSERT(data);
 
@@ -137,7 +137,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (new_capacity_for > self->capacity) {
-        size_t const new_capacity = next_power_of_2(new_capacity_for * 2);
+        size_t const new_capacity = dc_math_next_power_of_2(new_capacity_for * 2);
 
         // We set the capability to write for the allocator, and only touch the
         // state for memory that is inaccessible
@@ -187,7 +187,7 @@ static void NS(SELF, push_back)(SELF* self, ITEM item) {
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
 
     if (!self->empty) {
-        self->tail = modulus_power_of_2_capacity(self->tail + 1, self->capacity);
+        self->tail = dc_math_modulus_power_of_2_capacity(self->tail + 1, self->capacity);
     }
     memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
                        &self->data[self->tail], sizeof(ITEM));
@@ -227,7 +227,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
     if (self->head == self->tail) {
         self->empty = true;
     } else {
-        self->head = modulus_power_of_2_capacity(self->head + 1, self->capacity);
+        self->head = dc_math_modulus_power_of_2_capacity(self->head + 1, self->capacity);
     }
     return value;
 }
@@ -255,7 +255,8 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
 static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
     if (index < NS(SELF, size)(self)) {
-        size_t const real_index = modulus_power_of_2_capacity(self->head + index, self->capacity);
+        size_t const real_index =
+            dc_math_modulus_power_of_2_capacity(self->head + index, self->capacity);
         return &self->data[real_index];
     }
     return NULL;
@@ -381,7 +382,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     size_t const old_size = NS(SELF, size)(self);
 
     if (old_size > 0) {
-        new_capacity = next_power_of_2(old_size);
+        new_capacity = dc_math_next_power_of_2(old_size);
         new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
         ASSERT(new_data);
 

@@ -258,4 +258,31 @@ template <typename SutNS> struct DeleteEntry : Command<SutNS> {
     void show(std::ostream& os) const override { os << "DeleteEntry(" << mKey.value() << ")"; }
 };
 
+template <typename SutNS> struct ExtendCapacity : Command<SutNS> {
+    using Base = Command<SutNS>;
+    using typename Base::Model;
+    using typename Base::Wrapper;
+
+    static const size_t MAX_FACTOR = 5;
+    size_t oldCapacity;
+    size_t newCapacity;
+
+    explicit ExtendCapacity(const Model& m)
+        : oldCapacity(m.size()),
+          newCapacity(*rc::gen::inRange(oldCapacity, oldCapacity * MAX_FACTOR)) {}
+
+    void checkPreconditions(const Model& s) const override {}
+    void apply(Model& m) const override {
+        // No-op, just extending the capacity
+    }
+
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
+        SutNS::Sut_extend_capacity_for(w.get(), newCapacity);
+    }
+
+    void show(std::ostream& os) const override {
+        os << "ExtendCapacity(" << oldCapacity << " -> " << newCapacity << ")";
+    }
+};
+
 } // namespace containers::map

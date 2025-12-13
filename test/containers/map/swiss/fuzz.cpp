@@ -10,9 +10,8 @@
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
-#include <derive-c/container/map/decomposed/includes.h>
+#include <derive-c/container/map/swiss/includes.h>
 
-/// A test case for maps from (int -> int)
 template <typename Key, typename Value> struct SutIntegers {
     static bool equality(Key const* key_1, Key const* key_2) { return *key_1 == *key_2; }
     static size_t awful_hash(Key const* key) {
@@ -30,12 +29,12 @@ template <typename Key, typename Value> struct SutIntegers {
 #define KEY_HASH awful_hash
 #define VALUE Value
 #define NAME Sut
-#include <derive-c/container/map/decomposed/template.h>
+#include <derive-c/container/map/swiss/template.h>
 };
 
-namespace containers::map::decomposed {
+namespace containers::map::swiss {
 
-RC_GTEST_PROP(DecomposedTests, Fuzz, ()) {
+RC_GTEST_PROP(Swiss, Fuzz, ()) {
     using SutNS = SutIntegers<size_t, size_t>;
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
     SutModel<SutNS> model;
@@ -46,4 +45,4 @@ RC_GTEST_PROP(DecomposedTests, Fuzz, ()) {
             Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, ExtendCapacity<SutNS>,
             Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
 }
-} // namespace containers::map::decomposed
+} // namespace containers::map::swiss

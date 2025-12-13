@@ -137,7 +137,7 @@ static void memory_tracker_check(memory_tracker_level level, memory_tracker_capa
         switch (cap) {
         case MEMORY_TRACKER_CAP_NONE: {
             if (!region_is_poisoned) {
-                bool const is_at_end_of_granule = is_aligned_pow2_exp((char*)addr - 7, 3);
+                bool const is_at_end_of_granule = dc_math_is_aligned_pow2_exp((char*)addr - 7, 3);
                 bool const is_next_byte_poisoned =
                     __asan_region_is_poisoned((void*)((char*)addr + 1), 1);
 

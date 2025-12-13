@@ -95,7 +95,7 @@ typedef struct {
 
 static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
     ASSERT(items > 0);
-    size_t capacity = next_power_of_2(items);
+    size_t capacity = dc_math_next_power_of_2(items);
     ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
     ASSERT(slots);

@@ -6,7 +6,7 @@
 
 static inline size_t apply_capacity_policy(size_t capacity) {
     // TODO(oliverkillane): play with overallocation policy
-    return next_power_of_2(capacity + (capacity / 2));
+    return dc_math_next_power_of_2(capacity + (capacity / 2));
 }
 
 static size_t const PROBE_DISTANCE = 1;

@@ -86,7 +86,7 @@ typedef struct {
 
 #define INVARIANT_CHECK(self)                                                                      \
     ASSUME(self);                                                                                  \
-    ASSUME(is_power_of_2((self)->capacity));                                                       \
+    ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                               \
     ASSUME((self)->keys);                                                                          \
     ASSUME((self)->values);                                                                        \
     ASSUME((self)->alloc);
@@ -167,7 +167,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key, VALUE value) {
     uint16_t distance_from_desired = 0;
     size_t const hash = KEY_HASH(&key);
-    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
+    size_t index = dc_math_modulus_power_of_2_capacity(hash, self->capacity);
 
     VALUE* inserted_to_entry = NULL;
 
@@ -199,7 +199,7 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
             }
 
             distance_from_desired++;
-            index = modulus_power_of_2_capacity(index + 1, self->capacity);
+            index = dc_math_modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             entry->present = true;
             entry->distance_from_desired = distance_from_desired;
@@ -261,7 +261,7 @@ static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
 static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
     INVARIANT_CHECK(self);
     size_t const hash = KEY_HASH(&key);
-    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
+    size_t index = dc_math_modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -269,7 +269,7 @@ static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
             if (KEY_EQ(&entry->key, &key)) {
                 return &self->values[index];
             }
-            index = modulus_power_of_2_capacity(index + 1, self->capacity);
+            index = dc_math_modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -285,7 +285,7 @@ static VALUE* NS(SELF, write)(SELF* self, KEY key) {
 static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     INVARIANT_CHECK(self);
     size_t const hash = KEY_HASH(&key);
-    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
+    size_t index = dc_math_modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -293,7 +293,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
             if (KEY_EQ(&entry->key, &key)) {
                 return &self->values[index];
             }
-            index = modulus_power_of_2_capacity(index + 1, self->capacity);
+            index = dc_math_modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return NULL;
         }
@@ -310,7 +310,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const hash = KEY_HASH(&key);
-    size_t index = modulus_power_of_2_capacity(hash, self->capacity);
+    size_t index = dc_math_modulus_power_of_2_capacity(hash, self->capacity);
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
@@ -330,7 +330,8 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
                 size_t free_index = index;
                 KEY_ENTRY* free_entry = entry;
 
-                size_t check_index = modulus_power_of_2_capacity(free_index + 1, self->capacity);
+                size_t check_index =
+                    dc_math_modulus_power_of_2_capacity(free_index + 1, self->capacity);
                 KEY_ENTRY* check_entry = &self->keys[check_index];
 
                 while (check_entry->present && (check_entry->distance_from_desired > 0)) {
@@ -341,7 +342,8 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
                     free_index = check_index;
                     free_entry = check_entry;
 
-                    check_index = modulus_power_of_2_capacity(free_index + 1, self->capacity);
+                    check_index =
+                        dc_math_modulus_power_of_2_capacity(free_index + 1, self->capacity);
                     check_entry = &self->keys[check_index];
                 }
 
@@ -357,7 +359,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 
                 return true;
             }
-            index = modulus_power_of_2_capacity(index + 1, self->capacity);
+            index = dc_math_modulus_power_of_2_capacity(index + 1, self->capacity);
         } else {
             return false;
         }
