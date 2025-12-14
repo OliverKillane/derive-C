@@ -95,7 +95,8 @@ typedef struct {
     ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                               \
     ASSUME((self)->slots);                                                                         \
     ASSUME((self)->ctrl);                                                                          \
-    ASSUME((self)->alloc);
+    ASSUME((self)->alloc);                                                                         \
+    ASSUME((self)->count + (self)->tombstones <= (self)->capacity);
 
 static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* alloc) {
     ASSUME(capacity > DC_SWISS_SIMD_PROBE_SIZE);
@@ -169,7 +170,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
 }
 
 static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key, VALUE value) {
-    ASSUME(self->count < self->capacity);
+    INVARIANT_CHECK(self);
+    ASSUME(self->count + self->tombstones < self->capacity);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     const size_t mask = self->capacity - 1;
@@ -231,6 +233,8 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
 }
 
 static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
+    INVARIANT_CHECK(self);
+
     // NOTE: This code also works for shrinking the hashmap
     //  - we never expect to do this, so are defensive.
     //  - We do expect to rehash with the same capacity (tombstone cleanup)
@@ -498,7 +502,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     KV_PAIR_CONST item;
 
     for (KV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
-         item = NS(ITER_CONST, next)(&iter)) {
+        item = NS(ITER_CONST, next)(&iter)) {
         debug_fmt_print(fmt, stream, "{\n");
         fmt = debug_fmt_scope_begin(fmt);
 

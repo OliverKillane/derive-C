@@ -60,7 +60,7 @@ function(add_example file)
 endfunction()
 
 
-file(GLOB_RECURSE EXAMPLES CONFIGURE_DEPENDS *.c)
+file(GLOB_RECURSE EXAMPLES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
 
 foreach(EXAMPLE_FILE ${EXAMPLES})
   add_example(${EXAMPLE_FILE})

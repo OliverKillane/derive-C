@@ -48,10 +48,6 @@ static size_t dc_swiss_capacity(size_t for_items) {
     return dc_math_next_power_of_2(for_items);
 }
 
-static size_t dc_swiss_ctrl_capacity(size_t for_items) {
-    return dc_swiss_capacity(for_items) + DC_SWISS_SIMD_PROBE_SIZE;
-}
-
 static void dc_swiss_ctrl_set_at(dc_swiss_ctrl* self, size_t capacity, size_t index,
                                  dc_swiss_ctrl val) {
     self[index] = val;
@@ -70,16 +66,12 @@ static dc_swiss_rehash_action dc_swiss_heuristic_should_extend(size_t tombstones
                                                                size_t capacity) {
     ASSUME(capacity > 0);
 
-    // ---- 1) Load-factor based growth (≈ 7/8 full) ----
-    // max_load = 0.875 * capacity
-    const size_t max_load = capacity - (capacity >> 3);
+    const size_t max_load = capacity - (capacity / 8);
     if (count >= max_load) {
         return DC_SWISS_DOUBLE_CAPACITY;
     }
 
-    // ---- 2) Tombstone cleanup (rehash at same capacity) ----
-    // Too many tombstones → probe chains get long even if count is low.
-    if (tombstones > (count >> 1)) {
+    if (tombstones > (count / 2)) {
         return DC_SWISS_CLEANUP_TOMBSONES;
     }
 

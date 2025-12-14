@@ -69,7 +69,7 @@ typedef ALLOC NS(SELF, alloc_t);
 #define INTERNAL_NAME SLOT             // [DERIVE-C] for template
 #include <derive-c/utils/slot/template.h>
 
-typedef SLOT PRIV(NS(SELF, block))[BLOCK_SIZE(BLOCK_INDEX_BITS)];
+typedef SLOT PRIV(NS(SELF, block))[DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS)];
 
 typedef struct {
     size_t count;
@@ -87,10 +87,12 @@ typedef struct {
 #define INVARIANT_CHECK(self)                                                                      \
     ASSUME(self);                                                                                  \
     ASSUME(((self))->count <= MAX_INDEX);                                                          \
-    ASSUME(((self)->block_current_exclusive_end) <= BLOCK_SIZE(BLOCK_INDEX_BITS));                 \
+    ASSUME(((self)->block_current_exclusive_end) <=                                                \
+           DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS));                                         \
     ASSUME(WHEN((self)->free_list == INDEX_NONE,                                                   \
-                (self)->count == (BLOCK_SIZE(BLOCK_INDEX_BITS) * (self)->block_current +           \
-                                  (self)->block_current_exclusive_end)),                           \
+                (self)->count ==                                                                   \
+                    (DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS) * (self)->block_current +       \
+                     (self)->block_current_exclusive_end)),                                        \
            "All slots are full if the free list is empty");
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
@@ -104,7 +106,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 
     blocks[0] = first_block;
 
-    for (INDEX_TYPE offset = 0; offset < BLOCK_SIZE(BLOCK_INDEX_BITS); offset++) {
+    for (INDEX_TYPE offset = 0; offset < DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS); offset++) {
         /* Properly index the slots within the allocated block */
         NS(SLOT, memory_tracker_empty)(&(*first_block)[offset]);
     }
@@ -128,8 +130,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
-        INDEX_TYPE block = INDEX_TO_BLOCK(free_index, BLOCK_INDEX_BITS);
-        INDEX_TYPE offset = INDEX_TO_OFFSET(free_index, BLOCK_INDEX_BITS);
+        INDEX_TYPE block = DC_ARENA_CHUNKED_INDEX_TO_BLOCK(free_index, BLOCK_INDEX_BITS);
+        INDEX_TYPE offset = DC_ARENA_CHUNKED_INDEX_TO_OFFSET(free_index, BLOCK_INDEX_BITS);
 
         SLOT* slot = &(*self->blocks[block])[offset];
 
@@ -142,7 +144,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         return (INDEX){.index = free_index};
     }
 
-    if (self->block_current_exclusive_end == BLOCK_SIZE(BLOCK_INDEX_BITS)) {
+    if (self->block_current_exclusive_end == DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS)) {
         self->block_current++;
         self->block_current_exclusive_end = 0;
 
@@ -156,7 +158,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
         self->blocks[self->block_current] = new_block;
 
-        for (size_t offset = 0; offset < BLOCK_SIZE(BLOCK_INDEX_BITS); offset++) {
+        for (size_t offset = 0; offset < DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS); offset++) {
             NS(SLOT, memory_tracker_empty)(&(*new_block)[offset]);
         }
     }
@@ -166,8 +168,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     NS(SLOT, memory_tracker_present)(slot);
     slot->value = value;
 
-    INDEX_TYPE index = BLOCK_OFFSET_TO_INDEX(self->block_current, self->block_current_exclusive_end,
-                                             BLOCK_INDEX_BITS);
+    INDEX_TYPE index = DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(
+        self->block_current, self->block_current_exclusive_end, BLOCK_INDEX_BITS);
     self->count++;
     self->block_current_exclusive_end++;
 
@@ -177,8 +179,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     INVARIANT_CHECK(self);
 
-    INDEX_TYPE block = INDEX_TO_BLOCK(index.index, BLOCK_INDEX_BITS);
-    INDEX_TYPE offset = INDEX_TO_OFFSET(index.index, BLOCK_INDEX_BITS);
+    INDEX_TYPE block = DC_ARENA_CHUNKED_INDEX_TO_BLOCK(index.index, BLOCK_INDEX_BITS);
+    INDEX_TYPE offset = DC_ARENA_CHUNKED_INDEX_TO_OFFSET(index.index, BLOCK_INDEX_BITS);
 
     if (block > self->block_current ||
         (block == self->block_current && offset >= self->block_current_exclusive_end)) {
@@ -223,7 +225,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     for (INDEX_TYPE b = 0; b < self->block_current; b++) {
         PRIV(NS(SELF, block))* to_block = blocks[b];
         PRIV(NS(SELF, block)) const* from_block = self->blocks[b];
-        for (INDEX_TYPE i = 0; i < BLOCK_SIZE(BLOCK_INDEX_BITS); i++) {
+        for (INDEX_TYPE i = 0; i < DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS); i++) {
             NS(SLOT, clone_from)(&(*from_block)[i], &(*to_block)[i]);
         }
     }
@@ -262,8 +264,8 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
-    INDEX_TYPE block = INDEX_TO_BLOCK(index.index, BLOCK_INDEX_BITS);
-    INDEX_TYPE offset = INDEX_TO_OFFSET(index.index, BLOCK_INDEX_BITS);
+    INDEX_TYPE block = DC_ARENA_CHUNKED_INDEX_TO_BLOCK(index.index, BLOCK_INDEX_BITS);
+    INDEX_TYPE offset = DC_ARENA_CHUNKED_INDEX_TO_OFFSET(index.index, BLOCK_INDEX_BITS);
 
     /* Only treat offset vs block_current_exclusive_end for the last block */
     if (block > self->block_current ||
@@ -297,8 +299,8 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
 
 static INDEX_TYPE PRIV(NS(SELF, next_index_value))(SELF const* self, INDEX_TYPE from_index) {
     for (INDEX_TYPE next_index = from_index + 1;; next_index++) {
-        INDEX_TYPE block = INDEX_TO_BLOCK(next_index, BLOCK_INDEX_BITS);
-        INDEX_TYPE offset = INDEX_TO_OFFSET(next_index, BLOCK_INDEX_BITS);
+        INDEX_TYPE block = DC_ARENA_CHUNKED_INDEX_TO_BLOCK(next_index, BLOCK_INDEX_BITS);
+        INDEX_TYPE offset = DC_ARENA_CHUNKED_INDEX_TO_OFFSET(next_index, BLOCK_INDEX_BITS);
 
         if (block > self->block_current ||
             (block == self->block_current && offset >= self->block_current_exclusive_end)) {
@@ -473,7 +475,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 
         INDEX_TYPE block_entry_exclusive_end = b == self->block_current
                                                    ? self->block_current_exclusive_end
-                                                   : BLOCK_SIZE(BLOCK_INDEX_BITS);
+                                                   : DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS);
 
         for (INDEX_TYPE i = 0; i < block_entry_exclusive_end; i++) {
             /* Previously used self->blocks[b][i] which computes wrong address.
@@ -481,17 +483,19 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
             SLOT* entry = &(*self->blocks[b])[i];
 
             if (entry->present) {
-                debug_fmt_print(fmt, stream, "[index=%lu]{\n",
-                                (size_t)BLOCK_OFFSET_TO_INDEX(b, i, BLOCK_INDEX_BITS));
+                debug_fmt_print(
+                    fmt, stream, "[index=%lu]{\n",
+                    (size_t)DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(b, i, BLOCK_INDEX_BITS));
                 fmt = debug_fmt_scope_begin(fmt);
                 VALUE_DEBUG(&entry->value, fmt, stream);
                 fprintf(stream, ",\n");
                 fmt = debug_fmt_scope_end(fmt);
                 debug_fmt_print(fmt, stream, "},\n");
             } else {
-                debug_fmt_print(fmt, stream, "[index=%lu]{ next_free=%lu }\n",
-                                (size_t)BLOCK_OFFSET_TO_INDEX(b, i, BLOCK_INDEX_BITS),
-                                (size_t)entry->next_free);
+                debug_fmt_print(
+                    fmt, stream, "[index=%lu]{ next_free=%lu }\n",
+                    (size_t)DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(b, i, BLOCK_INDEX_BITS),
+                    (size_t)entry->next_free);
             }
         }
 
