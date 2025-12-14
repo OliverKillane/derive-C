@@ -4,22 +4,37 @@ import re
 from dataclasses import dataclass
 from typing import Self
 
-from src.linting.linter import DERIVE_C_TAG, LinterCheck, ResultSingle, LintContext, Location, ResultMultiple, Result, Error
+from src.linting.linter import (
+    DERIVE_C_TAG,
+    LinterCheck,
+    ResultSingle,
+    LintContext,
+    Location,
+    ResultMultiple,
+    Result,
+    Error,
+)
 from src.linting.utils import RED, RESET
 
 FOR_TEMPLATE: str = f"// {DERIVE_C_TAG} for template"
+FOR_INPUT_ARG: str = f"// {DERIVE_C_TAG} for input arg"
+
 
 class Action(Enum):
     DEFINE = auto()
     UNDEF = auto()
 
+
 class Kind(Enum):
     MACRO = auto()
     INCLUDE = auto()
 
+
 class Attrib(Enum):
     NORMAL = auto()
     TEMPLATE = auto()
+    INPUT_ARG = auto()
+
 
 @dataclass(frozen=True)
 class Define:
@@ -40,10 +55,10 @@ class Define:
                         return f"#include <{self.name}/def.h>"
                     case Action.UNDEF:
                         return f"#include <{self.name}/undef.h>"
-            
+
 
 @dataclass(frozen=True)
-class Event: 
+class Event:
     action: Action
     attrib: Attrib
     location: Location
@@ -61,7 +76,12 @@ class Event:
         if not s:
             return None
 
-        attrib = Attrib.TEMPLATE if s.endswith(FOR_TEMPLATE) else Attrib.NORMAL
+        if s.endswith(FOR_TEMPLATE):
+            attrib = Attrib.TEMPLATE
+        elif s.endswith(FOR_INPUT_ARG):
+            attrib = Attrib.INPUT_ARG
+        else:
+            attrib = Attrib.NORMAL
         if attrib is Attrib.TEMPLATE:
             s = s[: -len(FOR_TEMPLATE)].rstrip()
 
@@ -89,7 +109,7 @@ class Event:
             return None
 
         return cls(action, attrib, location, Define(name, kind))
-    
+
     @classmethod
     def from_file(cls, file: Path) -> list[Self]:
         events = []
@@ -109,12 +129,14 @@ class UnexpectedUndef(Error):
     def describe(self) -> str:
         return f"{RED}{self.actual.describe()} unexpected, next undef could only be: {self.expected.describe(Action.UNDEF)}{RESET}"
 
+
 @dataclass
 class ImpossibleUndef(Error):
     actual: Event
 
     def describe(self) -> str:
         return f"{RED}{self.actual.describe()} impossible as it is not defined at this point{RESET}"
+
 
 @dataclass
 class MissingUndef(Error):
@@ -123,14 +145,15 @@ class MissingUndef(Error):
     def describe(self) -> str:
         return f"{RED}{self.expected.describe(Action.UNDEF)} expected{RESET}"
 
+
 @dataclass
 class Tracker:
     stack: list[Define]
     diagnostics: list[Error]
 
     @classmethod
-    def process_events(cls, events: list[Event]) -> list[Error]: 
-        state = cls(stack=[],diagnostics=[])
+    def process_events(cls, events: list[Event]) -> list[Error]:
+        state = cls(stack=[], diagnostics=[])
         for event in events:
             state._process_event(event)
         for define in state.stack[::-1]:
@@ -141,7 +164,7 @@ class Tracker:
         match event.action:
             case Action.DEFINE:
                 if event.define not in self.stack:
-                    if event.attrib != Attrib.TEMPLATE:
+                    if event.attrib == Attrib.NORMAL:
                         self.stack.append(event.define)
                     else:
                         # ignore for templates
@@ -151,12 +174,16 @@ class Tracker:
                     pass
             case Action.UNDEF:
                 if len(self.stack) > 0:
-                    if self.stack[-1] == event.define:
-                        self.stack.pop()
-                    else:
-                        self.diagnostics.append(UnexpectedUndef(self.stack[-1], event))
+                    if event.attrib == Attrib.NORMAL:
+                        if self.stack[-1] == event.define:
+                            self.stack.pop()
+                        else:
+                            self.diagnostics.append(
+                                UnexpectedUndef(self.stack[-1], event)
+                            )
                 else:
                     self.diagnostics.append(ImpossibleUndef(event))
+
 
 class TemplateDefines(LinterCheck):
     """
@@ -164,15 +191,14 @@ class TemplateDefines(LinterCheck):
      - undefine in reverse order of defines
      - no defines leaked
     """
-    
+
     def run(self, ctx: LintContext) -> Result:
         files = list(ctx.source_dir.rglob("template.h"))
         futures = {f: ctx.executor.submit(self.check_file, f) for f in files}
         return ResultMultiple({f: future.result() for f, future in futures.items()})
 
     def check_file(self, file_path: Path) -> ResultSingle:
-        with open(file_path, "r", encoding="utf-8") as f:
-            events = Event.from_file(file_path)
+        events = Event.from_file(file_path)
         return ResultSingle(
             errors=Tracker.process_events(events),
         )

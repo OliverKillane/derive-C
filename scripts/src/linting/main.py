@@ -2,9 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Dict
 
-from src.linting.linter import LinterCheck, LintContext, ResultMultiple, LintResults
+from src.linting.linter import LinterCheck, LintContext, LintResults
 from src.linting.lints.template_defines import TemplateDefines
 from src.linting.lints.def_undef_match import DefUndefIncludes
 from src.linting.lints.includes_export import IncludesExport
@@ -15,6 +14,7 @@ LINTS: list[LinterCheck] = [
     DefUndefIncludes(),
     IncludesExport(),
 ]
+
 
 def main():
     parser = argparse.ArgumentParser(description="Custom Linter for Derive-C")
@@ -33,13 +33,14 @@ def main():
             ),
             LINTS,
         )
-    
+
     ConsoleOutput().write(results)
 
     if not results.successful:
         sys.exit(1)
 
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

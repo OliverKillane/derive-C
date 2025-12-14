@@ -1,7 +1,7 @@
 from pathlib import Path
-import pytest
-from src.linting.lints.template_defines import TemplateDefines, Event, Tracker, Location
-from src.linting.linter import ResultMultiple, ResultSingle
+from src.linting.lints.template_defines import Event, Tracker, Location
+from src.linting.linter import ResultSingle
+
 
 def check_code(code: str) -> ResultSingle:
     lines = code.splitlines(keepends=True)
@@ -11,12 +11,16 @@ def check_code(code: str) -> ResultSingle:
         event = Event.from_line(Location(path, i + 1), line)
         if event:
             events.append(event)
-    
+
     errors = Tracker.process_events(events)
     return ResultSingle(errors=errors)
 
+
 def assert_pass(result: ResultSingle):
-    assert result.successful, f"Failed with errors: {[e.describe() for e in result.errors]}"
+    assert result.successful, (
+        f"Failed with errors: {[e.describe() for e in result.errors]}"
+    )
+
 
 def test_simple_define_undef():
     code = """
@@ -26,6 +30,7 @@ def test_simple_define_undef():
     results = check_code(code)
     assert_pass(results)
 
+
 def test_duplicate_define():
     code = """
     #define FOO
@@ -34,6 +39,7 @@ def test_duplicate_define():
     """
     results = check_code(code)
     assert_pass(results)
+
 
 def test_redefine_undef_redefine():
     code = """
@@ -45,6 +51,7 @@ def test_redefine_undef_redefine():
     results = check_code(code)
     assert_pass(results)
 
+
 def test_nested_defines():
     code = """
     #define BAR
@@ -54,6 +61,7 @@ def test_nested_defines():
     """
     results = check_code(code)
     assert_pass(results)
+
 
 def test_mixed_nesting():
     code = """
@@ -67,6 +75,7 @@ def test_mixed_nesting():
     results = check_code(code)
     assert_pass(results)
 
+
 def test_include_defines():
     code = """
     #include <foo/def.h>
@@ -75,6 +84,7 @@ def test_include_defines():
     """
     results = check_code(code)
     assert_pass(results)
+
 
 def test_redefinitions():
     code = """
@@ -85,6 +95,7 @@ def test_redefinitions():
     """
     results = check_code(code)
     assert_pass(results)
+
 
 def test_repeat_definitions():
     code = """
@@ -97,6 +108,7 @@ def test_repeat_definitions():
     results = check_code(code)
     assert_pass(results)
 
+
 def test_include_defines_and_defines():
     code = """
     #include <foo/def.h>
@@ -106,6 +118,7 @@ def test_include_defines_and_defines():
     """
     results = check_code(code)
     assert_pass(results)
+
 
 def test_includes_for_templates():
     code = """

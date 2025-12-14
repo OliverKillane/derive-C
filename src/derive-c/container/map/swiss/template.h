@@ -579,7 +579,6 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #undef INVARIANT_CHECK
-#undef KEY_ENTRY
 
 #undef SLOT
 

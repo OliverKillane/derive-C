@@ -5,6 +5,8 @@ version = "0.1.0"
 readme = "README.md"
 dependencies = [
     "pytest>=8.0.0",
+    "mypy>=1.19.0",
+    "ruff>=0.14.9"
 ]
 classifiers = ["Private :: Do Not Upload"]
 

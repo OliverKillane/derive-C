@@ -123,6 +123,7 @@ static void NS(SLOT, delete)(SLOT* slot) {
 #if defined SMALL_BUCKETS
     #define INDEX_KIND dc_ankerl_index_small
     #define BUCKET_SIZE 4
+    #undef SMALL_BUCKETS // [DERIVE-C] for input arg
 #else
     #define INDEX_KIND dc_ankerl_index_large
     #define BUCKET_SIZE 8
@@ -619,9 +620,12 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef KV_PAIR
 #undef ITER
 
-#undef INVARIANT_CHECK
-#undef KEY_ENTRY
 
+#undef INVARIANT_CHECK
+#undef BUCKET
+#undef BUCKET_SIZE
+#undef INDEX_KIND
+#undef SLOT_VECTOR
 #undef SLOT
 
 #undef VALUE_DEBUG
