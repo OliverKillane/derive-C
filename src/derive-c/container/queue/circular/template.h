@@ -443,7 +443,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef ITEM_DELETE
 #undef ITEM
 
-TRAIT_QUEUE(SELF);
+DC_TRAIT_QUEUE(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

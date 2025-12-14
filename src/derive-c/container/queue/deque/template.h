@@ -112,7 +112,7 @@ static void NS(SELF, rebalance)(SELF* self) {
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
     size_t const total_size = front_size + back_size;
 
-    if (!deque_rebalance_policy(total_size, front_size)) {
+    if (!dc_deque_rebalance_policy(total_size, front_size)) {
         return;
     }
 
@@ -330,7 +330,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef ITEM_DELETE
 #undef ITEM
 
-TRAIT_QUEUE(SELF);
+DC_TRAIT_QUEUE(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

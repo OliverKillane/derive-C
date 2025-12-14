@@ -120,9 +120,25 @@ static void NS(SLOT, delete)(SLOT* slot) {
 
 #pragma pop_macro("ALLOC")
 
+#if defined SMALL_BUCKETS
+    #define INDEX_KIND dc_ankerl_index_small
+    #define BUCKET_SIZE 4
+#else
+    #define INDEX_KIND dc_ankerl_index_large
+    #define BUCKET_SIZE 8
+#endif
+
+#define BUCKET NS(SELF, bucket)
+typedef struct {
+    dc_ankerl_mdata mdata;
+    INDEX_KIND index;
+} __attribute__((packed)) BUCKET;
+
+STATIC_ASSERT(sizeof(BUCKET) == BUCKET_SIZE);
+
 typedef struct {
     size_t buckets_capacity;
-    dc_ankerl_bucket_big* buckets;
+    BUCKET* buckets;
     SLOT_VECTOR slots;
 
     ALLOC* alloc;
@@ -141,8 +157,7 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* allo
     ASSUME(capacity > 0);
     ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
 
-    dc_ankerl_bucket_big* buckets =
-        (dc_ankerl_bucket_big*)NS(ALLOC, calloc)(alloc, capacity, sizeof(dc_ankerl_bucket_big));
+    BUCKET* buckets = (BUCKET*)NS(ALLOC, calloc)(alloc, capacity, sizeof(BUCKET));
     ASSERT(buckets);
 
     return (SELF){
@@ -165,10 +180,10 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
-    dc_ankerl_bucket_big* new_buckets = (dc_ankerl_bucket_big*)NS(ALLOC, malloc)(
-        self->alloc, self->buckets_capacity * sizeof(dc_ankerl_bucket_big));
+    BUCKET* new_buckets =
+        (BUCKET*)NS(ALLOC, malloc)(self->alloc, self->buckets_capacity * sizeof(BUCKET));
     ASSERT(new_buckets);
-    memcpy(new_buckets, self->buckets, self->buckets_capacity * sizeof(dc_ankerl_bucket_big));
+    memcpy(new_buckets, self->buckets, self->buckets_capacity * sizeof(BUCKET));
 
     return (SELF){
         .buckets_capacity = self->buckets_capacity,
@@ -191,9 +206,9 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
     {
         dc_ankerl_dfd dfd = dc_ankerl_dfd_new(0);
         for (size_t pos = desired;; pos = (pos + 1) & mask) {
-            dc_ankerl_bucket_big const* b = &self->buckets[pos];
+            BUCKET const* b = &self->buckets[pos];
 
-            if (!dc_ankerl_bucket_big_present(b)) {
+            if (!dc_ankerl_mdata_present(&b->mdata)) {
                 break;
             }
 
@@ -202,12 +217,12 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
             //  - Once dfd reaches dc_ankerl_dfd_max it no longer encodes a strict ordering,
             //    so the usual Robin Hood early-out (b->dfd < dfd) is only valid while dfd
             //    is not saturated. After saturation we must continue probing until EMPTY.
-            if (dfd != dc_ankerl_dfd_max && b->dfd < dfd) {
+            if (dfd != dc_ankerl_dfd_max && b->mdata.dfd < dfd) {
                 break;
             }
 
-            if (b->fingerprint == fp) {
-                const size_t di = dc_ankerl_bucket_get_index(b);
+            if (b->mdata.fingerprint == fp) {
+                const size_t di = NS(INDEX_KIND, get)(&b->index);
                 SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
                 if (KEY_EQ(&slot->key, &key)) {
                     return NULL;
@@ -224,24 +239,30 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
                                             .value = value,
                                         });
 
-    dc_ankerl_bucket_big cur;
-    dc_ankerl_bucket_big_set(&cur, fp, dc_ankerl_dfd_new(0), dense_index);
+    BUCKET cur = {
+        .mdata =
+            {
+                .fingerprint = fp,
+                .dfd = dc_ankerl_dfd_new(0),
+            },
+        .index = NS(INDEX_KIND, new)(dense_index),
+    };
 
     for (size_t pos = desired;; pos = (pos + 1) & mask) {
-        dc_ankerl_bucket_big* b = &self->buckets[pos];
+        BUCKET* b = &self->buckets[pos];
 
-        if (!dc_ankerl_bucket_big_present(b)) {
+        if (!dc_ankerl_mdata_present(&b->mdata)) {
             *b = cur;
             return &NS(SLOT_VECTOR, write)(&self->slots, dense_index)->value;
         }
 
-        if (b->dfd < cur.dfd) {
-            dc_ankerl_bucket_big tmp = *b;
+        if (b->mdata.dfd < cur.mdata.dfd) {
+            BUCKET tmp = *b;
             *b = cur;
             cur = tmp;
         }
 
-        cur.dfd = dc_ankerl_dfd_increment(cur.dfd);
+        cur.mdata.dfd = dc_ankerl_dfd_increment(cur.mdata.dfd);
     }
 }
 
@@ -249,8 +270,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
     ASSUME(DC_MATH_IS_POWER_OF_2(new_capacity));
 
-    dc_ankerl_bucket_big* new_buckets =
-        (dc_ankerl_bucket_big*)NS(ALLOC, calloc)(self->alloc, new_capacity, sizeof(dc_ankerl_bucket_big));
+    BUCKET* new_buckets = (BUCKET*)NS(ALLOC, calloc)(self->alloc, new_capacity, sizeof(BUCKET));
     ASSERT(new_buckets);
 
     const size_t new_mask = new_capacity - 1;
@@ -263,24 +283,28 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
         const uint8_t fp = dc_ankerl_fingerprint_from_hash(hash);
         const size_t desired = hash & new_mask;
 
-        dc_ankerl_bucket_big cur;
-        dc_ankerl_bucket_big_set(&cur, fp, dc_ankerl_dfd_new(0), dense_index);
+        BUCKET cur = {.mdata =
+                          {
+                              .fingerprint = fp,
+                              .dfd = dc_ankerl_dfd_new(0),
+                          },
+                      .index = NS(INDEX_KIND, new)(dense_index)};
 
         for (size_t pos = desired;; pos = (pos + 1) & new_mask) {
-            dc_ankerl_bucket_big* b = &new_buckets[pos];
+            BUCKET* b = &new_buckets[pos];
 
-            if (!dc_ankerl_bucket_big_present(b)) {
+            if (!dc_ankerl_mdata_present(&b->mdata)) {
                 *b = cur;
                 break;
             }
 
-            if (b->dfd < cur.dfd) {
-                dc_ankerl_bucket_big tmp = *b;
+            if (b->mdata.dfd < cur.mdata.dfd) {
+                BUCKET tmp = *b;
                 *b = cur;
                 cur = tmp;
             }
 
-            cur.dfd = dc_ankerl_dfd_increment(cur.dfd);
+            cur.mdata.dfd = dc_ankerl_dfd_increment(cur.mdata.dfd);
         }
     }
 
@@ -332,19 +356,19 @@ static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* key, size_t* o
 
     dc_ankerl_dfd dfd = dc_ankerl_dfd_new(0);
     for (size_t pos = desired;; pos = (pos + 1) & mask) {
-        dc_ankerl_bucket_big const* b = &self->buckets[pos];
+        BUCKET const* b = &self->buckets[pos];
 
-        if (!dc_ankerl_bucket_big_present(b)) {
+        if (!dc_ankerl_mdata_present(&b->mdata)) {
             return false;
         }
 
         // NOTE: capped/saturating dfd: early-out only valid while dfd not saturated.
-        if (dfd != dc_ankerl_dfd_max && b->dfd < dfd) {
+        if (dfd != dc_ankerl_dfd_max && b->mdata.dfd < dfd) {
             return false;
         }
 
-        if (b->fingerprint == fp) {
-            const size_t di = dc_ankerl_bucket_get_index(b);
+        if (b->mdata.fingerprint == fp) {
+            const size_t di = NS(INDEX_KIND, get)(&b->index);
             SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
             if (KEY_EQ(&slot->key, key)) {
                 *out_bucket_pos = pos;
@@ -415,16 +439,16 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 
         for (;;) {
             const size_t next = (hole + 1) & mask;
-            dc_ankerl_bucket_big* nb = &self->buckets[next];
+            BUCKET* nb = &self->buckets[next];
 
-            if (!dc_ankerl_bucket_big_present(nb) || nb->dfd == dc_ankerl_dfd_new(0)) {
-                self->buckets[hole].dfd = dc_ankerl_dfd_none;
+            if (!dc_ankerl_mdata_present(&nb->mdata) || nb->mdata.dfd == dc_ankerl_dfd_new(0)) {
+                self->buckets[hole].mdata.dfd = dc_ankerl_dfd_none;
                 break;
             }
 
             self->buckets[hole] = *nb;
-            self->buckets[hole].dfd =
-                dc_ankerl_dfd_decrement_for_backshift(self->buckets[hole].dfd);
+            self->buckets[hole].mdata.dfd =
+                dc_ankerl_dfd_decrement_for_backshift(self->buckets[hole].mdata.dfd);
             hole = next;
         }
     }
@@ -447,19 +471,19 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 
             dc_ankerl_dfd dfd = dc_ankerl_dfd_new(0);
             for (size_t pos = desired;; pos = (pos + 1) & mask) {
-                dc_ankerl_bucket_big* b = &self->buckets[pos];
+                BUCKET* b = &self->buckets[pos];
 
-                ASSERT(dc_ankerl_bucket_big_present(b));
+                ASSERT(dc_ankerl_mdata_present(&b->mdata));
 
-                if (dfd != dc_ankerl_dfd_max && b->dfd < dfd) {
+                if (dfd != dc_ankerl_dfd_max && b->mdata.dfd < dfd) {
                     ASSERT(false);
                 }
 
-                if (b->fingerprint == moved_fp) {
-                    const size_t di = dc_ankerl_bucket_get_index(b);
+                if (b->mdata.fingerprint == moved_fp) {
+                    const size_t di = NS(INDEX_KIND, get)(&b->index);
                     SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
                     if (KEY_EQ(&slot->key, &dst->key)) {
-                        dc_ankerl_bucket_big_set_index(b, removed_dense_index);
+                        b->index = NS(INDEX_KIND, new)(removed_dense_index);
                         break;
                     }
                 }
@@ -612,7 +636,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef KEY_HASH
 #undef KEY
 
-TRAIT_MAP(SELF);
+DC_TRAIT_MAP(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

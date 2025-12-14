@@ -4,7 +4,7 @@
 #include <derive-c/core/require.h>
 #include <derive-c/core/std/reflect.h>
 
-#define TRAIT_CLONEABLE(SELF) REQUIRE_METHOD(SELF, SELF, clone, (SELF const*));
+#define DC_TRAIT_CLONEABLE(SELF) DC_REQUIRE_METHOD(SELF, SELF, clone, (SELF const*));
 
 #define COPY_CLONE(SELF) (*(SELF))
 

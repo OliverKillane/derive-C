@@ -112,14 +112,14 @@ typedef struct {
     //    half the largest index.
     size_t block_current_exclusive_end;
     uint8_t block_current;
-    SLOT* blocks[MAX_NUM_BLOCKS(INDEX_BITS, INITIAL_BLOCK_INDEX_BITS)];
+    SLOT* blocks[DC_ARENA_GEO_MAX_NUM_BLOCKS(INDEX_BITS, INITIAL_BLOCK_INDEX_BITS)];
 } SELF;
 
 static void PRIV(NS(SELF, set_memory_tracking))(SELF const* self) {
     for (uint8_t block_index = 0; block_index <= self->block_current; block_index++) {
         size_t block_items = block_index == self->block_current
                                  ? self->block_current_exclusive_end
-                                 : BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
+                                 : DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
         for (size_t offset = 0; offset < block_items; offset++) {
             SLOT* slot = &self->blocks[block_index][offset];
             if (slot->present) {
@@ -130,7 +130,7 @@ static void PRIV(NS(SELF, set_memory_tracking))(SELF const* self) {
         }
     }
 
-    size_t tail_slots = BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS) -
+    size_t tail_slots = DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS) -
                         (self->block_current_exclusive_end - 1);
     memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
                        &self->blocks[self->block_current][self->block_current_exclusive_end],
@@ -139,13 +139,13 @@ static void PRIV(NS(SELF, set_memory_tracking))(SELF const* self) {
 
 #define INVARIANT_CHECK(self)                                                                      \
     ASSUME(self);                                                                                  \
-    ASSUME(BLOCK_TO_SIZE((self)->block_current, INITIAL_BLOCK_INDEX_BITS) >=                       \
+    ASSUME(DC_ARENA_GEO_BLOCK_TO_SIZE((self)->block_current, INITIAL_BLOCK_INDEX_BITS) >=                       \
            (self)->block_current_exclusive_end);                                                   \
     ASSUME((self)->count <= MAX_INDEX);
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     uint8_t initial_block = 0;
-    size_t initial_block_items = BLOCK_TO_SIZE(initial_block, INITIAL_BLOCK_INDEX_BITS);
+    size_t initial_block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(initial_block, INITIAL_BLOCK_INDEX_BITS);
     SLOT* initial_block_slots = (SLOT*)NS(ALLOC, malloc)(alloc, initial_block_items * sizeof(SLOT));
     ASSERT(initial_block_slots);
 
@@ -176,8 +176,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
 
-        uint8_t block = INDEX_TO_BLOCK(free_index, INITIAL_BLOCK_INDEX_BITS);
-        size_t offset = INDEX_TO_OFFSET(free_index, block, INITIAL_BLOCK_INDEX_BITS);
+        uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(free_index, INITIAL_BLOCK_INDEX_BITS);
+        size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(free_index, block, INITIAL_BLOCK_INDEX_BITS);
         SLOT* free_slot = &self->blocks[block][offset];
 
         ASSUME(!free_slot->present, "The free list should only contain free slots");
@@ -191,11 +191,11 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     }
 
     if (self->block_current_exclusive_end ==
-        BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS)) {
+        DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS)) {
         ASSUME(self->block_current < sizeof(self->blocks) / sizeof(SLOT*));
 
         self->block_current++;
-        size_t block_items = BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS);
+        size_t block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS);
         SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
         ASSERT(block_slots);
 
@@ -206,7 +206,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     size_t offset = self->block_current_exclusive_end;
     NS(SLOT, fill)(&self->blocks[self->block_current][offset], value);
     INDEX_TYPE new_index =
-        (INDEX_TYPE)(BLOCK_OFFSET_TO_INDEX(self->block_current, offset, INITIAL_BLOCK_INDEX_BITS));
+        (INDEX_TYPE)(DC_ARENA_GEO_BLOCK_OFFSET_TO_INDEX(self->block_current, offset, INITIAL_BLOCK_INDEX_BITS));
 
     self->block_current_exclusive_end++;
     self->count++;
@@ -219,12 +219,12 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     INVARIANT_CHECK(self);
 
-    uint8_t block = INDEX_TO_BLOCK(index.index, INITIAL_BLOCK_INDEX_BITS);
+    uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(index.index, INITIAL_BLOCK_INDEX_BITS);
     if (block > self->block_current) {
         return NULL;
     }
 
-    size_t offset = INDEX_TO_OFFSET(index.index, block, INITIAL_BLOCK_INDEX_BITS);
+    size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(index.index, block, INITIAL_BLOCK_INDEX_BITS);
 
     if (block == self->block_current && offset >= self->block_current_exclusive_end) {
         return NULL;
@@ -272,7 +272,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     };
 
     for (size_t block_index = 0; block_index <= self->block_current; block_index++) {
-        size_t block_items = BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
+        size_t block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
         SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
         ASSERT(block_slots);
         new_self.blocks[block_index] = block_slots;
@@ -303,12 +303,12 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
-    uint8_t block = INDEX_TO_BLOCK(index.index, INITIAL_BLOCK_INDEX_BITS);
+    uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(index.index, INITIAL_BLOCK_INDEX_BITS);
     if (block > self->block_current) {
         return false;
     }
 
-    size_t offset = INDEX_TO_OFFSET(index.index, block, INITIAL_BLOCK_INDEX_BITS);
+    size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(index.index, block, INITIAL_BLOCK_INDEX_BITS);
 
     if (block == self->block_current && offset >= self->block_current_exclusive_end) {
         return false;
@@ -341,7 +341,7 @@ static void NS(SELF, delete)(SELF* self) {
     for (uint8_t block = 0; block <= self->block_current; block++) {
         size_t const to_offset = block == self->block_current
                                      ? self->block_current_exclusive_end
-                                     : BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS);
+                                     : DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS);
 
         for (size_t offset = 0; offset < to_offset; offset++) {
             SLOT* slot = &self->blocks[block][offset];
@@ -351,7 +351,7 @@ static void NS(SELF, delete)(SELF* self) {
         }
 
         memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
-                           self->blocks[block], BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS));
+                           self->blocks[block], DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS));
         NS(ALLOC, free)(self->alloc, self->blocks[block]);
     }
 }
@@ -385,8 +385,8 @@ static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     mutation_version_check(&iter->version);
 
     while (iter->next_index < MAX_INDEX) {
-        uint8_t block = INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
-        size_t offset = INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
+        uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
+        size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
 
         if ((block == iter->arena->block_current &&
              offset >= iter->arena->block_current_exclusive_end) ||
@@ -441,7 +441,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
         debug_fmt_print(fmt, stream, "{\n");
         fmt = debug_fmt_scope_begin(fmt);
 
-        size_t const capacity = BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS);
+        size_t const capacity = DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS);
         size_t const to_offset =
             block == self->block_current ? self->block_current_exclusive_end : capacity;
 
@@ -517,8 +517,8 @@ static IV_PAIR NS(ITER, next)(ITER* iter) {
     mutation_version_check(&iter->version);
 
     while (iter->next_index < MAX_INDEX) {
-        uint8_t block = INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
-        size_t offset = INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
+        uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
+        size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
 
         if ((block == iter->arena->block_current &&
              offset >= iter->arena->block_current_exclusive_end) ||
@@ -567,7 +567,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef VALUE
 #undef INDEX_BITS
 
-TRAIT_ARENA(SELF);
+DC_TRAIT_ARENA(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

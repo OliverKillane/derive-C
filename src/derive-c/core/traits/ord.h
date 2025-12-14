@@ -5,9 +5,9 @@
 #include <derive-c/core/namespace.h>
 #include <derive-c/core/std/reflect.h>
 
-#define TRAIT_ORDABLE(SELF)                                                                        \
-    REQUIRE_METHOD(bool, SELF, lt, (SELF const*, SELF const*));                                    \
-    REQUIRE_METHOD(bool, SELF, gt, (SELF const*, SELF const*));
+#define DC_TRAIT_ORDABLE(SELF)                                                                        \
+    DC_REQUIRE_METHOD(bool, SELF, lt, (SELF const*, SELF const*));                                    \
+    DC_REQUIRE_METHOD(bool, SELF, gt, (SELF const*, SELF const*));
 
 #define _DERIVE_ORD_MEMBER_GT(MEMBER_TYPE, MEMBER_NAME)                                            \
     || NS(MEMBER_TYPE, gt)(&self_1->MEMBER_NAME, &self_2->MEMBER_NAME)

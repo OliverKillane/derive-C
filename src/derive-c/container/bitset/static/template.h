@@ -36,7 +36,7 @@ static INDEX_TYPE NS(SELF, max_index)() { return EXCLUSIVE_END_INDEX - 1; }
 static INDEX_TYPE NS(SELF, min_index)() { return 0; }
 
 typedef struct {
-    uint8_t bits[CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX)];
+    uint8_t bits[DC_BITSET_STATIC_CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX)];
     gdb_marker derive_c_bitset_static;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
@@ -59,9 +59,9 @@ static bool NS(SELF, try_set)(SELF* self, INDEX_TYPE index, bool value) {
         return false;
     }
 
-    INDEX_TYPE byte = INDEX_TO_BYTES(index);
-    INDEX_TYPE offset = INDEX_TO_OFFSET(index);
-    uint8_t mask = OFFSET_TO_MASK(offset);
+    INDEX_TYPE byte = DC_BITSET_STATIC_INDEX_TO_BYTES(index);
+    INDEX_TYPE offset = DC_BITSET_STATIC_INDEX_TO_OFFSET(index);
+    uint8_t mask = DC_BITSET_STATIC_OFFSET_TO_MASK(offset);
 
     if (value) {
         self->bits[byte] = self->bits[byte] | mask;
@@ -81,9 +81,9 @@ static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
 
     ASSERT(index < EXCLUSIVE_END_INDEX);
 
-    INDEX_TYPE byte = INDEX_TO_BYTES(index);
-    INDEX_TYPE offset = INDEX_TO_OFFSET(index);
-    uint8_t mask = OFFSET_TO_MASK(offset);
+    INDEX_TYPE byte = DC_BITSET_STATIC_INDEX_TO_BYTES(index);
+    INDEX_TYPE offset = DC_BITSET_STATIC_INDEX_TO_OFFSET(index);
+    uint8_t mask = DC_BITSET_STATIC_OFFSET_TO_MASK(offset);
     return (self->bits[byte] & mask) != 0;
 }
 
@@ -96,7 +96,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     for (INDEX_TYPE index = 0; index < EXCLUSIVE_END_INDEX; index++) {
         if (NS(SELF, get)(self, index)) {
             debug_fmt_print(fmt, stream, "(byte: %lu, offset: %lu, index: %lu)",
-                            (size_t)INDEX_TO_BYTES(index), (size_t)INDEX_TO_OFFSET(index),
+                            (size_t)DC_BITSET_STATIC_INDEX_TO_BYTES(index), (size_t)DC_BITSET_STATIC_INDEX_TO_OFFSET(index),
                             (size_t)index);
         }
     }
@@ -120,7 +120,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 static INDEX_TYPE NS(SELF, size)(SELF const* self) {
     INDEX_TYPE size = 0;
 
-    for (INDEX_TYPE byte = 0; byte < (INDEX_TYPE)CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX); byte++) {
+    for (INDEX_TYPE byte = 0; byte < (INDEX_TYPE)DC_BITSET_STATIC_CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX); byte++) {
         size += __builtin_popcount((unsigned int)self->bits[byte]);
     }
 
@@ -227,7 +227,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef INDICES_CAPACITY
 #undef EXCLUSIVE_END_INDEX
 
-TRAIT_BITSET(SELF);
+DC_TRAIT_BITSET(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/includes/undef.h>

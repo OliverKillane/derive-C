@@ -13,8 +13,6 @@
 
 #include <derive-c/core/debug/memory_tracker.h>
 
-namespace containers::arena {
-
 using ModelIndex = size_t;
 
 // JUSTIFY: Sequential Index Generator
@@ -92,6 +90,7 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
     }
 
     void CheckFailedAccess(const Model& m, const Wrapper& w) const {
+        (void)m;
         Wrapper wMut = w;
         // Default-construct an index (strong-int typically provides a .index field).
         // Increment the underlying representation until we find an index not present in the map.
@@ -240,5 +239,3 @@ template <typename SutNS> struct Remove : Command<SutNS> {
         os << "Remove(" << (mIndex.has_value() ? std::to_string(mIndex.value()) : "none") << ")";
     }
 };
-
-} // namespace containers::arena

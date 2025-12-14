@@ -4,7 +4,7 @@
 #include <derive-c/core/require.h>
 #include <derive-c/core/std/reflect.h>
 
-#define TRAIT_DELETABLE(SELF) REQUIRE_METHOD(void, SELF, delete, (SELF*));
+#define DC_TRAIT_DELETABLE(SELF) DC_REQUIRE_METHOD(void, SELF, delete, (SELF*));
 
 #define NO_DELETE(SELF) (void)(SELF)
 

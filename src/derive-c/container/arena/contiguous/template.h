@@ -478,7 +478,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 
 #undef INDEX_BITS
 
-TRAIT_ARENA(SELF);
+DC_TRAIT_ARENA(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

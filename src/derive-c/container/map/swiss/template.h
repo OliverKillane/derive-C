@@ -502,7 +502,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     KV_PAIR_CONST item;
 
     for (KV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
-        item = NS(ITER_CONST, next)(&iter)) {
+         item = NS(ITER_CONST, next)(&iter)) {
         debug_fmt_print(fmt, stream, "{\n");
         fmt = debug_fmt_scope_begin(fmt);
 
@@ -595,7 +595,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef KEY_HASH
 #undef KEY
 
-TRAIT_MAP(SELF);
+DC_TRAIT_MAP(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

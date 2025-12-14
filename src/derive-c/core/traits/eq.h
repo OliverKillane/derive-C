@@ -6,7 +6,7 @@
 #include <derive-c/core/require.h>
 #include <derive-c/core/std/reflect.h>
 
-#define TRAIT_EQABLE(SELF) REQUIRE_METHOD(bool, SELF, eq, (SELF const*, SELF const*));
+#define DC_TRAIT_EQABLE(SELF) DC_REQUIRE_METHOD(bool, SELF, eq, (SELF const*, SELF const*));
 
 #define MEM_EQ(SELF_1, SELF_2) (*(SELF_1) == *(SELF_2))
 

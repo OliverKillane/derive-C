@@ -93,7 +93,7 @@ typedef struct {
 
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     ASSERT(capacity > 0);
-    size_t const real_capacity = apply_capacity_policy(capacity);
+    size_t const real_capacity = dc_apply_capacity_policy(capacity);
     ASSERT(real_capacity > 0);
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
@@ -122,7 +122,7 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
 }
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
-    return NS(SELF, new_with_capacity_for)(INITIAL_CAPACITY, alloc);
+    return NS(SELF, new_with_capacity_for)(DC_INITIAL_CAPACITY, alloc);
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
@@ -224,7 +224,7 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     INVARIANT_CHECK(self);
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    size_t const target_capacity = apply_capacity_policy(expected_items);
+    size_t const target_capacity = dc_apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
         SELF new_map = NS(SELF, new_with_capacity_for)(expected_items, self->alloc);
         for (size_t index = 0; index < self->capacity; index++) {
@@ -245,7 +245,7 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    if (apply_capacity_policy(self->items) > self->capacity / 2) {
+    if (dc_apply_capacity_policy(self->items) > self->capacity / 2) {
         NS(SELF, extend_capacity_for)(self, self->items * 2);
     }
 
@@ -572,7 +572,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 #undef KEY_HASH
 #undef KEY
 
-TRAIT_MAP(SELF);
+DC_TRAIT_MAP(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

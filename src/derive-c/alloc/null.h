@@ -44,4 +44,4 @@ static void NS(nullalloc, debug)(nullalloc const* self, debug_fmt fmt, FILE* str
     fprintf(stream, "nullalloc@%p { }", self);
 }
 
-TRAIT_ALLOC(nullalloc);
+DC_TRAIT_ALLOC(nullalloc);

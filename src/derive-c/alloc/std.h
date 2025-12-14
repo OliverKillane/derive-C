@@ -45,4 +45,4 @@ static void NS(stdalloc, debug)(stdalloc const* self, debug_fmt fmt, FILE* strea
     fprintf(stream, "stdalloc@%p { }", self);
 }
 
-TRAIT_ALLOC(stdalloc);
+DC_TRAIT_ALLOC(stdalloc);

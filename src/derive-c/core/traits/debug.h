@@ -14,8 +14,8 @@
 #include <derive-c/core/require.h>
 #include <derive-c/core/std/reflect.h>
 
-#define TRAIT_DEBUGABLE(SELF)                                                                      \
-    REQUIRE_METHOD(void, SELF, debug, (SELF const*, debug_fmt fmt, FILE*));
+#define DC_TRAIT_DEBUGABLE(SELF)                                                                      \
+    DC_REQUIRE_METHOD(void, SELF, debug, (SELF const*, debug_fmt fmt, FILE*));
 
 #define NO_DEBUG PRIV(no_debug)
 

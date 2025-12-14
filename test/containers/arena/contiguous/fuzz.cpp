@@ -5,11 +5,11 @@
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>
 
+#include "../macros.hpp"
 #include "../commands.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
-
 #include <derive-c/container/arena/contiguous/includes.h>
 
 struct SutSmall {
@@ -22,23 +22,7 @@ struct SutSmall {
     static size_t max_size() { return Sut_max_entries; }
 };
 
-inline bool operator==(const SutSmall::Sut_index_t& a, const SutSmall::Sut_index_t& b) {
-    return a.index == b.index;
-}
-inline bool operator==(const SutSmall::Sut_iv& a, const SutSmall::Sut_iv& b) {
-    return a.index == b.index && *a.value == *b.value;
-}
-inline bool operator==(const SutSmall::Sut_iv_const& a, const SutSmall::Sut_iv_const& b) {
-    return a.index == b.index && *a.value == *b.value;
-}
-
-namespace std {
-template <> struct hash<SutSmall::Sut_index_t> {
-    std::size_t operator()(const SutSmall::Sut_index_t& s) const noexcept {
-        return std::hash<uint8_t>{}(s.index);
-    }
-};
-} // namespace std
+INDEX_ITEMS_EQ_HASH(SutSmall);
 
 struct SutMedium {
 #define EXPAND_IN_STRUCT
@@ -50,25 +34,9 @@ struct SutMedium {
     static size_t max_size() { return Sut_max_entries; }
 };
 
-inline bool operator==(const SutMedium::Sut_index_t& a, const SutMedium::Sut_index_t& b) {
-    return a.index == b.index;
-}
-inline bool operator==(const SutMedium::Sut_iv& a, const SutMedium::Sut_iv& b) {
-    return a.index == b.index && *a.value == *b.value;
-}
-inline bool operator==(const SutMedium::Sut_iv_const& a, const SutMedium::Sut_iv_const& b) {
-    return a.index == b.index && *a.value == *b.value;
-}
+INDEX_ITEMS_EQ_HASH(SutMedium);
 
-namespace std {
-template <> struct hash<SutMedium::Sut_index_t> {
-    std::size_t operator()(const SutMedium::Sut_index_t& s) const noexcept {
-        return std::hash<uint16_t>{}(s.index);
-    }
-};
-} // namespace std
-
-namespace containers::arena::contiguous {
+namespace {
 
 RC_GTEST_PROP(ContiguousArena, FuzzSmall, ()) {
     SutWrapper<SutSmall> sutWrapper(SutSmall::Sut_new_with_capacity_for(1, stdalloc_get()));
@@ -88,4 +56,4 @@ RC_GTEST_PROP(ContiguousArena, FuzzMedium, ()) {
                                                        Write<SutMedium>, Remove<SutMedium>>());
 }
 
-} // namespace containers::arena::contiguous
+} // namespace

@@ -155,7 +155,7 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
     #undef ENTRIES_VECTOR
 #endif
 
-TRAIT_ALLOC(SELF);
+DC_TRAIT_ALLOC(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/alloc/undef.h>

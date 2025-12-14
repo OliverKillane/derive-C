@@ -1,4 +1,5 @@
 #pragma once
+#include <derive-c/core/math.h>
 
 #define DC_ARENA_CHUNKED_INDEX_TO_BLOCK(INDEX, BLOCK_INDEX_BITS) ((INDEX) >> (BLOCK_INDEX_BITS))
 

@@ -365,7 +365,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 
 #undef CAPACITY
 
-TRAIT_MAP(SELF);
+DC_TRAIT_MAP(SELF);
 
 #include <derive-c/core/self/undef.h>
 #include <derive-c/core/includes/undef.h>

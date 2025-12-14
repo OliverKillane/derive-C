@@ -4,12 +4,21 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <derive-c/core/math.h>
 #include <derive-c/core/attributes.h>
 #include <derive-c/core/panic.h>
 
 // JUSTIFY: Macro rather than function
 // - So this can be used in static asserts
 #define DC_MATH_IS_POWER_OF_2(x) ((x) != 0 && ((x) & ((x) - 1)) == 0)
+
+#define DC_MATH_MSB_INDEX(x)                                                                               \
+    (x == 0 ? 0                                                                                    \
+            : _Generic((x),                                                                        \
+             uint8_t: (7u - __builtin_clz((uint32_t)((x)) << 24)),                                 \
+             uint16_t: (15u - __builtin_clz((uint32_t)((x)) << 16)),                               \
+             uint32_t: (31u - __builtin_clz((uint32_t)(x))),                                       \
+             uint64_t: (63u - __builtin_clzll((uint64_t)(x)))))
 
 static INLINE CONST size_t dc_math_next_power_of_2(size_t x) {
     if (x == 0)
