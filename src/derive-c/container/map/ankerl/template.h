@@ -620,7 +620,6 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef KV_PAIR
 #undef ITER
 
-
 #undef INVARIANT_CHECK
 #undef BUCKET
 #undef BUCKET_SIZE
