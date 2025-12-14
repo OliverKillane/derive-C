@@ -70,6 +70,7 @@ option(OPT_REPORTS "Create Clang Optimisation Reports" Off)
 option(TESTS "Build tests" ON)
 option(BENCH "Build benchmarks" ON)
 option(DOCS "Build documentation" ON)
+option(LINTING "Enable linting & formatting" ON)
 
 add_subdirectory(src)
 add_subdirectory(examples)
@@ -86,9 +87,6 @@ endif()
 if(DOCS)
    add_subdirectory(docs)
 endif()
-
-# Linting
-option(LINTING "Enable linting & formatting" ON)
 
 if(LINTING)
     # JUSTIFY: No formatting for cmake
