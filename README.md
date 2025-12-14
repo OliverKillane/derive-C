@@ -1,5 +1,7 @@
 # Derive C
-## Elevator Pitch
+
+_Easy templated data strctures in C_
+
 When using C for complex projects, the lack of generics is frustrating:
  - tradeoff performance and store runtime type information (e.g. size of items in a vector)
  - tradeoff usability and restrict sizes of types, use unions (e.g. vector of only 8 byte items, user must cast to their own type, debuggers unaware of _real_ type)
@@ -16,7 +18,7 @@ See examples in [./examples](./examples/)
 
 ## Use
 In a `CMakeLists.txt`
-```
+```cmake
 include(FetchContent)
 
 FetchContent_Declare(
@@ -25,6 +27,14 @@ FetchContent_Declare(
     GIT_TAG <Chosen derive-c version>
 )
 FetchContent_MakeAvailable(derive-c)
+
+target_compile_definitions(${my_target} PRIVATE
+    # Enable free function mocking for tests
+    ENABLE_MOCKING  
+
+    # To override the default behaviour for `DC_PANIC`, `DC_ASSERT
+    DC_PANIC_HEADER=<my-special-library/foo/derive_c_panic_overrides.h> 
+)
 ```
 
 ## Develop
@@ -61,83 +71,9 @@ infer explore
 ### TODO
 In development, remaining tasks:
  - Fix remaining infer-detected casting issues
- - Finish gdb pretty printers
- - Increase coverage for hashmap
+ - Increase coverage
  - Regression benchmarks
  - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
 
-To be added in this PR
-
-hashmap plan:
- - use separate arenas for backing storage and the map
- - use staticbumpalloc
- - use small indices (8 bit)
- - switch to linear map below threshold
-
-```
-container
-    vector 
-        static  // current staticvec
-        dynamic // normal vector
-    map
-        linear     // linear search map
-        decomposed // current hashmap
-        ankerl     // new ankerl hashmap
-        btree      // btreemap
-    queue
-        circular // current: circular buffer
-        deque    // current: double ended queue
-    arena
-        basic // current implementation
-        blocks
-        generational
-utils
-    option // current option
-    result 
-    string
-        short
-        intern
-    ptr
-        count
-        observe // notified 
-        span
-    closure
-        dynamic
-        small
-algorithms
-    sort
-        mergesort
-    search
-        binarysearch
-    hash
-        murmur
-        integer
-allocs
-    std
-    staticbump
-    test
-    alloc
-test
-    mock
-```
-
 ## References
 - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)
-
-TODO later / evening fun:
-2. linear map
-3. ankerl hashmap
-5. namespacing DC
-6. comparative benchmarks
-
-
-TODO:
-undef / def pattern for utils
-check templates used in a template are included in the includes
-maybe work out a better way for nested templates? PREVIOUS_SELF?
-all constainers, alloc must implement a trait
-all header functions static
-
-unify queue interfaces
-
-
