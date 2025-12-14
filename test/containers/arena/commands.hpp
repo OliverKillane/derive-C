@@ -229,8 +229,8 @@ template <typename SutNS> struct Remove : Command<SutNS> {
 
         typename SutNS::Sut_value_t const* entry_ptr = SutNS::Sut_read(w.getConst(), sut_index);
         typename SutNS::Sut_value_t entry = SutNS::Sut_remove(w.get(), sut_index);
-        memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, entry_ptr,
-                             sizeof(typename SutNS::Sut_value_t));
+        dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                                entry_ptr, sizeof(typename SutNS::Sut_value_t));
 
         RC_ASSERT(entry == m.mValues.at(mIndex.value()));
     }

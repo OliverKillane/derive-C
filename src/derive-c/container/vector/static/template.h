@@ -28,19 +28,19 @@ static void ITEM_DELETE(item_t* self);
     #define ITEM_CLONE item_clone
 static item_t ITEM_CLONE(item_t const* self);
     #define ITEM_DEBUG item_debug
-static void ITEM_DEBUG(ITEM const* self, debug_fmt fmt, FILE* stream);
+static void ITEM_DEBUG(ITEM const* self, dc_debug_fmt fmt, FILE* stream);
 #endif
 
 #if !defined ITEM_DELETE
-    #define ITEM_DELETE NO_DELETE
+    #define ITEM_DELETE DC_NO_DELETE
 #endif
 
 #if !defined ITEM_CLONE
-    #define ITEM_CLONE COPY_CLONE
+    #define ITEM_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined ITEM_DEBUG
-    #define ITEM_DEBUG DEFAULT_DEBUG
+    #define ITEM_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #if !defined INPLACE_CAPACITY
@@ -66,18 +66,18 @@ typedef ITEM NS(SELF, item_t);
 typedef struct {
     INDEX_TYPE size;
     ITEM data[INPLACE_CAPACITY];
-    gdb_marker derive_c_staticvec;
+    dc_gdb_marker derive_c_staticvec;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME((self->size) <= INPLACE_CAPACITY);
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME((self->size) <= INPLACE_CAPACITY);
 
 static SELF NS(SELF, new)() {
     SELF self = {
         .size = 0,
-        .derive_c_staticvec = gdb_marker_new(),
+        .derive_c_staticvec = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
     return self;
@@ -98,7 +98,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
 static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
-    if (LIKELY(index < self->size)) {
+    if (DC_LIKELY(index < self->size)) {
         return &self->data[index];
     }
     return NULL;
@@ -106,13 +106,13 @@ static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index) {
 
 static ITEM const* NS(SELF, read)(SELF const* self, INDEX_TYPE index) {
     ITEM const* value = NS(SELF, try_read)(self, index);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
 static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
-    if (LIKELY(index < self->size)) {
+    if (DC_LIKELY(index < self->size)) {
         return &self->data[index];
     }
     return NULL;
@@ -120,7 +120,7 @@ static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
 
 static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
     ITEM* value = NS(SELF, try_write)(self, index);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -139,8 +139,8 @@ static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
 static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
                                      INDEX_TYPE count) {
     INVARIANT_CHECK(self);
-    ASSUME(items);
-    ASSERT(at <= self->size);
+    DC_ASSUME(items);
+    DC_ASSERT(at <= self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (self->size + count > INPLACE_CAPACITY) {
@@ -159,7 +159,7 @@ static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* item
 
 static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
     INVARIANT_CHECK(self);
-    ASSERT(at + count <= self->size);
+    DC_ASSERT(at + count <= self->size);
 
     if (count == 0) {
         return;
@@ -175,14 +175,14 @@ static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
 
 static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     ITEM* slot = NS(SELF, try_push)(self, item);
-    ASSERT(slot);
+    DC_ASSERT(slot);
     return slot;
 }
 
 static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    if (LIKELY(self->size > 0)) {
+    if (DC_LIKELY(self->size > 0)) {
         self->size--;
         *destination = self->data[self->size];
         return true;
@@ -192,7 +192,7 @@ static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
 
 static ITEM NS(SELF, pop)(SELF* self) {
     ITEM entry;
-    ASSERT(NS(SELF, try_pop)(self, &entry));
+    DC_ASSERT(NS(SELF, try_pop)(self, &entry));
     return entry;
 }
 
@@ -220,7 +220,7 @@ typedef struct {
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->pos < iter->vec->size) {
         ITEM* item = &iter->vec->data[iter->pos];
@@ -231,19 +231,19 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 }
 
 static INDEX_TYPE NS(ITER, position)(ITER const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     return (ITER){.vec = self,
                   .pos = 0,
                   .version = mutation_tracker_get(&self->iterator_invalidation_tracker)};
@@ -263,7 +263,7 @@ typedef struct {
 } ITER_CONST;
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->pos < iter->vec->size) {
         ITEM const* item = &iter->vec->data[iter->pos];
@@ -274,19 +274,19 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static INDEX_TYPE NS(ITER_CONST, position)(ITER_CONST const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     return (ITER_CONST){
         .vec = self,
         .pos = 0,
@@ -294,25 +294,25 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "capacity: %lu,\n", (size_t)INPLACE_CAPACITY);
-    debug_fmt_print(fmt, stream, "size: %lu,\n", (size_t)self->size);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", (size_t)INPLACE_CAPACITY);
+    dc_debug_fmt_print(fmt, stream, "size: %lu,\n", (size_t)self->size);
 
-    debug_fmt_print(fmt, stream, "items: @%p [\n", self->data);
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "items: @%p [\n", self->data);
+    fmt = dc_debug_fmt_scope_begin(fmt);
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
     ITEM const* item;
     while ((item = NS(ITER_CONST, next)(&iter))) {
-        debug_fmt_print_indents(fmt, stream);
+        dc_debug_fmt_print_indents(fmt, stream);
         ITEM_DEBUG(item, fmt, stream);
         fprintf(stream, ",\n");
     }
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}\n");
 }
 
 #undef ITER_CONST

@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <derive-cpp/test/rapidcheck_panic.hpp>
+
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -21,7 +21,7 @@ template <typename Int> struct SutSmall {
 #include <derive-c/container/vector/static/template.h>
 };
 
-namespace containers::vector::staticcapacity {
+namespace {
 
 namespace {
 template <typename SutNS> void TestVector(SutWrapper<SutNS> sutWrapper) {
@@ -44,4 +44,4 @@ RC_GTEST_PROP(DequeueSmallCase2, Fuzz, ()) {
     TestVector(SutWrapper<SutNS>(SutNS::Sut_new()));
 }
 
-} // namespace containers::vector::staticcapacity
+} // namespace

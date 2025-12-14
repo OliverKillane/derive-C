@@ -6,8 +6,6 @@
 #include <rapidcheck/state.h>
 #include <vector>
 
-namespace containers::vector {
-
 template <typename SutNS> using SutModel = std::vector<typename SutNS::Sut_item_t>;
 
 template <typename SutNS> struct SutWrapper {
@@ -208,5 +206,3 @@ template <typename SutNS> struct Pop : Command<SutNS> {
     void runCommand(const Model& /*m*/, Wrapper& w) const override { SutNS::Sut_pop(w.get()); }
     void show(std::ostream& os) const override { os << "Pop()"; }
 };
-
-} // namespace containers::vector

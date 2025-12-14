@@ -6,17 +6,17 @@
 
 #define DC_TRAIT_CLONEABLE(SELF) DC_REQUIRE_METHOD(SELF, SELF, clone, (SELF const*));
 
-#define COPY_CLONE(SELF) (*(SELF))
+#define DC_COPY_CLONE(SELF) (*(SELF))
 
-#define _DERIVE_CLONE_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                             \
+#define _DC_DERIVE_CLONE_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                          \
     .MEMBER_NAME = NS(MEMBER_TYPE, clone)(&self->MEMBER_NAME),
 
-#define DERIVE_CLONE(TYPE)                                                                         \
+#define DC_DERIVE_CLONE(TYPE)                                                                      \
     static TYPE NS(TYPE, clone)(TYPE const* self) {                                                \
-        return (TYPE){NS(TYPE, REFLECT)(_DERIVE_CLONE_MEMBER)};                                    \
+        return (TYPE){NS(TYPE, REFLECT)(_DC_DERIVE_CLONE_MEMBER)};                                 \
     }
 
-#define _DERIVE_STD_CLONE(TYPE, ...)                                                               \
+#define _DC_DERIVE_STD_CLONE(TYPE, ...)                                                            \
     static TYPE NS(TYPE, clone)(TYPE const* self) { return *self; }
 
-STD_REFLECT(_DERIVE_STD_CLONE)
+DC_STD_REFLECT(_DC_DERIVE_STD_CLONE)

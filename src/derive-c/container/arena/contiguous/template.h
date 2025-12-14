@@ -28,21 +28,21 @@ static void VALUE_DELETE(value_t* self);
     #define VALUE_CLONE value_clone
 static value_t VALUE_CLONE(value_t const* self);
     #define VALUE_DEBUG value_debug
-static void VALUE_DEBUG(VALUE const* self, debug_fmt fmt, FILE* stream);
+static void VALUE_DEBUG(VALUE const* self, dc_debug_fmt fmt, FILE* stream);
 #endif
 
-STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
+DC_STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NO_DELETE
+    #define VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE COPY_CLONE
+    #define VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG DEFAULT_DEBUG
+    #define VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #include <derive-c/core/index/bits_to_type/def.h>
@@ -83,22 +83,22 @@ typedef struct {
     size_t count;
 
     ALLOC* alloc;
-    gdb_marker derive_c_arena_basic;
+    dc_gdb_marker derive_c_arena_basic;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME((self)->count <= (self)->capacity);                                                     \
-    ASSUME((self)->exclusive_end >= (self)->count);                                                \
-    ASSUME((self)->count <= MAX_INDEX);
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME((self)->count <= (self)->capacity);                                                  \
+    DC_ASSUME((self)->exclusive_end >= (self)->count);                                             \
+    DC_ASSUME((self)->count <= MAX_INDEX);
 
 static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
-    ASSERT(items > 0);
+    DC_ASSERT(items > 0);
     size_t capacity = dc_math_next_power_of_2(items);
-    ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
+    DC_ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(alloc, capacity, sizeof(SLOT));
-    ASSERT(slots);
+    DC_ASSERT(slots);
 
     for (INDEX_TYPE index = 0; index < capacity; index++) {
         NS(SLOT, memory_tracker_empty)(&slots[index]);
@@ -111,20 +111,20 @@ static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, ALLOC* alloc) {
         .exclusive_end = 0,
         .count = 0,
         .alloc = alloc,
-        .derive_c_arena_basic = gdb_marker_new(),
+        .derive_c_arena_basic = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
 static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     INVARIANT_CHECK(self);
-    ASSERT(self->count < MAX_INDEX);
+    DC_ASSERT(self->count < MAX_INDEX);
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
         SLOT* slot = &self->slots[free_index];
-        ASSUME(!slot->present);
+        DC_ASSUME(!slot->present);
         self->free_list = slot->next_free;
         slot->present = true;
         NS(SLOT, memory_tracker_present)(slot);
@@ -134,11 +134,11 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     }
 
     if (self->exclusive_end == self->capacity) {
-        ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR));
+        DC_ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR));
         self->capacity *= RESIZE_FACTOR;
         SLOT* new_alloc =
             (SLOT*)NS(ALLOC, realloc)(self->alloc, self->slots, self->capacity * sizeof(SLOT));
-        ASSERT(new_alloc);
+        DC_ASSERT(new_alloc);
         self->slots = new_alloc;
 
         for (size_t index = self->exclusive_end; index < self->capacity; index++) {
@@ -170,7 +170,7 @@ static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
 
 static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
     VALUE* value = NS(SELF, try_write)(self, index);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -188,14 +188,14 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
 
 static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
     VALUE const* value = NS(SELF, try_read)(self, index);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     SLOT* slots = (SLOT*)NS(ALLOC, calloc)(self->alloc, self->capacity, sizeof(SLOT));
-    ASSERT(slots);
+    DC_ASSERT(slots);
 
     for (INDEX_TYPE index = 0; index < self->exclusive_end; index++) {
         if (self->slots[index].present) {
@@ -216,7 +216,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .exclusive_end = self->exclusive_end,
         .count = self->count,
         .alloc = self->alloc,
-        .derive_c_arena_basic = gdb_marker_new(),
+        .derive_c_arena_basic = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -264,7 +264,7 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
-    ASSERT(NS(SELF, try_remove)(self, index, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, index, &value));
     return value;
 }
 
@@ -291,7 +291,7 @@ typedef struct {
 } ITER;
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     // JUSTIFY: If no entries are left, then the previous '.._next' call moved
     //          the index to the exclusive end
@@ -300,7 +300,7 @@ static bool NS(ITER, empty)(ITER const* iter) {
 }
 
 static IV_PAIR NS(ITER, next)(ITER* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
     while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end) {
@@ -380,13 +380,13 @@ typedef struct {
 } ITER_CONST;
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
 static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
     while (iter->next_index < INDEX_NONE && iter->next_index < iter->arena->exclusive_end) {
@@ -422,42 +422,42 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
-    debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
-    debug_fmt_print(fmt, stream, "slots: %p,\n", self->slots);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+    dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
+    dc_debug_fmt_print(fmt, stream, "slots: %p,\n", self->slots);
 
-    debug_fmt_print(fmt, stream, "alloc: ");
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "items: [");
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "items: [");
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
     for (IV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
          item = NS(ITER_CONST, next)(&iter)) {
-        debug_fmt_print(fmt, stream, "{\n");
-        fmt = debug_fmt_scope_begin(fmt);
+        dc_debug_fmt_print(fmt, stream, "{\n");
+        fmt = dc_debug_fmt_scope_begin(fmt);
 
-        debug_fmt_print(fmt, stream, "key: ");
+        dc_debug_fmt_print(fmt, stream, "key: ");
         NS(INDEX, debug)(&item.index, fmt, stream);
         fprintf(stream, ",\n");
 
-        debug_fmt_print(fmt, stream, "value: ");
+        dc_debug_fmt_print(fmt, stream, "value: ");
         VALUE_DEBUG(item.value, fmt, stream);
         fprintf(stream, ",\n");
 
-        fmt = debug_fmt_scope_end(fmt);
-        debug_fmt_print(fmt, stream, "},\n");
+        fmt = dc_debug_fmt_scope_end(fmt);
+        dc_debug_fmt_print(fmt, stream, "},\n");
     }
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef ITER_CONST

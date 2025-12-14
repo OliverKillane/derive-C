@@ -21,7 +21,7 @@ static SELF NS(SELF, new)(char const* name, ALLOC* alloc) {
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
-    ASSUME(self);
+    DC_ASSUME(self);
     void* ptr = NS(ALLOC, malloc)(self->base, size);
     if (ptr) {
         printf("%s allocated %zu bytes at %p\n", self->name, size, ptr);
@@ -32,7 +32,7 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 }
 
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
-    ASSUME(self);
+    DC_ASSUME(self);
     void* ptr = NS(ALLOC, calloc)(self->base, count, size);
     if (ptr) {
         printf("%s allocated %zu bytes at %p\n", self->name, count * size, ptr);
@@ -43,7 +43,7 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 }
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-    ASSUME(self);
+    DC_ASSUME(self);
     void* new_ptr = NS(ALLOC, realloc)(self->base, ptr, size);
     if (new_ptr) {
         printf("%s reallocated memory at %p to %zu bytes\n", self->name, new_ptr, size);
@@ -54,18 +54,18 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
-    ASSUME(self);
+    DC_ASSUME(self);
     printf("%s freeing memory at %p\n", self->name, ptr);
     NS(ALLOC, free)(self->base, ptr);
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, STRINGIFY(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "name: %s,\n", self->name);
-    debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->base);
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "name: %s,\n", self->name);
+    dc_debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->base);
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 DC_TRAIT_ALLOC(SELF);

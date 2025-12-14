@@ -1,4 +1,4 @@
-#include <derive-cpp/test/rapidcheck_panic.hpp>
+
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -33,7 +33,7 @@ template <typename Key, typename Value> struct SutIntegers {
 #include <derive-c/container/map/decomposed/template.h>
 };
 
-namespace containers::map::decomposed {
+namespace {
 
 RC_GTEST_PROP(DecomposedTests, Fuzz, ()) {
     using SutNS = SutIntegers<size_t, size_t>;
@@ -46,4 +46,4 @@ RC_GTEST_PROP(DecomposedTests, Fuzz, ()) {
             Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, ExtendCapacity<SutNS>,
             Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
 }
-} // namespace containers::map::decomposed
+} // namespace

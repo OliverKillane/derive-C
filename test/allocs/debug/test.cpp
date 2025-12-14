@@ -1,7 +1,4 @@
-#include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
-
-namespace debugalloc {
 
 extern "C" {
 #include <derive-c/alloc/std.h>
@@ -19,5 +16,3 @@ TEST(DebugAlloc, BasicAllocation) {
     stddebugalloc_free(&alloc, malloced);
     stddebugalloc_free(&alloc, calloced);
 }
-
-} // namespace debugalloc

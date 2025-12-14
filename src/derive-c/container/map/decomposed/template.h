@@ -26,19 +26,19 @@ static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined KEY_EQ
-    #define KEY_EQ MEM_EQ
+    #define KEY_EQ DC_MEM_EQ
 #endif
 
 #if !defined KEY_DELETE
-    #define KEY_DELETE NO_DELETE
+    #define KEY_DELETE DC_NO_DELETE
 #endif
 
 #if !defined KEY_CLONE
-    #define KEY_CLONE COPY_CLONE
+    #define KEY_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined KEY_DEBUG
-    #define KEY_DEBUG DEFAULT_DEBUG
+    #define KEY_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #if !defined VALUE
@@ -52,15 +52,15 @@ typedef struct {
 #endif
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NO_DELETE
+    #define VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE COPY_CLONE
+    #define VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG DEFAULT_DEBUG
+    #define VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef KEY NS(SELF, key_t);
@@ -80,35 +80,35 @@ typedef struct {
     KEY_ENTRY* keys;
     VALUE* values;
     ALLOC* alloc;
-    gdb_marker derive_c_hashmap;
+    dc_gdb_marker derive_c_hashmap;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                               \
-    ASSUME((self)->keys);                                                                          \
-    ASSUME((self)->values);                                                                        \
-    ASSUME((self)->alloc);
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                            \
+    DC_ASSUME((self)->keys);                                                                       \
+    DC_ASSUME((self)->values);                                                                     \
+    DC_ASSUME((self)->alloc);
 
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
-    ASSERT(capacity > 0);
+    DC_ASSERT(capacity > 0);
     size_t const real_capacity = dc_apply_capacity_policy(capacity);
-    ASSERT(real_capacity > 0);
+    DC_ASSERT(real_capacity > 0);
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
     KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
     VALUE* values = (VALUE*)NS(ALLOC, malloc)(alloc, sizeof(VALUE) * real_capacity);
-    ASSERT(keys && values);
+    DC_ASSERT(keys && values);
 
     // JUSTIFY: no access for values & but keys are fine
     // - Keys are calloced/zeroed as we use this for item lookup, therefore it is valid to read
     // them.
     // - Values are only accessed when the corresponding key is present, so we can mark them as
     // deleted.
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, values,
-                       sizeof(VALUE) * real_capacity);
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, values,
+                          sizeof(VALUE) * real_capacity);
 
     return (SELF){
         .capacity = real_capacity,
@@ -116,7 +116,7 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
         .keys = keys,
         .values = values,
         .alloc = alloc,
-        .derive_c_hashmap = gdb_marker_new(),
+        .derive_c_hashmap = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -136,7 +136,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(self->alloc, sizeof(KEY_ENTRY), self->capacity);
     VALUE* values = (VALUE*)NS(ALLOC, malloc)(self->alloc, sizeof(VALUE) * self->capacity);
-    ASSERT(keys && values);
+    DC_ASSERT(keys && values);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -148,8 +148,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
             };
             values[i] = VALUE_CLONE(&self->values[i]);
         } else {
-            memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &values[i],
-                               sizeof(VALUE));
+            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                                  &values[i], sizeof(VALUE));
         }
     }
 
@@ -159,7 +159,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .keys = keys,
         .values = values,
         .alloc = self->alloc,
-        .derive_c_hashmap = gdb_marker_new(),
+        .derive_c_hashmap = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -173,7 +173,7 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
 
     for (;;) {
         KEY_ENTRY* entry = &self->keys[index];
-        ASSUME(distance_from_desired < self->capacity);
+        DC_ASSUME(distance_from_desired < self->capacity);
 
         if (entry->present) {
             if (KEY_EQ(&entry->key, &key)) {
@@ -205,8 +205,8 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
             entry->distance_from_desired = distance_from_desired;
             entry->key = key;
 
-            memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
-                               &self->values[index], sizeof(VALUE));
+            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                                  &self->values[index], sizeof(VALUE));
 
             self->values[index] = value;
 
@@ -254,7 +254,7 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
 
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
-    ASSERT(value_ptr);
+    DC_ASSERT(value_ptr);
     return value_ptr;
 }
 
@@ -278,7 +278,7 @@ static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
 
 static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -302,7 +302,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
 static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -354,8 +354,8 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
                 //             should be false.
 
                 free_entry->present = false;
-                memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
-                                   &self->values[free_index], sizeof(VALUE));
+                dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                                      &self->values[free_index], sizeof(VALUE));
 
                 return true;
             }
@@ -368,7 +368,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 
 static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
-    ASSERT(NS(SELF, try_remove)(self, key, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
@@ -404,7 +404,7 @@ typedef struct {
 } ITER;
 
 static KV_PAIR NS(ITER, next)(ITER* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR){.key = &iter->map->keys[iter->index].key,
@@ -419,13 +419,13 @@ static KV_PAIR NS(ITER, next)(ITER* iter) {
 }
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
         first_index++;
@@ -439,7 +439,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 }
 
 static void NS(SELF, delete)(SELF* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -477,7 +477,7 @@ typedef struct {
 } ITER_CONST;
 
 static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
         iter->curr = (KV_PAIR_CONST){.key = &iter->map->keys[iter->index].key,
@@ -492,13 +492,13 @@ static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
         first_index++;
@@ -511,47 +511,47 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
-    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
-    debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
+    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+    dc_debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
 
-    debug_fmt_print(fmt, stream, "keys: @%p,\n", self->keys);
-    debug_fmt_print(fmt, stream, "values: @%p,\n", self->values);
+    dc_debug_fmt_print(fmt, stream, "keys: @%p,\n", self->keys);
+    dc_debug_fmt_print(fmt, stream, "values: @%p,\n", self->values);
 
-    debug_fmt_print(fmt, stream, "alloc: ");
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "items: [");
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "items: [");
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
     KV_PAIR_CONST item;
 
     for (KV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
          item = NS(ITER_CONST, next)(&iter)) {
-        debug_fmt_print(fmt, stream, "{\n");
-        fmt = debug_fmt_scope_begin(fmt);
+        dc_debug_fmt_print(fmt, stream, "{\n");
+        fmt = dc_debug_fmt_scope_begin(fmt);
 
-        debug_fmt_print(fmt, stream, "key: ");
+        dc_debug_fmt_print(fmt, stream, "key: ");
         KEY_DEBUG(item.key, fmt, stream);
         fprintf(stream, ",\n");
 
-        debug_fmt_print(fmt, stream, "value: ");
+        dc_debug_fmt_print(fmt, stream, "value: ");
         VALUE_DEBUG(item.value, fmt, stream);
         fprintf(stream, ",\n");
 
-        fmt = debug_fmt_scope_end(fmt);
-        debug_fmt_print(fmt, stream, "},\n");
+        fmt = dc_debug_fmt_scope_end(fmt);
+        dc_debug_fmt_print(fmt, stream, "},\n");
     }
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef ITER_CONST

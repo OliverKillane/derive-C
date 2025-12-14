@@ -1,6 +1,6 @@
 #pragma once
 
-#define DERIVE_STRUCT_MEMBER(MEMBER_TYPE, MEMBER_NAME) MEMBER_TYPE MEMBER_NAME;
+#define DC_DERIVE_STRUCT_MEMBER(MEMBER_TYPE, MEMBER_NAME) MEMBER_TYPE MEMBER_NAME;
 
 // Given you have define a reflect for an ID, the struct can be defined.
 // ```c
@@ -8,9 +8,9 @@
 //     F(int, x, __VA_ARGS__)  \
 //     F(int, y, __VA_ARGS__)
 //
-// DERIVE_STRUCT(Foo)
+// DC_DERIVE_STRUCT(Foo)
 // ```
-#define DERIVE_STRUCT(TYPE, ...)                                                                   \
+#define DC_DERIVE_STRUCT(TYPE, ...)                                                                \
     typedef struct {                                                                               \
-        NS(TYPE, REFLECT)(DERIVE_STRUCT_MEMBER)                                                    \
+        NS(TYPE, REFLECT)(DC_DERIVE_STRUCT_MEMBER)                                                 \
     }(TYPE)__VA_ARGS__;

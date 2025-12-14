@@ -20,15 +20,15 @@ void basic_example() {
     int_queue_push_back(&q, 2);
     int_queue_push_back(&q, 3);
 
-    ASSERT(int_queue_size(&q) == 3);
+    DC_ASSERT(int_queue_size(&q) == 3);
 
-    int_queue_debug(&q, debug_fmt_new(), stdout);
+    int_queue_debug(&q, dc_debug_fmt_new(), stdout);
 
-    ASSERT(int_queue_pop_front(&q) == 1);
+    DC_ASSERT(int_queue_pop_front(&q) == 1);
 
-    ASSERT(int_queue_pop_back(&q) == 3);
+    DC_ASSERT(int_queue_pop_back(&q) == 3);
 
-    int_queue_debug(&q, debug_fmt_new(), stdout);
+    int_queue_debug(&q, dc_debug_fmt_new(), stdout);
 
     int_queue_delete(&q);
 }

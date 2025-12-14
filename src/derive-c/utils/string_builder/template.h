@@ -24,11 +24,11 @@ typedef struct {
 static size_t const NS(SELF, additional_alloc_size) = 32;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME((self)->alloc);                                                                         \
-    ASSUME(WHEN((self)->buf, (self)->stream && (self)->capacity > 0));                             \
-    ASSUME(WHEN((self)->capacity == 0, !(self)->buf));                                             \
-    ASSUME(WHEN((self)->buf, (self)->size_without_null + 1 <= (self)->capacity));
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME((self)->alloc);                                                                      \
+    DC_ASSUME(DC_WHEN((self)->buf, (self)->stream && (self)->capacity > 0));                       \
+    DC_ASSUME(DC_WHEN((self)->capacity == 0, !(self)->buf));                                       \
+    DC_ASSUME(DC_WHEN((self)->buf, (self)->size_without_null + 1 <= (self)->capacity));
 
 static ssize_t PRIV(NS(SELF, read))(void* capture,
                                     char* buf /*NOLINT(readability-non-const-parameter)*/,
@@ -39,7 +39,7 @@ static ssize_t PRIV(NS(SELF, read))(void* capture,
     (void)buf;
     (void)size;
 
-    PANIC("cookie set in write-only mode, but read was called.");
+    DC_PANIC("cookie set in write-only mode, but read was called.");
 }
 
 static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t size) {
@@ -55,7 +55,7 @@ static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t siz
                 (self->capacity * growth_factor) + size + NS(SELF, additional_alloc_size);
             new_buf = (char*)NS(ALLOC, realloc)(self->alloc, self->buf, new_capacity);
         } else {
-            ASSUME(self->capacity == 0);
+            DC_ASSUME(self->capacity == 0);
             new_capacity = size + 1 + NS(SELF, additional_alloc_size);
             new_buf = (char*)NS(ALLOC, malloc)(self->alloc, new_capacity);
         }
@@ -115,8 +115,8 @@ static FILE* NS(SELF, stream)(SELF* self) {
             .close = PRIV(NS(SELF, close)),
         };
         self->stream = fopencookie(self, "w", io);
-        ASSERT(self->stream != NULL, "Failed to open stream for string builder, with error: %s",
-               strerror(errno));
+        DC_ASSERT(self->stream != NULL, "Failed to open stream for string builder, with error: %s",
+                  strerror(errno));
 
         // JUSTIFY: No buffering
         // - No performance advantage to buffering writes - this already writes to an in memory

@@ -5,8 +5,6 @@
 #include <rapidcheck/state.h>
 #include <unordered_map>
 
-namespace containers::map {
-
 template <typename SutNS>
 using SutModel = std::unordered_map<typename SutNS::Sut_key_t, typename SutNS::Sut_value_t>;
 
@@ -284,5 +282,3 @@ template <typename SutNS> struct ExtendCapacity : Command<SutNS> {
         os << "ExtendCapacity(" << oldCapacity << " -> " << newCapacity << ")";
     }
 };
-
-} // namespace containers::map

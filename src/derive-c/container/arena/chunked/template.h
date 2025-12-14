@@ -20,8 +20,9 @@ TEMPLATE_ERROR("The number of bits used to get the offset within a block must be
     #define BLOCK_INDEX_BITS 8
 #endif
 
-STATIC_ASSERT(INDEX_BITS > BLOCK_INDEX_BITS, "The number of bits for offset within a block must be "
-                                             "less than the number of bits used for an index");
+DC_STATIC_ASSERT(INDEX_BITS > BLOCK_INDEX_BITS,
+                 "The number of bits for offset within a block must be "
+                 "less than the number of bits used for an index");
 
 #if !defined VALUE
     #if !defined PLACEHOLDERS
@@ -36,21 +37,21 @@ static void VALUE_DELETE(value_t* self);
     #define VALUE_CLONE value_clone
 static value_t VALUE_CLONE(value_t const* self);
     #define VALUE_DEBUG value_debug
-static void VALUE_DEBUG(VALUE const*, debug_fmt, FILE* stream);
+static void VALUE_DEBUG(VALUE const*, dc_debug_fmt, FILE* stream);
 #endif
 
-STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
+DC_STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NO_DELETE
+    #define VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE COPY_CLONE
+    #define VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG DEFAULT_DEBUG
+    #define VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #include <derive-c/core/index/bits_to_type/def.h>
@@ -80,29 +81,29 @@ typedef struct {
     INDEX_TYPE block_current_exclusive_end;
 
     ALLOC* alloc;
-    gdb_marker derive_c_arena_basic;
+    dc_gdb_marker derive_c_arena_basic;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME(((self))->count <= MAX_INDEX);                                                          \
-    ASSUME(((self)->block_current_exclusive_end) <=                                                \
-           DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS));                                         \
-    ASSUME(WHEN((self)->free_list == INDEX_NONE,                                                   \
-                (self)->count ==                                                                   \
-                    (DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS) * (self)->block_current +       \
-                     (self)->block_current_exclusive_end)),                                        \
-           "All slots are full if the free list is empty");
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME(((self))->count <= MAX_INDEX);                                                       \
+    DC_ASSUME(((self)->block_current_exclusive_end) <=                                             \
+              DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS));                                      \
+    DC_ASSUME(DC_WHEN((self)->free_list == INDEX_NONE,                                             \
+                      (self)->count ==                                                             \
+                          (DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS) * (self)->block_current + \
+                           (self)->block_current_exclusive_end)),                                  \
+              "All slots are full if the free list is empty");
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     PRIV(NS(SELF, block))* first_block =
         (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))));
-    ASSERT(first_block);
+    DC_ASSERT(first_block);
 
     PRIV(NS(SELF, block))** blocks =
         (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))*));
-    ASSERT(blocks);
+    DC_ASSERT(blocks);
 
     blocks[0] = first_block;
 
@@ -118,7 +119,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         .block_current = 0,
         .block_current_exclusive_end = 0,
         .alloc = alloc,
-        .derive_c_arena_basic = gdb_marker_new(),
+        .derive_c_arena_basic = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -126,7 +127,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    ASSERT(self->count < MAX_INDEX);
+    DC_ASSERT(self->count < MAX_INDEX);
 
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
@@ -135,7 +136,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
         SLOT* slot = &(*self->blocks[block])[offset];
 
-        ASSUME(!slot->present);
+        DC_ASSUME(!slot->present);
         self->free_list = slot->next_free;
         slot->present = true;
         NS(SLOT, memory_tracker_present)(slot);
@@ -151,7 +152,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         self->blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, realloc)(
             self->alloc, (void*)self->blocks,
             (self->block_current + 1) * sizeof(PRIV(NS(SELF, block))*));
-        ASSERT(self->blocks);
+        DC_ASSERT(self->blocks);
 
         PRIV(NS(SELF, block))* new_block =
             (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(self->alloc, sizeof(PRIV(NS(SELF, block))));
@@ -197,7 +198,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
 
 static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
     VALUE const* value = NS(SELF, try_read)(self, index);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -207,7 +208,7 @@ static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
 
 static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
     VALUE* value = NS(SELF, try_write)(self, index);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -243,7 +244,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .block_current = self->block_current,
         .block_current_exclusive_end = self->block_current_exclusive_end,
         .alloc = self->alloc,
-        .derive_c_arena_basic = gdb_marker_new(),
+        .derive_c_arena_basic = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -293,7 +294,7 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
-    ASSERT(NS(SELF, try_remove)(self, index, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, index, &value));
     return value;
 }
 
@@ -326,10 +327,11 @@ typedef struct {
 } ITER;
 
 #define ITER_INVARIANT_CHECK(iter)                                                                 \
-    ASSUME(iter);                                                                                  \
-    ASSUME(WHEN((iter)->next_index != INDEX_NONE,                                                  \
+    DC_ASSUME(iter);                                                                               \
+    DC_ASSUME(                                                                                     \
+        DC_WHEN((iter)->next_index != INDEX_NONE,                                                  \
                 NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
-           "The next index is either valid, or the iterator is empty");
+        "The next index is either valid, or the iterator is empty");
 
 typedef struct {
     INDEX index;
@@ -403,10 +405,11 @@ typedef struct {
 } ITER_CONST;
 
 #define ITER_CONST_INVARIANT_CHECK(iter)                                                           \
-    ASSUME(iter);                                                                                  \
-    ASSUME(WHEN((iter)->next_index != INDEX_NONE,                                                  \
+    DC_ASSUME(iter);                                                                               \
+    DC_ASSUME(                                                                                     \
+        DC_WHEN((iter)->next_index != INDEX_NONE,                                                  \
                 NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
-           "The next index is either valid, or the iterator is empty");
+        "The next index is either valid, or the iterator is empty");
 
 typedef struct {
     INDEX index;
@@ -452,26 +455,26 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
-    debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
+    dc_debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);
 
-    debug_fmt_print(fmt, stream, "alloc: ");
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "current_block: %lu\n", (size_t)self->block_current);
-    debug_fmt_print(fmt, stream, "block_current_exclusive_end: %lu\n",
-                    (size_t)self->block_current_exclusive_end);
-    debug_fmt_print(fmt, stream, "blocks: [");
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "current_block: %lu\n", (size_t)self->block_current);
+    dc_debug_fmt_print(fmt, stream, "block_current_exclusive_end: %lu\n",
+                       (size_t)self->block_current_exclusive_end);
+    dc_debug_fmt_print(fmt, stream, "blocks: [");
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
 
-        debug_fmt_print(fmt, stream, "block[%lu]: @%p [", (size_t)b, self->blocks[b]);
-        fmt = debug_fmt_scope_begin(fmt);
+        dc_debug_fmt_print(fmt, stream, "block[%lu]: @%p [", (size_t)b, self->blocks[b]);
+        fmt = dc_debug_fmt_scope_begin(fmt);
 
         INDEX_TYPE block_entry_exclusive_end = b == self->block_current
                                                    ? self->block_current_exclusive_end
@@ -483,31 +486,31 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
             SLOT* entry = &(*self->blocks[b])[i];
 
             if (entry->present) {
-                debug_fmt_print(
+                dc_debug_fmt_print(
                     fmt, stream, "[index=%lu]{\n",
                     (size_t)DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(b, i, BLOCK_INDEX_BITS));
-                fmt = debug_fmt_scope_begin(fmt);
+                fmt = dc_debug_fmt_scope_begin(fmt);
                 VALUE_DEBUG(&entry->value, fmt, stream);
                 fprintf(stream, ",\n");
-                fmt = debug_fmt_scope_end(fmt);
-                debug_fmt_print(fmt, stream, "},\n");
+                fmt = dc_debug_fmt_scope_end(fmt);
+                dc_debug_fmt_print(fmt, stream, "},\n");
             } else {
-                debug_fmt_print(
+                dc_debug_fmt_print(
                     fmt, stream, "[index=%lu]{ next_free=%lu }\n",
                     (size_t)DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(b, i, BLOCK_INDEX_BITS),
                     (size_t)entry->next_free);
             }
         }
 
-        fmt = debug_fmt_scope_end(fmt);
-        debug_fmt_print(fmt, stream, "],\n");
+        fmt = dc_debug_fmt_scope_end(fmt);
+        dc_debug_fmt_print(fmt, stream, "],\n");
     }
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef ITER_CONST_INVARIANT_CHECK

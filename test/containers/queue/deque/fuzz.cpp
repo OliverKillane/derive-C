@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <derive-cpp/test/rapidcheck_panic.hpp>
+
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -20,7 +20,7 @@ template <typename Int> struct SutSmall {
 #include <derive-c/container/queue/deque/template.h>
 };
 
-namespace containers::queue::dequeue {
+namespace {
 
 namespace {
 template <typename SutNS> void TestDequeue(SutWrapper<SutNS> sutWrapper) {
@@ -43,4 +43,4 @@ RC_GTEST_PROP(DequeueSmallCase2, Fuzz, ()) {
     TestDequeue(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(1, stdalloc_get())));
 }
 
-} // namespace containers::queue::dequeue
+} // namespace

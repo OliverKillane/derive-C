@@ -6,16 +6,17 @@
 
 #define DC_TRAIT_DELETABLE(SELF) DC_REQUIRE_METHOD(void, SELF, delete, (SELF*));
 
-#define NO_DELETE(SELF) (void)(SELF)
+#define DC_NO_DELETE(SELF) (void)(SELF)
 
-#define _DERIVE_DELETE_MEMBER(MEMBER_TYPE, MEMBER_NAME) NS(MEMBER_TYPE, delete)(&self->MEMBER_NAME),
+#define _DC_DERIVE_DELETE_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                         \
+    NS(MEMBER_TYPE, delete)(&self->MEMBER_NAME),
 
-#define DERIVE_DELETE(TYPE)                                                                        \
-    static void NS(TYPE, delete)(TYPE * self) { NS(TYPE, REFLECT)(_DERIVE_DELETE_MEMBER); }
+#define DC_DERIVE_DELETE(TYPE)                                                                     \
+    static void NS(TYPE, delete)(TYPE * self) { NS(TYPE, REFLECT)(_DC_DERIVE_DELETE_MEMBER); }
 
-#define _DERIVE_STD_DELETE(TYPE, ...)                                                              \
+#define _DC_DERIVE_STD_DELETE(TYPE, ...)                                                           \
     static void NS(TYPE, delete)(TYPE * self /* NOLINT(readability-non-const-parameter) */) {      \
         (void)self;                                                                                \
     }
 
-STD_REFLECT(_DERIVE_STD_DELETE)
+DC_STD_REFLECT(_DC_DERIVE_STD_DELETE)

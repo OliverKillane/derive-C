@@ -8,7 +8,7 @@
 /// Reflection on std types
 /// `F(type, print_fmt)`
 // clang-format off
-#define STD_REFLECT(F, ...) \
+#define DC_STD_REFLECT(F, ...) \
     /* character types */ \
     F(char,               "%c"       , __VA_ARGS__) \
     /* floating point types */ \

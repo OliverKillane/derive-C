@@ -6,13 +6,13 @@
 // - In C++ this is not valid, and the type must be at least 1 byte. Hence for compatibility, zero
 //   sized is size 1 in C++
 #ifdef __cplusplus
-    #define ZERO_SIZED(TYPE)                                                                       \
+    #define DC_ZERO_SIZED(TYPE)                                                                    \
         typedef struct {                                                                           \
             char zero_sized_marker[1];                                                             \
         } TYPE;                                                                                    \
         static_assert(sizeof(TYPE) == 1)
 #else
-    #define ZERO_SIZED(TYPE)                                                                       \
+    #define DC_ZERO_SIZED(TYPE)                                                                    \
         typedef struct {                                                                           \
             char zero_sized_marker[0];                                                             \
         } TYPE;                                                                                    \

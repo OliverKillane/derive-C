@@ -9,7 +9,7 @@
 
 // JUSTIFY: Why power of 2?
 // - Has can be done with bitmasking, faster than modulus.
-STATIC_ASSERT(DC_MATH_IS_POWER_OF_2(DC_SWISS_SIMD_PROBE_SIZE));
+DC_STATIC_ASSERT(DC_MATH_IS_POWER_OF_2(DC_SWISS_SIMD_PROBE_SIZE));
 
 // clang-format off
 #define DC_SWISS_VAL_ID_MASK  0b01111111
@@ -33,7 +33,7 @@ static bool dc_swiss_is_present(dc_swiss_ctrl ctrl) {
 }
 
 static uint8_t dc_swiss_ctrl_get_id(dc_swiss_ctrl ctrl) {
-    ASSUME(dc_swiss_is_present(ctrl));
+    DC_ASSUME(dc_swiss_is_present(ctrl));
     return ctrl & DC_SWISS_VAL_ID_MASK;
 }
 
@@ -64,7 +64,7 @@ typedef enum {
 
 static dc_swiss_rehash_action dc_swiss_heuristic_should_extend(size_t tombstones, size_t count,
                                                                size_t capacity) {
-    ASSUME(capacity > 0);
+    DC_ASSUME(capacity > 0);
 
     const size_t max_load = capacity - (capacity / 8);
     if (count >= max_load) {

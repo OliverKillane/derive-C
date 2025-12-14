@@ -37,16 +37,16 @@ static INDEX_TYPE NS(SELF, min_index)() { return 0; }
 
 typedef struct {
     uint8_t bits[DC_BITSET_STATIC_CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX)];
-    gdb_marker derive_c_bitset_static;
+    dc_gdb_marker derive_c_bitset_static;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
-#define INVARIANT_CHECK(self) ASSUME(self);
+#define INVARIANT_CHECK(self) DC_ASSUME(self);
 
 static SELF NS(SELF, new)() {
     return (SELF){
         .bits = {},
-        .derive_c_bitset_static = gdb_marker_new(),
+        .derive_c_bitset_static = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -73,13 +73,13 @@ static bool NS(SELF, try_set)(SELF* self, INDEX_TYPE index, bool value) {
 
 static void NS(SELF, set)(SELF* self, INDEX_TYPE index, bool value) {
     INVARIANT_CHECK(self);
-    ASSERT(NS(SELF, try_set)(self, index, value));
+    DC_ASSERT(NS(SELF, try_set)(self, index, value));
 }
 
 static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
 
-    ASSERT(index < EXCLUSIVE_END_INDEX);
+    DC_ASSERT(index < EXCLUSIVE_END_INDEX);
 
     INDEX_TYPE byte = DC_BITSET_STATIC_INDEX_TO_BYTES(index);
     INDEX_TYPE offset = DC_BITSET_STATIC_INDEX_TO_OFFSET(index);
@@ -87,30 +87,30 @@ static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
     return (self->bits[byte] & mask) != 0;
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
-    debug_fmt_print(fmt, stream, "blocks: [");
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "blocks: [");
+    fmt = dc_debug_fmt_scope_begin(fmt);
     for (INDEX_TYPE index = 0; index < EXCLUSIVE_END_INDEX; index++) {
         if (NS(SELF, get)(self, index)) {
-            debug_fmt_print(fmt, stream, "(byte: %lu, offset: %lu, index: %lu)",
-                            (size_t)DC_BITSET_STATIC_INDEX_TO_BYTES(index), (size_t)DC_BITSET_STATIC_INDEX_TO_OFFSET(index),
-                            (size_t)index);
+            dc_debug_fmt_print(fmt, stream, "(byte: %lu, offset: %lu, index: %lu)",
+                               (size_t)DC_BITSET_STATIC_INDEX_TO_BYTES(index),
+                               (size_t)DC_BITSET_STATIC_INDEX_TO_OFFSET(index), (size_t)index);
         }
     }
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     SELF new_self = (SELF){
-        .derive_c_bitset_static = gdb_marker_new(),
+        .derive_c_bitset_static = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
     memcpy(&new_self.bits, &self->bits, sizeof(self->bits));
@@ -120,7 +120,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
 static INDEX_TYPE NS(SELF, size)(SELF const* self) {
     INDEX_TYPE size = 0;
 
-    for (INDEX_TYPE byte = 0; byte < (INDEX_TYPE)DC_BITSET_STATIC_CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX); byte++) {
+    for (INDEX_TYPE byte = 0;
+         byte < (INDEX_TYPE)DC_BITSET_STATIC_CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX); byte++) {
         size += __builtin_popcount((unsigned int)self->bits[byte]);
     }
 
@@ -142,7 +143,7 @@ static bool NS(ITER_CONST, empty_item)(INDEX_TYPE const* item) {
 }
 
 static INDEX_TYPE NS(ITER_CONST, next)(ITER_CONST* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
     if (iter->next_index == EXCLUSIVE_END_INDEX) {
@@ -186,7 +187,7 @@ typedef INDEX_TYPE NS(ITER, item);
 static bool NS(ITER, empty_item)(INDEX_TYPE const* item) { return *item == EXCLUSIVE_END_INDEX; }
 
 static INDEX_TYPE NS(ITER, next)(ITER* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
     if (iter->next_index == EXCLUSIVE_END_INDEX) {

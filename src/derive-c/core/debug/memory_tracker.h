@@ -43,10 +43,10 @@
 
 /// Capabilities to assign to memory regions
 typedef enum { // NOLINT(performance-enum-size)
-    MEMORY_TRACKER_CAP_NONE,
-    MEMORY_TRACKER_CAP_WRITE,
-    MEMORY_TRACKER_CAP_READ_WRITE,
-} memory_tracker_capability;
+    DC_MEMORY_TRACKER_CAP_NONE,
+    DC_MEMORY_TRACKER_CAP_WRITE,
+    DC_MEMORY_TRACKER_CAP_READ_WRITE,
+} dc_memory_tracker_capability;
 
 // JUSTIFY: Different tracker levels
 //  - So we can disable container, or allocator level tracking when testing/debugging tracking
@@ -56,51 +56,51 @@ typedef enum { // NOLINT(performance-enum-size)
 /// - when testing containers, at the allocator level
 /// - when testing users code, at the container and below level
 typedef enum { // NOLINT(performance-enum-size)
-    MEMORY_TRACKER_LVL_NONE = 0,
-    MEMORY_TRACKER_LVL_ALLOC = 1,
-    MEMORY_TRACKER_LVL_CONTAINER = 2,
-} memory_tracker_level;
+    DC_MEMORY_TRACKER_LVL_NONE = 0,
+    DC_MEMORY_TRACKER_LVL_ALLOC = 1,
+    DC_MEMORY_TRACKER_LVL_CONTAINER = 2,
+} dc_memory_tracker_level;
 
 #if defined CUSTOM_MEMORY_TRACKING
-static const memory_tracker_level memory_tracker_global_level =
-    (memory_tracker_level)CUSTOM_MEMORY_TRACKING;
+static const dc_memory_tracker_level memory_tracker_global_level =
+    (dc_memory_tracker_level)CUSTOM_MEMORY_TRACKING;
 #else
 // JUSTIFY: Default as container
 //  - Library users assume correct library implementation, so expect tracking from the container
 //  level
-static const memory_tracker_level memory_tracker_global_level = MEMORY_TRACKER_LVL_CONTAINER;
+static const dc_memory_tracker_level memory_tracker_global_level = DC_MEMORY_TRACKER_LVL_CONTAINER;
 #endif
 
-static void memory_tracker_set(memory_tracker_level level, memory_tracker_capability cap,
-                               const volatile void* addr, size_t size) {
+static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
+                                  const volatile void* addr, size_t size) {
     if (level <= memory_tracker_global_level) {
 #if defined(MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
         switch (cap) {
-        case MEMORY_TRACKER_CAP_NONE:
-        case MEMORY_TRACKER_CAP_WRITE: {
+        case DC_MEMORY_TRACKER_CAP_NONE:
+        case DC_MEMORY_TRACKER_CAP_WRITE: {
             __msan_poison(addr, size);
             return;
         }
-        case MEMORY_TRACKER_CAP_READ_WRITE: {
+        case DC_MEMORY_TRACKER_CAP_READ_WRITE: {
             __msan_unpoison(addr, size);
             return;
         }
         }
-        UNREACHABLE("Invalid capability");
+        DC_UNREACHABLE("Invalid capability");
 #elif defined(ASAN_ON)
         switch (cap) {
-        case MEMORY_TRACKER_CAP_NONE: {
+        case DC_MEMORY_TRACKER_CAP_NONE: {
             __asan_poison_memory_region(addr, size);
             return;
         }
-        case MEMORY_TRACKER_CAP_WRITE:
-        case MEMORY_TRACKER_CAP_READ_WRITE: {
+        case DC_MEMORY_TRACKER_CAP_WRITE:
+        case DC_MEMORY_TRACKER_CAP_READ_WRITE: {
             __asan_unpoison_memory_region(addr, size);
             return;
         }
         }
-        UNREACHABLE("Invalid capability");
+        DC_UNREACHABLE("Invalid capability");
 #else
         (void)addr;
         (void)size;
@@ -109,33 +109,33 @@ static void memory_tracker_set(memory_tracker_level level, memory_tracker_capabi
     }
 }
 
-static void memory_tracker_check(memory_tracker_level level, memory_tracker_capability cap,
-                                 const void* addr, size_t size) {
+static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
+                                    const void* addr, size_t size) {
     if (level <= memory_tracker_global_level) {
 #if defined(MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
         switch (cap) {
-        case MEMORY_TRACKER_CAP_NONE:
-        case MEMORY_TRACKER_CAP_WRITE: {
+        case DC_MEMORY_TRACKER_CAP_NONE:
+        case DC_MEMORY_TRACKER_CAP_WRITE: {
             if (__msan_test_shadow((void*)addr, size) != -1) {
-                PANIC("Memory region %p (%zu bytes) is not uninitialised, but should be", addr,
-                      size);
+                DC_PANIC("Memory region %p (%zu bytes) is not uninitialised, but should be", addr,
+                         size);
             }
             return;
         }
-        case MEMORY_TRACKER_CAP_READ_WRITE: {
+        case DC_MEMORY_TRACKER_CAP_READ_WRITE: {
             if (__msan_test_shadow((void*)addr, size) == -1) {
-                PANIC("Memory region %p (%zu bytes) is not uninitialised, but should be", addr,
-                      size);
+                DC_PANIC("Memory region %p (%zu bytes) is not uninitialised, but should be", addr,
+                         size);
             }
             return;
         }
         }
-        UNREACHABLE("Invalid capability");
+        DC_UNREACHABLE("Invalid capability");
 #elif defined(ASAN_ON)
         bool const region_is_poisoned = __asan_region_is_poisoned((void*)addr, size);
         switch (cap) {
-        case MEMORY_TRACKER_CAP_NONE: {
+        case DC_MEMORY_TRACKER_CAP_NONE: {
             if (!region_is_poisoned) {
                 bool const is_at_end_of_granule = dc_math_is_aligned_pow2_exp((char*)addr - 7, 3);
                 bool const is_next_byte_poisoned =
@@ -151,22 +151,22 @@ static void memory_tracker_check(memory_tracker_level level, memory_tracker_capa
                 // granule)
                 if (is_at_end_of_granule || is_next_byte_poisoned) {
 
-                    PANIC("Memory region %p (%zu bytes) is not poisoned, but should be", addr,
-                          size);
+                    DC_PANIC("Memory region %p (%zu bytes) is not poisoned, but should be", addr,
+                             size);
                 }
             }
             return;
         }
-        case MEMORY_TRACKER_CAP_WRITE:
-        case MEMORY_TRACKER_CAP_READ_WRITE: {
+        case DC_MEMORY_TRACKER_CAP_WRITE:
+        case DC_MEMORY_TRACKER_CAP_READ_WRITE: {
             if (region_is_poisoned) {
-                PANIC("Memory region %p (%zu bytes) is poisoned, but should be accessible", addr,
-                      size);
+                DC_PANIC("Memory region %p (%zu bytes) is poisoned, but should be accessible", addr,
+                         size);
             }
             return;
         }
         }
-        UNREACHABLE("Invalid capability");
+        DC_UNREACHABLE("Invalid capability");
 #else
         (void)addr;
         (void)size;
@@ -175,7 +175,7 @@ static void memory_tracker_check(memory_tracker_level level, memory_tracker_capa
     }
 }
 
-static void memory_tracker_debug(FILE* stream, const void* addr, size_t size) {
+static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size) {
     fprintf(stream, "memory tracker debug (%zu bytes) at %p ", size, addr);
 #if defined(MSAN_ON)
     fprintf(stream, "[MSAN]: ")

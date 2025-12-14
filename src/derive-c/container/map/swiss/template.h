@@ -29,19 +29,19 @@ static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined KEY_EQ
-    #define KEY_EQ MEM_EQ
+    #define KEY_EQ DC_MEM_EQ
 #endif
 
 #if !defined KEY_DELETE
-    #define KEY_DELETE NO_DELETE
+    #define KEY_DELETE DC_NO_DELETE
 #endif
 
 #if !defined KEY_CLONE
-    #define KEY_CLONE COPY_CLONE
+    #define KEY_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined KEY_DEBUG
-    #define KEY_DEBUG DEFAULT_DEBUG
+    #define KEY_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #if !defined VALUE
@@ -55,15 +55,15 @@ typedef struct {
 #endif
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NO_DELETE
+    #define VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE COPY_CLONE
+    #define VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG DEFAULT_DEBUG
+    #define VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef KEY NS(SELF, key_t);
@@ -86,27 +86,27 @@ typedef struct {
     SLOT* slots;
 
     ALLOC* alloc;
-    gdb_marker derive_c_hashmap;
+    dc_gdb_marker derive_c_hashmap;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                               \
-    ASSUME((self)->slots);                                                                         \
-    ASSUME((self)->ctrl);                                                                          \
-    ASSUME((self)->alloc);                                                                         \
-    ASSUME((self)->count + (self)->tombstones <= (self)->capacity);
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                            \
+    DC_ASSUME((self)->slots);                                                                      \
+    DC_ASSUME((self)->ctrl);                                                                       \
+    DC_ASSUME((self)->alloc);                                                                      \
+    DC_ASSUME((self)->count + (self)->tombstones <= (self)->capacity);
 
 static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* alloc) {
-    ASSUME(capacity > DC_SWISS_SIMD_PROBE_SIZE);
-    ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
+    DC_ASSUME(capacity > DC_SWISS_SIMD_PROBE_SIZE);
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
     size_t ctrl_capacity = capacity + DC_SWISS_SIMD_PROBE_SIZE;
 
     dc_swiss_ctrl* ctrl =
         (dc_swiss_ctrl*)NS(ALLOC, calloc)(alloc, sizeof(dc_swiss_ctrl), ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, malloc)(alloc, sizeof(SLOT) * capacity);
-    ASSERT(ctrl && slots);
+    DC_ASSERT(ctrl && slots);
 
     for (size_t i = 0; i < capacity; i++) {
         ctrl[i] = DC_SWISS_VAL_EMPTY;
@@ -123,13 +123,13 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* allo
         .ctrl = ctrl,
         .slots = slots,
         .alloc = alloc,
-        .derive_c_hashmap = gdb_marker_new(),
+        .derive_c_hashmap = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
 static SELF NS(SELF, new_with_capacity_for)(size_t for_items, ALLOC* alloc) {
-    ASSERT(for_items > 0);
+    DC_ASSERT(for_items > 0);
 
     return PRIV(NS(SELF, new_with_exact_capacity))(dc_swiss_capacity(for_items), alloc);
 }
@@ -146,7 +146,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     dc_swiss_ctrl* ctrl =
         (dc_swiss_ctrl*)NS(ALLOC, malloc)(self->alloc, sizeof(dc_swiss_ctrl) * ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, sizeof(SLOT) * self->capacity);
-    ASSERT(ctrl && slots);
+    DC_ASSERT(ctrl && slots);
 
     memcpy(ctrl, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
 
@@ -164,14 +164,14 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .ctrl = ctrl,
         .slots = slots,
         .alloc = self->alloc,
-        .derive_c_hashmap = gdb_marker_new(),
+        .derive_c_hashmap = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
 static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
-    ASSUME(self->count + self->tombstones < self->capacity);
+    DC_ASSUME(self->count + self->tombstones < self->capacity);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     const size_t mask = self->capacity - 1;
@@ -238,7 +238,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     // NOTE: This code also works for shrinking the hashmap
     //  - we never expect to do this, so are defensive.
     //  - We do expect to rehash with the same capacity (tombstone cleanup)
-    ASSUME(new_capacity >= self->capacity);
+    DC_ASSUME(new_capacity >= self->capacity);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     SELF new_map = PRIV(NS(SELF, new_with_exact_capacity))(new_capacity, self->alloc);
@@ -287,7 +287,7 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
 
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
-    ASSERT(value_ptr);
+    DC_ASSERT(value_ptr);
     return value_ptr;
 }
 
@@ -329,7 +329,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
 static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -340,7 +340,7 @@ static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
 
 static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -398,7 +398,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 
 static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
-    ASSERT(NS(SELF, try_remove)(self, key, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
@@ -482,19 +482,19 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
-    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
-    debug_fmt_print(fmt, stream, "tombstones: %lu,\n", self->tombstones);
-    debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
+    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+    dc_debug_fmt_print(fmt, stream, "tombstones: %lu,\n", self->tombstones);
+    dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
 
-    debug_fmt_print(fmt, stream, "ctrl: @%p[%lu + simd probe size additional %lu],\n", self->ctrl,
-                    self->capacity, DC_SWISS_SIMD_PROBE_SIZE);
-    debug_fmt_print(fmt, stream, "slots: @%p[%lu],\n", self->slots, self->capacity);
+    dc_debug_fmt_print(fmt, stream, "ctrl: @%p[%lu + simd probe size additional %lu],\n",
+                       self->ctrl, self->capacity, DC_SWISS_SIMD_PROBE_SIZE);
+    dc_debug_fmt_print(fmt, stream, "slots: @%p[%lu],\n", self->slots, self->capacity);
 
-    debug_fmt_print(fmt, stream, "alloc: ");
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
@@ -503,23 +503,23 @@ static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
 
     for (KV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
          item = NS(ITER_CONST, next)(&iter)) {
-        debug_fmt_print(fmt, stream, "{\n");
-        fmt = debug_fmt_scope_begin(fmt);
+        dc_debug_fmt_print(fmt, stream, "{\n");
+        fmt = dc_debug_fmt_scope_begin(fmt);
 
-        debug_fmt_print(fmt, stream, "key: ");
+        dc_debug_fmt_print(fmt, stream, "key: ");
         KEY_DEBUG(item.key, fmt, stream);
         fprintf(stream, ",\n");
 
-        debug_fmt_print(fmt, stream, "value: ");
+        dc_debug_fmt_print(fmt, stream, "value: ");
         VALUE_DEBUG(item.value, fmt, stream);
         fprintf(stream, ",\n");
 
-        fmt = debug_fmt_scope_end(fmt);
-        debug_fmt_print(fmt, stream, "},\n");
+        fmt = dc_debug_fmt_scope_end(fmt);
+        dc_debug_fmt_print(fmt, stream, "},\n");
     }
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef KV_PAIR_CONST

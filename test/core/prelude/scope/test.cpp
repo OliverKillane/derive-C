@@ -1,6 +1,6 @@
 #include "derive-c/core/scope.h"
 #include "gmock/gmock.h"
-#include <derive-cpp/test/gtest_panic.hpp>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -49,23 +49,23 @@ TEST_F(ScopeTest, DeleterOrder) {
     InSequence s;
 
     {
-        SCOPED(foo) f = foo_new(0);
+        DC_SCOPED(foo) f = foo_new(0);
         EXPECT_CALL(*this, foo_on_delete_mock(FooMatch(0)));
     }
 
     {
-        SCOPED(foo) f = foo_new(1);
-        SCOPED(foo) ff = foo_new(2);
+        DC_SCOPED(foo) f = foo_new(1);
+        DC_SCOPED(foo) ff = foo_new(2);
 
         EXPECT_CALL(*this, foo_on_delete_mock(FooMatch(2)));
         EXPECT_CALL(*this, foo_on_delete_mock(FooMatch(1)));
     }
 
     {
-        SCOPED(foo) f = foo_new(1);
+        DC_SCOPED(foo) f = foo_new(1);
 
         {
-            SCOPED(foo) ff = foo_new(2);
+            DC_SCOPED(foo) ff = foo_new(2);
             EXPECT_CALL(*this, foo_on_delete_mock(FooMatch(2)));
         }
 
@@ -77,14 +77,14 @@ TEST_F(ScopeTest, DeferredCall) {
     InSequence s;
 
     {
-        DEFER(some_fcn);
+        DC_DEFER(some_fcn);
 
         EXPECT_CALL(*this, on_some_fcn_mock());
     }
 
     {
-        DEFER(some_fcn);
-        DEFER(some_fcn);
+        DC_DEFER(some_fcn);
+        DC_DEFER(some_fcn);
 
         EXPECT_CALL(*this, on_some_fcn_mock());
         EXPECT_CALL(*this, on_some_fcn_mock());

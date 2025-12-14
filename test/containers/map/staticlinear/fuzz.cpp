@@ -1,4 +1,4 @@
-#include <derive-cpp/test/rapidcheck_panic.hpp>
+
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -32,7 +32,7 @@ struct SutMedium {
 #include <derive-c/container/map/staticlinear/template.h>
 };
 
-namespace containers::map::staticlinear {
+namespace {
 
 template <typename SutNS> struct InsertIfCapacity : Insert<SutNS> {
     using Base = Insert<SutNS>;
@@ -70,4 +70,4 @@ RC_GTEST_PROP(StaticLinearMediumTests, Fuzz, ()) {
                                           Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>,
                                           DuplicateInsert<SutNS>>());
 }
-} // namespace containers::map::staticlinear
+} // namespace

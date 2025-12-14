@@ -1,4 +1,4 @@
-#include <derive-cpp/test/gtest_panic.hpp>
+
 #include <gtest/gtest.h>
 
 extern "C" {
@@ -79,7 +79,7 @@ TEST(BitsetStaticUtils, IterEmpty) {
 
     Sut_set(&bitset, 0, true);
 
-    Sut_debug(&bitset, debug_fmt_new(), stdout);
+    Sut_debug(&bitset, dc_debug_fmt_new(), stdout);
 
     FOR(Sut, &bitset, iter, item) {
         // std::cout << static_cast<size_t>(item) << "\n";

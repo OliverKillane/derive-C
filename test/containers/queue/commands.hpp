@@ -5,8 +5,6 @@
 #include <rapidcheck/state.h>
 #include <deque>
 
-namespace containers::queue {
-
 template <typename SutNS> using SutModel = std::deque<typename SutNS::Sut_item_t>;
 
 template <typename SutNS> struct SutWrapper {
@@ -143,5 +141,3 @@ template <typename SutNS> struct PopBack : Command<SutNS> {
     void runCommand(const Model& /*m*/, Wrapper& w) const override { SutNS::Sut_pop_back(w.get()); }
     void show(std::ostream& os) const override { os << "PopBack()"; }
 };
-
-} // namespace containers::queue

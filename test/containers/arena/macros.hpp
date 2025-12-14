@@ -1,6 +1,6 @@
 #pragma once
 
-#define INDEX_ITEMS_EQ_HASH(SUT)                                                                        \
+#define INDEX_ITEMS_EQ_HASH(SUT)                                                                   \
     inline bool operator==(const SUT::Sut_index_t& a, const SUT::Sut_index_t& b) {                 \
         return a.index == b.index;                                                                 \
     }                                                                                              \

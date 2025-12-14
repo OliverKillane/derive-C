@@ -19,19 +19,19 @@ typedef struct {
 #endif
 
 #if !defined OK_DELETE
-    #define OK_DELETE NO_DELETE
+    #define OK_DELETE DC_NO_DELETE
 #endif
 
 #if !defined OK_EQ
-    #define OK_EQ MEM_EQ
+    #define OK_EQ DC_MEM_EQ
 #endif
 
 #if !defined OK_CLONE
-    #define OK_CLONE COPY_CLONE
+    #define OK_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined OK_DEBUG
-    #define OK_DEBUG DEFAULT_DEBUG
+    #define OK_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #if !defined ERROR
@@ -45,23 +45,23 @@ typedef struct {
 #endif
 
 #if !defined ERROR_THROW
-    #define ERROR_THROW(_) PANIC("Unexpected error in " EXPAND_STRING(SELF))
+    #define ERROR_THROW(_) DC_PANIC("Unexpected error in " EXPAND_STRING(SELF))
 #endif
 
 #if !defined ERROR_DELETE
-    #define ERROR_DELETE NO_DELETE
+    #define ERROR_DELETE DC_NO_DELETE
 #endif
 
 #if !defined ERROR_EQ
-    #define ERROR_EQ MEM_EQ
+    #define ERROR_EQ DC_MEM_EQ
 #endif
 
 #if !defined ERROR_CLONE
-    #define ERROR_CLONE COPY_CLONE
+    #define ERROR_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined ERROR_DEBUG
-    #define ERROR_DEBUG DEFAULT_DEBUG
+    #define ERROR_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef struct {
@@ -115,20 +115,20 @@ static ERROR const* NS(SELF, get_error)(SELF const* self) {
     return NULL;
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
+    fmt = dc_debug_fmt_scope_begin(fmt);
     if (self->success) {
-        debug_fmt_print(fmt, stream, "ok: ");
+        dc_debug_fmt_print(fmt, stream, "ok: ");
         OK_DEBUG(&self->result.ok, fmt, stream);
         fprintf(stream, ",\n");
     } else {
-        debug_fmt_print(fmt, stream, "error: ");
+        dc_debug_fmt_print(fmt, stream, "error: ");
         ERROR_DEBUG(&self->result.error, fmt, stream);
         fprintf(stream, ",\n");
     }
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 static void NS(SELF, delete)(SELF* self) {

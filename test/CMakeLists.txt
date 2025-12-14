@@ -96,7 +96,10 @@ foreach(TEST_FILE IN LISTS TEST_CPP_FILES)
     OUTPUT_NAME "${TEST_TARGET}"
   )
 
-  target_compile_definitions(${TEST_TARGET} PRIVATE ENABLE_MOCKING)
+  target_compile_definitions(${TEST_TARGET} PRIVATE
+    ENABLE_MOCKING
+    DC_PANIC_HEADER=<derive-cpp/test/gtest_panic.hpp>
+  )
 
   target_link_libraries(${TEST_TARGET}
     PRIVATE
@@ -132,7 +135,10 @@ foreach(FUZZ_FILE IN LISTS FUZZ_CPP_FILES)
     OUTPUT_NAME "${FUZZ_TARGET}"
   )
 
-  target_compile_definitions(${FUZZ_TARGET} PRIVATE ENABLE_MOCKING)
+  target_compile_definitions(${FUZZ_TARGET} PRIVATE 
+    ENABLE_MOCKING
+    DC_PANIC_HEADER=<derive-cpp/test/rapidcheck_panic.hpp>
+  )
 
   target_link_libraries(${FUZZ_TARGET}
     PRIVATE

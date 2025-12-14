@@ -54,21 +54,21 @@ static void VALUE_DELETE(value_t* self);
     #define VALUE_CLONE value_clone
 static value_t VALUE_CLONE(value_t const* self);
     #define VALUE_DEBUG value_debug
-static void VALUE_DEBUG(VALUE const* self, debug_fmt fmt, FILE* stream);
+static void VALUE_DEBUG(VALUE const* self, dc_debug_fmt fmt, FILE* stream);
 #endif
 
-STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
+DC_STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NO_DELETE
+    #define VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE COPY_CLONE
+    #define VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG DEFAULT_DEBUG
+    #define VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #include <derive-c/core/index/bits_to_type/def.h>
@@ -78,9 +78,10 @@ STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
     #define INITIAL_BLOCK_INDEX_BITS 8
 #endif
 
-STATIC_ASSERT(INITIAL_BLOCK_INDEX_BITS < INDEX_BITS,
-              "INITIAL_BLOCK_INDEX_BITS must be less than INDEX_BITS");
-STATIC_ASSERT(INITIAL_BLOCK_INDEX_BITS > 0, "INITIAL_BLOCK_INDEX_BITS must be greater than zero");
+DC_STATIC_ASSERT(INITIAL_BLOCK_INDEX_BITS < INDEX_BITS,
+                 "INITIAL_BLOCK_INDEX_BITS must be less than INDEX_BITS");
+DC_STATIC_ASSERT(INITIAL_BLOCK_INDEX_BITS > 0,
+                 "INITIAL_BLOCK_INDEX_BITS must be greater than zero");
 
 static const size_t NS(SELF, max_entries) = MAX_INDEX;
 
@@ -104,7 +105,7 @@ typedef struct {
     size_t count;
 
     ALLOC* alloc;
-    gdb_marker derive_c_arena_blocks;
+    dc_gdb_marker derive_c_arena_blocks;
     mutation_tracker iterator_invalidation_tracker;
 
     // JUSTIFY: Using index type for the block exclusive end
@@ -117,9 +118,10 @@ typedef struct {
 
 static void PRIV(NS(SELF, set_memory_tracking))(SELF const* self) {
     for (uint8_t block_index = 0; block_index <= self->block_current; block_index++) {
-        size_t block_items = block_index == self->block_current
-                                 ? self->block_current_exclusive_end
-                                 : DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
+        size_t block_items =
+            block_index == self->block_current
+                ? self->block_current_exclusive_end
+                : DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
         for (size_t offset = 0; offset < block_items; offset++) {
             SLOT* slot = &self->blocks[block_index][offset];
             if (slot->present) {
@@ -132,28 +134,29 @@ static void PRIV(NS(SELF, set_memory_tracking))(SELF const* self) {
 
     size_t tail_slots = DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS) -
                         (self->block_current_exclusive_end - 1);
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
-                       &self->blocks[self->block_current][self->block_current_exclusive_end],
-                       tail_slots * sizeof(SLOT));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                          &self->blocks[self->block_current][self->block_current_exclusive_end],
+                          tail_slots * sizeof(SLOT));
 }
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME(DC_ARENA_GEO_BLOCK_TO_SIZE((self)->block_current, INITIAL_BLOCK_INDEX_BITS) >=                       \
-           (self)->block_current_exclusive_end);                                                   \
-    ASSUME((self)->count <= MAX_INDEX);
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME(DC_ARENA_GEO_BLOCK_TO_SIZE((self)->block_current, INITIAL_BLOCK_INDEX_BITS) >=       \
+              (self)->block_current_exclusive_end);                                                \
+    DC_ASSUME((self)->count <= MAX_INDEX);
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     uint8_t initial_block = 0;
-    size_t initial_block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(initial_block, INITIAL_BLOCK_INDEX_BITS);
+    size_t initial_block_items =
+        DC_ARENA_GEO_BLOCK_TO_SIZE(initial_block, INITIAL_BLOCK_INDEX_BITS);
     SLOT* initial_block_slots = (SLOT*)NS(ALLOC, malloc)(alloc, initial_block_items * sizeof(SLOT));
-    ASSERT(initial_block_slots);
+    DC_ASSERT(initial_block_slots);
 
     SELF self = {
         .free_list = INDEX_NONE,
         .count = 0,
         .alloc = alloc,
-        .derive_c_arena_blocks = gdb_marker_new(),
+        .derive_c_arena_blocks = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
         .block_current_exclusive_end = 0,
         .block_current = initial_block,
@@ -169,7 +172,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 
 static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     INVARIANT_CHECK(self);
-    ASSERT(self->count < MAX_INDEX);
+    DC_ASSERT(self->count < MAX_INDEX);
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -180,7 +183,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(free_index, block, INITIAL_BLOCK_INDEX_BITS);
         SLOT* free_slot = &self->blocks[block][offset];
 
-        ASSUME(!free_slot->present, "The free list should only contain free slots");
+        DC_ASSUME(!free_slot->present, "The free list should only contain free slots");
         self->free_list = free_slot->next_free;
 
         free_slot->present = true;
@@ -192,12 +195,13 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
     if (self->block_current_exclusive_end ==
         DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS)) {
-        ASSUME(self->block_current < sizeof(self->blocks) / sizeof(SLOT*));
+        DC_ASSUME(self->block_current < sizeof(self->blocks) / sizeof(SLOT*));
 
         self->block_current++;
-        size_t block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS);
+        size_t block_items =
+            DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS);
         SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
-        ASSERT(block_slots);
+        DC_ASSERT(block_slots);
 
         self->blocks[self->block_current] = block_slots;
         self->block_current_exclusive_end = 0;
@@ -205,8 +209,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
     size_t offset = self->block_current_exclusive_end;
     NS(SLOT, fill)(&self->blocks[self->block_current][offset], value);
-    INDEX_TYPE new_index =
-        (INDEX_TYPE)(DC_ARENA_GEO_BLOCK_OFFSET_TO_INDEX(self->block_current, offset, INITIAL_BLOCK_INDEX_BITS));
+    INDEX_TYPE new_index = (INDEX_TYPE)(DC_ARENA_GEO_BLOCK_OFFSET_TO_INDEX(
+        self->block_current, offset, INITIAL_BLOCK_INDEX_BITS));
 
     self->block_current_exclusive_end++;
     self->count++;
@@ -240,7 +244,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
 
 static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
     VALUE const* value = NS(SELF, try_read)(self, index);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -264,7 +268,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .free_list = self->free_list,
         .count = self->count,
         .alloc = self->alloc,
-        .derive_c_arena_blocks = gdb_marker_new(),
+        .derive_c_arena_blocks = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
         .block_current_exclusive_end = self->block_current_exclusive_end,
         .block_current = self->block_current,
@@ -274,7 +278,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     for (size_t block_index = 0; block_index <= self->block_current; block_index++) {
         size_t block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
         SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
-        ASSERT(block_slots);
+        DC_ASSERT(block_slots);
         new_self.blocks[block_index] = block_slots;
 
         size_t const to_offset =
@@ -331,7 +335,7 @@ static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
-    ASSERT(NS(SELF, try_remove)(self, index, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, index, &value));
     return value;
 }
 
@@ -350,8 +354,9 @@ static void NS(SELF, delete)(SELF* self) {
             }
         }
 
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
-                           self->blocks[block], DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS));
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                              self->blocks[block],
+                              DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS));
         NS(ALLOC, free)(self->alloc, self->blocks[block]);
     }
 }
@@ -381,12 +386,13 @@ typedef struct {
 } ITER_CONST;
 
 static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
     while (iter->next_index < MAX_INDEX) {
         uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
-        size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
+        size_t offset =
+            DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
 
         if ((block == iter->arena->block_current &&
              offset >= iter->arena->block_current_exclusive_end) ||
@@ -420,69 +426,69 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
 
     if (self->free_list == INDEX_NONE) {
-        debug_fmt_print(fmt, stream, "free_list: INDEX_NONE,\n");
+        dc_debug_fmt_print(fmt, stream, "free_list: INDEX_NONE,\n");
     } else {
-        debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);
+        dc_debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);
     }
 
-    debug_fmt_print(fmt, stream, "alloc: ");
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "blocks: [");
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "blocks: [");
+    fmt = dc_debug_fmt_scope_begin(fmt);
     for (size_t block = 0; block <= self->block_current; block++) {
-        debug_fmt_print(fmt, stream, "{\n");
-        fmt = debug_fmt_scope_begin(fmt);
+        dc_debug_fmt_print(fmt, stream, "{\n");
+        fmt = dc_debug_fmt_scope_begin(fmt);
 
         size_t const capacity = DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS);
         size_t const to_offset =
             block == self->block_current ? self->block_current_exclusive_end : capacity;
 
-        debug_fmt_print(fmt, stream, "block_index: %lu,\n", block);
-        debug_fmt_print(fmt, stream, "block_ptr: %p,\n", self->blocks[block]);
-        debug_fmt_print(fmt, stream, "capacity: %lu,\n", capacity);
-        debug_fmt_print(fmt, stream, "size: %lu,\n", to_offset);
-        debug_fmt_print(fmt, stream, "slots: [\n");
-        fmt = debug_fmt_scope_begin(fmt);
+        dc_debug_fmt_print(fmt, stream, "block_index: %lu,\n", block);
+        dc_debug_fmt_print(fmt, stream, "block_ptr: %p,\n", self->blocks[block]);
+        dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", capacity);
+        dc_debug_fmt_print(fmt, stream, "size: %lu,\n", to_offset);
+        dc_debug_fmt_print(fmt, stream, "slots: [\n");
+        fmt = dc_debug_fmt_scope_begin(fmt);
 
         for (size_t offset = 0; offset < to_offset; offset++) {
             SLOT* slot = &self->blocks[block][offset];
-            debug_fmt_print(fmt, stream, "{\n");
-            fmt = debug_fmt_scope_begin(fmt);
+            dc_debug_fmt_print(fmt, stream, "{\n");
+            fmt = dc_debug_fmt_scope_begin(fmt);
 
-            debug_fmt_print(fmt, stream, "present: %s,\n", slot->present ? "true" : "false");
+            dc_debug_fmt_print(fmt, stream, "present: %s,\n", slot->present ? "true" : "false");
             if (slot->present) {
-                debug_fmt_print(fmt, stream, "value: ");
+                dc_debug_fmt_print(fmt, stream, "value: ");
                 VALUE_DEBUG(&slot->value, fmt, stream);
                 fprintf(stream, ",\n");
             } else {
-                debug_fmt_print(fmt, stream, "next_free: %lu,\n", (size_t)slot->next_free);
+                dc_debug_fmt_print(fmt, stream, "next_free: %lu,\n", (size_t)slot->next_free);
             }
 
-            fmt = debug_fmt_scope_end(fmt);
-            debug_fmt_print(fmt, stream, "},\n");
+            fmt = dc_debug_fmt_scope_end(fmt);
+            dc_debug_fmt_print(fmt, stream, "},\n");
         }
 
-        fmt = debug_fmt_scope_end(fmt);
-        debug_fmt_print(fmt, stream, "],\n");
+        fmt = dc_debug_fmt_scope_end(fmt);
+        dc_debug_fmt_print(fmt, stream, "],\n");
 
         /* Close the block's scope and print its closing brace */
-        fmt = debug_fmt_scope_end(fmt);
-        debug_fmt_print(fmt, stream, "},\n");
+        fmt = dc_debug_fmt_scope_end(fmt);
+        dc_debug_fmt_print(fmt, stream, "},\n");
     }
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef ITER_CONST
@@ -513,12 +519,13 @@ typedef struct {
 } ITER;
 
 static IV_PAIR NS(ITER, next)(ITER* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
     while (iter->next_index < MAX_INDEX) {
         uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
-        size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
+        size_t offset =
+            DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
 
         if ((block == iter->arena->block_current &&
              offset >= iter->arena->block_current_exclusive_end) ||

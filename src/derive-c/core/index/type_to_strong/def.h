@@ -10,7 +10,7 @@ static bool NS(INDEX, eq)(INDEX const* idx_1, INDEX const* idx_2) {
     return idx_1->index == idx_2->index;
 }
 
-static void NS(INDEX, debug)(INDEX const* idx, debug_fmt fmt, FILE* stream) {
+static void NS(INDEX, debug)(INDEX const* idx, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, EXPAND_STRING(INDEX) " { %lu }", (size_t)idx->index);
 }

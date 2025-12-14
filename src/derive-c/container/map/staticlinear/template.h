@@ -23,19 +23,19 @@ typedef int KEY;
 #endif
 
 #if !defined KEY_EQ
-    #define KEY_EQ MEM_EQ
+    #define KEY_EQ DC_MEM_EQ
 #endif
 
 #if !defined KEY_DELETE
-    #define KEY_DELETE NO_DELETE
+    #define KEY_DELETE DC_NO_DELETE
 #endif
 
 #if !defined KEY_CLONE
-    #define KEY_CLONE COPY_CLONE
+    #define KEY_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined KEY_DEBUG
-    #define KEY_DEBUG DEFAULT_DEBUG
+    #define KEY_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #if !defined VALUE
@@ -49,15 +49,15 @@ typedef struct {
 #endif
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NO_DELETE
+    #define VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE COPY_CLONE
+    #define VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG DEFAULT_DEBUG
+    #define VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef KEY NS(SELF, key_t);
@@ -78,18 +78,18 @@ typedef struct {
     KEY keys[CAPACITY];
     VALUE values[CAPACITY];
 
-    gdb_marker derive_c_map_staticlinear;
+    dc_gdb_marker derive_c_map_staticlinear;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
-#define INVARIANT_CHECK(self) ASSUME(self);
+#define INVARIANT_CHECK(self) DC_ASSUME(self);
 
 static SELF NS(SELF, new)() {
     return (SELF){
         .presence = NS(BITSET, new)(),
         .keys = {},
         .values = {},
-        .derive_c_map_staticlinear = gdb_marker_new(),
+        .derive_c_map_staticlinear = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -106,7 +106,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
 static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -116,7 +116,7 @@ static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
 
 static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -142,12 +142,12 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
         }
     }
 
-    UNREACHABLE("A space must exist for insert");
+    DC_UNREACHABLE("A space must exist for insert");
 }
 
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* placed = NS(SELF, try_insert)(self, key, value);
-    ASSERT(placed);
+    DC_ASSERT(placed);
     return placed;
 }
 
@@ -168,7 +168,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* dest) {
 
 static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE dest;
-    ASSERT(NS(SELF, try_remove)(self, key, &dest));
+    DC_ASSERT(NS(SELF, try_remove)(self, key, &dest));
     return dest;
 }
 
@@ -184,7 +184,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     SELF new_self = (SELF){
         .presence = NS(BITSET, clone)(&self->presence),
-        .derive_c_map_staticlinear = gdb_marker_new(),
+        .derive_c_map_staticlinear = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
     for (INDEX_TYPE index = 0; index < CAPACITY; index++) {
@@ -208,26 +208,26 @@ static void NS(SELF, delete)(SELF* self) {
     NS(BITSET, delete)(&self->presence);
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
-    debug_fmt_print(fmt, stream, "entries: [");
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "entries: [");
+    fmt = dc_debug_fmt_scope_begin(fmt);
     for (INDEX_TYPE index = 0; index < CAPACITY; index++) {
         if (NS(BITSET, get)(&self->presence, index)) {
-            debug_fmt_print(fmt, stream, "(index: %lu, key: ", (size_t)index);
+            dc_debug_fmt_print(fmt, stream, "(index: %lu, key: ", (size_t)index);
             KEY_DEBUG(&self->keys[index], fmt, stream);
-            debug_fmt_print(fmt, stream, ", value: ");
+            dc_debug_fmt_print(fmt, stream, ", value: ");
             VALUE_DEBUG(&self->values[index], fmt, stream);
-            debug_fmt_print(fmt, stream, "), ");
+            dc_debug_fmt_print(fmt, stream, "), ");
         }
     }
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #define ITER_CONST NS(SELF, iter_const)

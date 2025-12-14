@@ -1,4 +1,4 @@
-#include <derive-cpp/test/rapidcheck_panic.hpp>
+
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -32,7 +32,7 @@ template <typename Key, typename Value> struct SutIntegers {
 #include <derive-c/container/map/swiss/template.h>
 };
 
-namespace containers::map::swiss {
+namespace {
 
 RC_GTEST_PROP(Swiss, Fuzz, ()) {
     using SutNS = SutIntegers<size_t, size_t>;
@@ -45,4 +45,4 @@ RC_GTEST_PROP(Swiss, Fuzz, ()) {
             Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, ExtendCapacity<SutNS>,
             Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
 }
-} // namespace containers::map::swiss
+} // namespace

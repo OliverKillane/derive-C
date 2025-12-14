@@ -2,6 +2,6 @@
 
 #include <derive-c/core/zerosized.h>
 
-ZERO_SIZED(gdb_marker);
+DC_ZERO_SIZED(dc_gdb_marker);
 
-static gdb_marker gdb_marker_new() { return (gdb_marker){}; }
+static dc_gdb_marker dc_gdb_marker_new() { return (dc_gdb_marker){}; }

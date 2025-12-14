@@ -22,19 +22,19 @@ static void ITEM_DELETE(item_t* self);
     #define ITEM_CLONE item_clone
 static item_t ITEM_CLONE(item_t const* self);
     #define ITEM_DEBUG item_debug
-static void ITEM_DEBUG(ITEM const* self, debug_fmt fmt, FILE* stream);
+static void ITEM_DEBUG(ITEM const* self, dc_debug_fmt fmt, FILE* stream);
 #endif
 
 #if !defined ITEM_DELETE
-    #define ITEM_DELETE NO_DELETE
+    #define ITEM_DELETE DC_NO_DELETE
 #endif
 
 #if !defined ITEM_CLONE
-    #define ITEM_CLONE COPY_CLONE
+    #define ITEM_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined ITEM_DEBUG
-    #define ITEM_DEBUG DEFAULT_DEBUG
+    #define ITEM_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef ITEM NS(SELF, item_t);
@@ -47,17 +47,17 @@ typedef struct {
     size_t tail; /* Index of the last element */
     bool empty;  /* Used to differentiate between head == tail when 1 element, or empty */
     ALLOC* alloc;
-    gdb_marker derive_c_circular;
+    dc_gdb_marker derive_c_circular;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME((self)->alloc);                                                                         \
-    ASSUME(                                                                                        \
-        WHEN(!(self)->empty, (self)->head < (self)->capacity && (self)->tail < (self)->capacity)); \
-    ASSUME(WHEN((self)->empty, (self)->head == (self)->tail));                                     \
-    ASSUME(WHEN(!(self)->data, (self)->head == 0 && (self)->tail == 0));
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME((self)->alloc);                                                                      \
+    DC_ASSUME(DC_WHEN(!(self)->empty,                                                              \
+                      (self)->head < (self)->capacity && (self)->tail < (self)->capacity));        \
+    DC_ASSUME(DC_WHEN((self)->empty, (self)->head == (self)->tail));                               \
+    DC_ASSUME(DC_WHEN(!(self)->data, (self)->head == 0 && (self)->tail == 0));
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     return (SELF){
@@ -66,7 +66,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         .tail = 0,
         .empty = true,
         .alloc = alloc,
-        .derive_c_circular = gdb_marker_new(),
+        .derive_c_circular = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -76,12 +76,12 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
         return NS(SELF, new)(alloc);
     }
     size_t const capacity = dc_math_next_power_of_2(capacity_for);
-    ASSERT(DC_MATH_IS_POWER_OF_2(capacity));
+    DC_ASSERT(DC_MATH_IS_POWER_OF_2(capacity));
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
-    ASSERT(data);
+    DC_ASSERT(data);
 
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, data,
-                       capacity * sizeof(ITEM));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, data,
+                          capacity * sizeof(ITEM));
 
     return (SELF){
         .data = data,
@@ -90,23 +90,23 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
         .tail = 0,
         .empty = true,
         .alloc = alloc,
-        .derive_c_circular = gdb_marker_new(),
+        .derive_c_circular = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
 static bool NS(SELF, empty)(SELF const* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     if (self->empty) {
-        ASSUME(self->head == self->tail);
+        DC_ASSUME(self->head == self->tail);
     }
     return self->empty;
 }
 
 static size_t NS(SELF, size)(SELF const* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     if (self->empty) {
-        ASSUME(self->tail == self->head);
+        DC_ASSUME(self->tail == self->head);
         return 0;
     }
 
@@ -117,18 +117,18 @@ static size_t NS(SELF, size)(SELF const* self) {
 }
 
 static void PRIV(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
-                                                         memory_tracker_capability cap) {
+                                                         dc_memory_tracker_capability cap) {
     if (self->empty) {
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
-                           self->capacity * sizeof(ITEM));
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
+                              self->capacity * sizeof(ITEM));
     } else if (self->head <= self->tail) {
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, &self->data[self->tail + 1],
-                           (self->capacity - (self->tail + 1)) * sizeof(ITEM));
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
-                           self->head * sizeof(ITEM));
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, cap, &self->data[self->tail + 1],
+                              (self->capacity - (self->tail + 1)) * sizeof(ITEM));
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, cap, self->data,
+                              self->head * sizeof(ITEM));
     } else {
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, cap, &self->data[self->tail + 1],
-                           (self->head - (self->tail + 1)) * sizeof(ITEM));
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, cap, &self->data[self->tail + 1],
+                              (self->head - (self->tail + 1)) * sizeof(ITEM));
     }
 }
 
@@ -141,12 +141,12 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 
         // We set the capability to write for the allocator, and only touch the
         // state for memory that is inaccessible
-        PRIV(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_WRITE);
+        PRIV(NS(SELF, set_inaccessible_memory_caps))(self, DC_MEMORY_TRACKER_CAP_WRITE);
 
         ITEM* new_data =
             (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
 
-        ASSERT(new_data);
+        DC_ASSERT(new_data);
         if (self->head > self->tail) {
             // The queue wraps at the old end, so we need to either:
             //  - shift elements of the tail around into the new area at the end of the buffer
@@ -166,7 +166,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
                 // the number of items at the front. As a result, we never need to consider:
                 // - Only copying the first n from the front
                 // - Shifting some of the front items to the start of the buffer
-                ASSUME(front_tail_items <= additional_capacity);
+                DC_ASSUME(front_tail_items <= additional_capacity);
 
                 memcpy(&new_data[old_capacity], &new_data[0], front_tail_items * sizeof(ITEM));
                 self->tail = old_capacity + front_tail_items - 1;
@@ -176,7 +176,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
         self->data = new_data;
 
         // Set the new inaccessible memory
-        PRIV(NS(SELF, set_inaccessible_memory_caps))(self, MEMORY_TRACKER_CAP_NONE);
+        PRIV(NS(SELF, set_inaccessible_memory_caps))(self, DC_MEMORY_TRACKER_CAP_NONE);
     }
     INVARIANT_CHECK(self);
 }
@@ -189,8 +189,8 @@ static void NS(SELF, push_back)(SELF* self, ITEM item) {
     if (!self->empty) {
         self->tail = dc_math_modulus_power_of_2_capacity(self->tail + 1, self->capacity);
     }
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
-                       &self->data[self->tail], sizeof(ITEM));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                          &self->data[self->tail], sizeof(ITEM));
     self->data[self->tail] = item;
     self->empty = false;
 }
@@ -207,8 +207,8 @@ static void NS(SELF, push_front)(SELF* self, ITEM item) {
             self->head--;
         }
     }
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE,
-                       &self->data[self->head], sizeof(ITEM));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                          &self->data[self->head], sizeof(ITEM));
     self->data[self->head] = item;
     self->empty = false;
 }
@@ -216,13 +216,13 @@ static void NS(SELF, push_front)(SELF* self, ITEM item) {
 static ITEM NS(SELF, pop_front)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    ASSERT(!NS(SELF, empty)(self));
+    DC_ASSERT(!NS(SELF, empty)(self));
 
     ITEM value = self->data[self->head];
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
-                       &self->data[self->head], sizeof(ITEM));
-    memory_tracker_check(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
-                         &self->data[self->head], sizeof(ITEM));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                          &self->data[self->head], sizeof(ITEM));
+    dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                            &self->data[self->head], sizeof(ITEM));
 
     if (self->head == self->tail) {
         self->empty = true;
@@ -235,11 +235,11 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
 static ITEM NS(SELF, pop_back)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    ASSERT(!NS(SELF, empty)(self));
+    DC_ASSERT(!NS(SELF, empty)(self));
 
     ITEM value = self->data[self->tail];
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE,
-                       &self->data[self->tail], sizeof(ITEM));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                          &self->data[self->tail], sizeof(ITEM));
     if (self->head == self->tail) {
         self->empty = true;
     } else {
@@ -294,13 +294,13 @@ typedef struct {
 } ITER;
 
 static bool NS(ITER, empty)(ITER const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
 static ITEM* NS(ITER, next)(ITER* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     ITEM* item = NS(SELF, try_write_from_front)(iter->circular, iter->position);
     if (!item) {
@@ -326,11 +326,11 @@ static void NS(SELF, delete)(SELF* self) {
         ITEM* item;
         while ((item = NS(ITER, next)(&iter))) {
             ITEM_DELETE(item);
-            memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, item,
-                               sizeof(ITEM));
+            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, item,
+                                  sizeof(ITEM));
         }
-        memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, self->data,
-                           self->capacity * sizeof(ITEM));
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                              self->data, self->capacity * sizeof(ITEM));
         NS(ALLOC, free)(self->alloc, self->data);
     }
 }
@@ -349,13 +349,13 @@ typedef struct {
 } ITER_CONST;
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     ITEM const* item = NS(SELF, try_read_from_front)(iter->circular, iter->position);
     if (!item) {
@@ -384,7 +384,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     if (old_size > 0) {
         new_capacity = dc_math_next_power_of_2(old_size);
         new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
-        ASSERT(new_data);
+        DC_ASSERT(new_data);
 
         ITER_CONST iter = NS(SELF, get_iter_const)(self);
         ITEM const* item;
@@ -401,39 +401,39 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .tail = tail,
         .empty = self->empty,
         .alloc = self->alloc,
-        .derive_c_circular = gdb_marker_new(),
+        .derive_c_circular = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
-    PRIV(NS(SELF, set_inaccessible_memory_caps))(&new_self, MEMORY_TRACKER_CAP_NONE);
+    PRIV(NS(SELF, set_inaccessible_memory_caps))(&new_self, DC_MEMORY_TRACKER_CAP_NONE);
     return new_self;
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
-    debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
-    debug_fmt_print(fmt, stream, "head: %lu,\n", self->head);
-    debug_fmt_print(fmt, stream, "tail: %lu,\n", self->tail);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
+    dc_debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
+    dc_debug_fmt_print(fmt, stream, "head: %lu,\n", self->head);
+    dc_debug_fmt_print(fmt, stream, "tail: %lu,\n", self->tail);
 
-    debug_fmt_print(fmt, stream, "alloc: ");
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "queue: @%p [\n", self->data);
-    fmt = debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "queue: @%p [\n", self->data);
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
     ITEM const* item;
     while ((item = NS(ITER_CONST, next)(&iter))) {
-        debug_fmt_print_indents(fmt, stream);
+        dc_debug_fmt_print_indents(fmt, stream);
         ITEM_DEBUG(item, fmt, stream);
         fprintf(stream, ",\n");
     }
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "],\n");
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "],\n");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}\n");
 }
 
 #undef ITER_CONST

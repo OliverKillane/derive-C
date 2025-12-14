@@ -7,19 +7,19 @@
     F(char, baz)                                                                                   \
     F(double, zing)
 
-DERIVE_STRUCT(Foo)
-DERIVE_EQ(Foo)
-DERIVE_CLONE(Foo)
-DERIVE_ORD(Foo)
+DC_DERIVE_STRUCT(Foo)
+DC_DERIVE_EQ(Foo)
+DC_DERIVE_CLONE(Foo)
+DC_DERIVE_ORD(Foo)
 
 int main() {
     Foo f = {.bing = 23, .baz = 'c', .zing = 3.14};
     Foo g = {.bing = 23, .baz = 'c', .zing = 3.14};
 
-    ASSERT(Foo_eq(&f, &g));
-    ASSERT(!Foo_gt(&f, &g) && !Foo_lt(&f, &g));
+    DC_ASSERT(Foo_eq(&f, &g));
+    DC_ASSERT(!Foo_gt(&f, &g) && !Foo_lt(&f, &g));
 
     Foo z = Foo_clone(&f);
     z.bing += 10;
-    ASSERT(Foo_gt(&z, &f));
+    DC_ASSERT(Foo_gt(&z, &f));
 }

@@ -35,12 +35,12 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
 
 static void NS(SELF, free)(SELF* self, void* ptr) { NS(ALLOC, free)(self->alloc, ptr); }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, STRINGIFY(SELF) " @%p {", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "alloc: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "alloc: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #else
@@ -77,7 +77,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static ENTRIES_VECTOR const* NS(SELF, get_entries)(SELF const* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     return &self->entries;
 }
 
@@ -95,7 +95,7 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 }
 
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
-    ASSUME(self);
+    DC_ASSUME(self);
     void* ptr = NS(ALLOC, calloc)(self->alloc, count, size);
     if (ptr) {
         NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
@@ -107,7 +107,7 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
-    ASSUME(self);
+    DC_ASSUME(self);
     void* ptr = NS(ALLOC, malloc)(self->alloc, size);
     if (ptr) {
         NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
@@ -119,21 +119,21 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 }
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-    ASSUME(self);
-    ASSUME(ptr);
+    DC_ASSUME(self);
+    DC_ASSUME(ptr);
     return NS(ALLOC, realloc)(self->alloc, ptr, size);
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
-    ASSUME(ptr);
-    ASSUME(self);
+    DC_ASSUME(ptr);
+    DC_ASSUME(self);
 
     NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
     TRACKED_ENTRY* entry;
 
     while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
         if (entry->ptr == ptr) {
-            ASSUME(!entry->freed);
+            DC_ASSUME(!entry->freed);
             entry->freed = true;
             break;
         }
@@ -142,13 +142,13 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
     NS(ALLOC, free)(self->alloc, ptr);
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, STRINGIFY(SELF) " @%p {", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
     NS(ENTRIES_VECTOR, debug)(&self->entries, fmt, stream);
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
     #undef TRACKED_ENTRY

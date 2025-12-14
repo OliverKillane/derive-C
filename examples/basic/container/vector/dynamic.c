@@ -22,7 +22,7 @@ void ints_example() {
     for (int32_t i = 0; i < upto; i++) {
         vec_ints_push(&ints, i);
     }
-    ASSERT(vec_ints_size(&ints) == upto);
+    DC_ASSERT(vec_ints_size(&ints) == upto);
 
     for (int32_t i = 0; i < upto; i++) {
         int* value = vec_ints_write(&ints, i);
@@ -30,15 +30,15 @@ void ints_example() {
     }
 
     for (int32_t i = 0; i < upto; i++) {
-        ASSERT(*vec_ints_read(&ints, i) == i + 1);
+        DC_ASSERT(*vec_ints_read(&ints, i) == i + 1);
     }
 
     // Pop the last value
     int32_t last_value = vec_ints_pop(&ints);
-    ASSERT(last_value == upto); // Last value should be 99 + 1
-    ASSERT(vec_ints_size(&ints) == upto - 1);
+    DC_ASSERT(last_value == upto); // Last value should be 99 + 1
+    DC_ASSERT(vec_ints_size(&ints) == upto - 1);
 
-    vec_ints_debug(&ints, debug_fmt_new(), stdout);
+    vec_ints_debug(&ints, dc_debug_fmt_new(), stdout);
 
     vec_ints_delete(&ints);
 }
@@ -48,13 +48,13 @@ struct complex_data {
     size_t score;
 };
 
-void complex_data_debug(struct complex_data const* self, debug_fmt fmt, FILE* stream) {
+void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, "complex_data@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
-    debug_fmt_print(fmt, stream, "description: %s,\n", self->description);
-    debug_fmt_print(fmt, stream, "score: %lu,\n", self->score);
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "description: %s,\n", self->description);
+    dc_debug_fmt_print(fmt, stream, "score: %lu,\n", self->score);
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 void complex_data_delete(struct complex_data* self) { free(self->description); }
@@ -73,17 +73,17 @@ void complex_data_example() {
         vec_complex_data_push(&vec, item);
     }
 
-    ASSERT(vec_complex_data_size(&vec) == entries);
+    DC_ASSERT(vec_complex_data_size(&vec) == entries);
 
     struct complex_data* first_item = vec_complex_data_write(&vec, 0);
     first_item->score += 5;
 
-    ASSERT(vec_complex_data_read(&vec, 0)->score == 5);
+    DC_ASSERT(vec_complex_data_read(&vec, 0)->score == 5);
 
     struct complex_data popped = vec_complex_data_pop(&vec);
-    ASSERT(popped.score == 40); // Last item's score should be 40
+    DC_ASSERT(popped.score == 40); // Last item's score should be 40
 
-    vec_complex_data_debug(&vec, debug_fmt_new(), stdout);
+    vec_complex_data_debug(&vec, dc_debug_fmt_new(), stdout);
 
     vec_complex_data_delete(&vec);
     complex_data_delete(&popped);
@@ -107,7 +107,7 @@ void iterate_example() {
     char_vec_push(&vec, 'l');
     char_vec_push(&vec, 'd');
 
-    ASSERT(char_vec_size(&vec) == 11);
+    DC_ASSERT(char_vec_size(&vec) == 11);
     {
         // Iterate over the vector and print the items
         char_vec_iter_const iter = char_vec_get_iter_const(&vec);

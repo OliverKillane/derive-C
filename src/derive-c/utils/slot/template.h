@@ -27,19 +27,19 @@ static void SLOT_VALUE_DELETE(slot_value_t* self);
     #define SLOT_VALUE_CLONE slot_value_clone
 static slot_value_t SLOT_VALUE_CLONE(slot_value_t const* self);
     #define SLOT_VALUE_DEBUG slot_value_debug
-static void SLOT_VALUE_DEBUG(SLOT_VALUE const*, debug_fmt, FILE* stream);
+static void SLOT_VALUE_DEBUG(SLOT_VALUE const*, dc_debug_fmt, FILE* stream);
 #endif
 
 #if !defined SLOT_VALUE_DELETE
-    #define SLOT_VALUE_DELETE NO_DELETE
+    #define SLOT_VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined SLOT_VALUE_CLONE
-    #define SLOT_VALUE_CLONE COPY_CLONE
+    #define SLOT_VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined SLOT_VALUE_DEBUG
-    #define SLOT_VALUE_DEBUG DEFAULT_DEBUG
+    #define SLOT_VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef struct {
@@ -51,12 +51,12 @@ typedef struct {
 } SELF;
 
 static void NS(SELF, memory_tracker_empty)(SELF const* slot) {
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->value,
-                       sizeof(SLOT_VALUE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->next_free,
-                       sizeof(SLOT_INDEX_TYPE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
-                       sizeof(bool));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, &slot->value,
+                          sizeof(SLOT_VALUE));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                          &slot->next_free, sizeof(SLOT_INDEX_TYPE));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_READ_WRITE,
+                          &slot->present, sizeof(bool));
 }
 
 static void NS(SELF, set_empty)(SELF* slot, SLOT_INDEX_TYPE next_free) {
@@ -66,12 +66,12 @@ static void NS(SELF, set_empty)(SELF* slot, SLOT_INDEX_TYPE next_free) {
 }
 
 static void NS(SELF, memory_tracker_present)(SELF const* slot) {
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_NONE, &slot->next_free,
-                       sizeof(SLOT_INDEX_TYPE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_WRITE, &slot->value,
-                       sizeof(SLOT_VALUE));
-    memory_tracker_set(MEMORY_TRACKER_LVL_CONTAINER, MEMORY_TRACKER_CAP_READ_WRITE, &slot->present,
-                       sizeof(bool));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                          &slot->next_free, sizeof(SLOT_INDEX_TYPE));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                          &slot->value, sizeof(SLOT_VALUE));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_READ_WRITE,
+                          &slot->present, sizeof(bool));
 }
 
 static void NS(SELF, fill)(SELF* slot, SLOT_VALUE value) {
@@ -91,7 +91,7 @@ static void NS(SELF, clone_from)(SELF const* from_slot, SELF* to_slot) {
     }
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     if (self->present) {
         fprintf(stream, "[empty] { next_free: %lu}", (size_t)self->next_free);
     } else {

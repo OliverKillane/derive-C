@@ -1,4 +1,4 @@
-#include <derive-cpp/test/rapidcheck_panic.hpp>
+
 #include <gtest/gtest.h>
 
 #include <rapidcheck.h>
@@ -32,7 +32,7 @@ template <typename Key, typename Value> struct SutIntegers {
 #include <derive-c/container/map/ankerl/template.h>
 };
 
-namespace containers::map::ankerl {
+namespace {
 
 RC_GTEST_PROP(Ankerl, Fuzz, ()) {
     using SutNS = SutIntegers<size_t, size_t>;
@@ -45,4 +45,4 @@ RC_GTEST_PROP(Ankerl, Fuzz, ()) {
             Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, ExtendCapacity<SutNS>,
             Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
 }
-} // namespace containers::map::ankerl
+} // namespace

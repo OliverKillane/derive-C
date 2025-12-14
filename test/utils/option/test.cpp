@@ -1,4 +1,4 @@
-#include <derive-cpp/test/gtest_panic.hpp>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

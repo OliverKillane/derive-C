@@ -28,19 +28,19 @@ static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined KEY_EQ
-    #define KEY_EQ MEM_EQ
+    #define KEY_EQ DC_MEM_EQ
 #endif
 
 #if !defined KEY_DELETE
-    #define KEY_DELETE NO_DELETE
+    #define KEY_DELETE DC_NO_DELETE
 #endif
 
 #if !defined KEY_CLONE
-    #define KEY_CLONE COPY_CLONE
+    #define KEY_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined KEY_DEBUG
-    #define KEY_DEBUG DEFAULT_DEBUG
+    #define KEY_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 #if !defined VALUE
@@ -54,15 +54,15 @@ typedef struct {
 #endif
 
 #if !defined VALUE_DELETE
-    #define VALUE_DELETE NO_DELETE
+    #define VALUE_DELETE DC_NO_DELETE
 #endif
 
 #if !defined VALUE_CLONE
-    #define VALUE_CLONE COPY_CLONE
+    #define VALUE_CLONE DC_COPY_CLONE
 #endif
 
 #if !defined VALUE_DEBUG
-    #define VALUE_DEBUG DEFAULT_DEBUG
+    #define VALUE_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef KEY NS(SELF, key_t);
@@ -85,20 +85,20 @@ static SLOT NS(SLOT, clone)(SLOT const* slot) {
     };
 }
 
-static void NS(SLOT, debug)(SLOT const* slot, debug_fmt fmt, FILE* stream) {
+static void NS(SLOT, debug)(SLOT const* slot, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SLOT) " @%p {\n", slot);
-    fmt = debug_fmt_scope_begin(fmt);
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
-    debug_fmt_print(fmt, stream, "key: ");
+    dc_debug_fmt_print(fmt, stream, "key: ");
     KEY_DEBUG(&slot->key, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "value: ");
+    dc_debug_fmt_print(fmt, stream, "value: ");
     VALUE_DEBUG(&slot->value, fmt, stream);
     fprintf(stream, ",\n");
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 static void NS(SLOT, delete)(SLOT* slot) {
@@ -134,7 +134,7 @@ typedef struct {
     INDEX_KIND index;
 } __attribute__((packed)) BUCKET;
 
-STATIC_ASSERT(sizeof(BUCKET) == BUCKET_SIZE);
+DC_STATIC_ASSERT(sizeof(BUCKET) == BUCKET_SIZE);
 
 typedef struct {
     size_t buckets_capacity;
@@ -142,23 +142,23 @@ typedef struct {
     SLOT_VECTOR slots;
 
     ALLOC* alloc;
-    gdb_marker derive_c_hashmap;
+    dc_gdb_marker derive_c_hashmap;
     // JUSTIFY: No iteration invalidator
     // - Iteration is dependent on the vector, which already tracks this.
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME(DC_MATH_IS_POWER_OF_2((self)->buckets_capacity));                                       \
-    ASSUME((self)->buckets);                                                                       \
-    ASSUME((self)->alloc);
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->buckets_capacity));                                    \
+    DC_ASSUME((self)->buckets);                                                                    \
+    DC_ASSUME((self)->alloc);
 
 static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* alloc) {
-    ASSUME(capacity > 0);
-    ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
+    DC_ASSUME(capacity > 0);
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
 
     BUCKET* buckets = (BUCKET*)NS(ALLOC, calloc)(alloc, capacity, sizeof(BUCKET));
-    ASSERT(buckets);
+    DC_ASSERT(buckets);
 
     return (SELF){
         .buckets_capacity = capacity,
@@ -169,7 +169,7 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* allo
 }
 
 static SELF NS(SELF, new_with_capacity_for)(size_t for_items, ALLOC* alloc) {
-    ASSERT(for_items > 0);
+    DC_ASSERT(for_items > 0);
     return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_buckets_capacity(for_items), alloc);
 }
 
@@ -182,7 +182,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     BUCKET* new_buckets =
         (BUCKET*)NS(ALLOC, malloc)(self->alloc, self->buckets_capacity * sizeof(BUCKET));
-    ASSERT(new_buckets);
+    DC_ASSERT(new_buckets);
     memcpy(new_buckets, self->buckets, self->buckets_capacity * sizeof(BUCKET));
 
     return (SELF){
@@ -190,13 +190,13 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .buckets = new_buckets,
         .slots = NS(SLOT_VECTOR, clone)(&self->slots),
         .alloc = self->alloc,
-        .derive_c_hashmap = gdb_marker_new(),
+        .derive_c_hashmap = dc_gdb_marker_new(),
     };
 }
 
 static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
-    ASSUME(NS(SLOT_VECTOR, size)(&self->slots) < self->buckets_capacity);
+    DC_ASSUME(NS(SLOT_VECTOR, size)(&self->slots) < self->buckets_capacity);
     const size_t mask = self->buckets_capacity - 1;
 
     const size_t hash = KEY_HASH(&key);
@@ -268,10 +268,10 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
 
 static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
-    ASSUME(DC_MATH_IS_POWER_OF_2(new_capacity));
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2(new_capacity));
 
     BUCKET* new_buckets = (BUCKET*)NS(ALLOC, calloc)(self->alloc, new_capacity, sizeof(BUCKET));
-    ASSERT(new_buckets);
+    DC_ASSERT(new_buckets);
 
     const size_t new_mask = new_capacity - 1;
     const size_t n = NS(SLOT_VECTOR, size)(&self->slots);
@@ -337,16 +337,16 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
 
 static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
-    ASSERT(value_ptr);
+    DC_ASSERT(value_ptr);
     return value_ptr;
 }
 
 static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* key, size_t* out_bucket_pos,
                                      size_t* out_dense_index) {
     INVARIANT_CHECK(self);
-    ASSUME(key);
-    ASSUME(out_bucket_pos);
-    ASSUME(out_dense_index);
+    DC_ASSUME(key);
+    DC_ASSUME(out_bucket_pos);
+    DC_ASSUME(out_dense_index);
 
     const size_t mask = self->buckets_capacity - 1;
 
@@ -394,7 +394,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
 static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -405,7 +405,7 @@ static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
 
 static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
-    ASSERT(value);
+    DC_ASSERT(value);
     return value;
 }
 
@@ -473,10 +473,10 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
             for (size_t pos = desired;; pos = (pos + 1) & mask) {
                 BUCKET* b = &self->buckets[pos];
 
-                ASSERT(dc_ankerl_mdata_present(&b->mdata));
+                DC_ASSERT(dc_ankerl_mdata_present(&b->mdata));
 
                 if (dfd != dc_ankerl_dfd_max && b->mdata.dfd < dfd) {
-                    ASSERT(false);
+                    DC_ASSERT(false);
                 }
 
                 if (b->mdata.fingerprint == moved_fp) {
@@ -500,7 +500,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 
 static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
-    ASSERT(NS(SELF, try_remove)(self, key, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
@@ -558,22 +558,22 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, debug_fmt fmt, FILE* stream) {
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
-    fmt = debug_fmt_scope_begin(fmt);
+    fmt = dc_debug_fmt_scope_begin(fmt);
 
-    debug_fmt_print(fmt, stream, "bucket capacity: %lu,\n", self->buckets_capacity);
+    dc_debug_fmt_print(fmt, stream, "bucket capacity: %lu,\n", self->buckets_capacity);
 
-    debug_fmt_print(fmt, stream, "alloc: ");
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    debug_fmt_print(fmt, stream, "slots: ");
+    dc_debug_fmt_print(fmt, stream, "slots: ");
     NS(SLOT_VECTOR, debug)(&self->slots, fmt, stream);
     fprintf(stream, ",\n");
 
-    fmt = debug_fmt_scope_end(fmt);
-    debug_fmt_print(fmt, stream, "}");
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef KV_PAIR_CONST
