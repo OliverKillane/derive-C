@@ -1,4 +1,7 @@
 # Derive C
+
+_Easy templated data strctures in C_
+
 ## Elevator Pitch
 When using C for complex projects, the lack of generics is frustrating:
  - tradeoff performance and store runtime type information (e.g. size of items in a vector)
@@ -16,7 +19,7 @@ See examples in [./examples](./examples/)
 
 ## Use
 In a `CMakeLists.txt`
-```
+```cmake
 include(FetchContent)
 
 FetchContent_Declare(
@@ -25,6 +28,14 @@ FetchContent_Declare(
     GIT_TAG <Chosen derive-c version>
 )
 FetchContent_MakeAvailable(derive-c)
+
+target_compile_definitions(${my_target} PRIVATE
+    # Enable free function mocking for tests
+    ENABLE_MOCKING  
+
+    # To override the default behaviour for `DC_PANIC`, `DC_ASSERT
+    DC_PANIC_HEADER=<my-special-library/foo/derive_c_panic_overrides.h> 
+)
 ```
 
 ## Develop
@@ -58,59 +69,17 @@ infer explore
 ```
  - Statically detects generic bugs (e.g. use after free, buffer overrun, integer overflow)
 
-### TODO
+To check for dependency upgrades in the cpp code:
+```bash
+LOG_LEVEL=debug renovate --platform=local --dry-run=full
+```
+
+### Remaining Work
 In development, remaining tasks:
  - Fix remaining infer-detected casting issues
- - Finish gdb pretty printers
- - Increase coverage for hashmap
+ - Increase coverage
  - Regression benchmarks
  - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
-
-```
-container
-    vector 
-        static  // current staticvec
-        dynamic // normal vector
-    map
-        linear     // linear search map
-        decomposed // current hashmap
-        ankerl     // new ankerl hashmap
-        btree      // btreemap
-    queue
-        circular // current: circular buffer
-        deque    // current: double ended queue
-    arena
-        basic // current implementation
-        generational
-utils
-    option // current option
-    result
-    string
-        short
-        intern
-    ptr
-        count
-        observe // notified 
-        span
-    closure
-        dynamic
-        small
-algorithms
-    sort
-        binarysort
-    search
-        binarysearch
-    hash
-        murmur
-        integer
-allocs
-    std
-    staticbump
-    test
-    alloc
-test
-    mock
-```
 
 ## References
 - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)

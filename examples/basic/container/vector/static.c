@@ -23,16 +23,18 @@ void push_example() {
     }
 
     // Cannot push past the in-place capacity
-    ASSERT(!staticvec_chars_try_push(&vec, 8));
+    DC_ASSERT(!staticvec_chars_try_push(&vec, 8));
 
     // Check that the first 8 characters are in place
     for (unsigned char i = 0; i < MAX_CAPACITY; i++) {
-        ASSERT(*staticvec_chars_read(&vec, i) == i);
+        DC_ASSERT(*staticvec_chars_read(&vec, i) == i);
     }
 
     // The next two should be NULL since they exceed the in-place capacity
-    ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY) == NULL);
-    ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY + 1) == NULL);
+    DC_ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY) == NULL);
+    DC_ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY + 1) == NULL);
+
+    staticvec_chars_debug(&vec, dc_debug_fmt_new(), stdout);
 
     staticvec_chars_delete(&vec);
 }
@@ -52,6 +54,8 @@ void iter_example() {
         printf("%u ", *item);
     }
     printf("\n");
+
+    staticvec_chars_debug(&vec, dc_debug_fmt_new(), stdout);
 
     staticvec_chars_delete(&vec);
 }

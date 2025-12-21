@@ -1,0 +1,23 @@
+[project]
+name = "derive-py"
+requires-python = ">=3.14"
+version = "0.1.0"
+readme = "README.md"
+dependencies = [
+    "pytest>=8.0.0",
+    "mypy>=1.19.0",
+    "ruff>=0.14.9"
+]
+classifiers = ["Private :: Do Not Upload"]
+
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "src"
+module-root = ""
+
+[project.scripts]
+linting = "src.linting.main:main"
+intellisense = "src.intellisense.main:main"

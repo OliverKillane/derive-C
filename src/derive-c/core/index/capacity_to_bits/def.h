@@ -1,0 +1,12 @@
+
+#if INDICES_CAPACITY <= 256
+    #define INDEX_BITS 8
+#elif INDICES_CAPACITY <= 65536
+    #define INDEX_BITS 16
+#elif INDICES_CAPACITY <= 4294967296
+    #define INDEX_BITS 32
+#elif INDICES_CAPACITY <= 18446744073709551616
+    #define INDEX_BITS 64
+#else
+    #error "INDICES_CAPACITY required"
+#endif

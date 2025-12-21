@@ -1,20 +1,18 @@
-#include <derive-cpp/test/gtest_panic.hpp>
+
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/alloc/std.h>
 
 #define ITEM int
 #define NAME int_vec
 #include <derive-c/container/vector/dynamic/template.h>
 
-#include <derive-c/utils/iterator/for.h>
-}
+#include <derive-c/utils/for.h>
 
 TEST(For, empty_iterator) {
     int_vec v = int_vec_new(stdalloc_get());
 
-    FOR(int_vec, v, item) { FAIL() << "Iterator should be empty"; }
+    FOR(int_vec, &v, iter, item) { FAIL() << "Iterator should be empty"; }
 
     int_vec_delete(&v);
 }
@@ -23,7 +21,7 @@ TEST(For, single_item) {
     int_vec v = int_vec_new(stdalloc_get());
     int_vec_push(&v, 42);
     size_t count = 0;
-    FOR(int_vec, v, item) {
+    FOR(int_vec, &v, iter, item) {
         count++;
         EXPECT_EQ(*item, 42);
     }
@@ -39,7 +37,7 @@ TEST(For, multiple_items) {
     }
 
     size_t count = 0;
-    FOR(int_vec, v, item) {
+    FOR(int_vec, &v, iter, item) {
         EXPECT_EQ(*item, count);
         count++;
     }

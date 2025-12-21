@@ -1,15 +1,10 @@
-#include <derive-cpp/test/gtest_panic.hpp>
 #include <gtest/gtest.h>
 
-namespace debugalloc {
-
-extern "C" {
 #include <derive-c/alloc/std.h>
 
 #define ALLOC stdalloc
 #define NAME stddebugalloc
 #include <derive-c/alloc/debug/template.h>
-}
 
 TEST(DebugAlloc, BasicAllocation) {
     stddebugalloc alloc = stddebugalloc_new("Test Allocator", stdalloc_get());
@@ -19,5 +14,3 @@ TEST(DebugAlloc, BasicAllocation) {
     stddebugalloc_free(&alloc, malloced);
     stddebugalloc_free(&alloc, calloced);
 }
-
-} // namespace debugalloc

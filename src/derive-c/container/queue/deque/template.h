@@ -1,26 +1,16 @@
 /// @brief A simple double ended queue
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
-#include "utils.h"
-
-#include <derive-c/container/queue/trait.h>
-#include <derive-c/core/debug/gdb_marker.h>
-#include <derive-c/core/debug/mutation_tracker.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
 
-// JUSTIFY: No custom memory tracking
-//  - already done by the contained vectors
-
 #if !defined ITEM
     #if !defined PLACEHOLDERS
-        #error "The contained type must be defined for a deque template"
+TEMPLATE_ERROR("No ITEM")
     #endif
 
 typedef struct {
@@ -28,18 +18,24 @@ typedef struct {
 } item_t;
     #define ITEM item_t
 
-static void item_delete(item_t* a) { (void)a; }
     #define ITEM_DELETE item_delete
-static item_t item_clone(item_t const* a) { return *a; }
+static void ITEM_DELETE(item_t* self);
     #define ITEM_CLONE item_clone
+static item_t ITEM_CLONE(item_t const* self);
+    #define ITEM_DEBUG item_debug
+static void ITEM_DEBUG(ITEM const* self, dc_debug_fmt fmt, FILE* stream);
 #endif
 
 #if !defined ITEM_DELETE
-    #define ITEM_DELETE(value)
+    #define ITEM_DELETE DC_NO_DELETE
 #endif
 
 #if !defined ITEM_CLONE
-    #define ITEM_CLONE(value) (*(value))
+    #define ITEM_CLONE DC_COPY_CLONE
+#endif
+
+#if !defined ITEM_DEBUG
+    #define ITEM_DEBUG DC_DEFAULT_DEBUG
 #endif
 
 typedef ITEM NS(SELF, item_t);
@@ -53,7 +49,7 @@ typedef ALLOC NS(SELF, alloc_t);
 #pragma push_macro("ITEM_DELETE")
 
 // ITEM is already defined
-#define INTERNAL_NAME ITEM_VECTORS
+#define INTERNAL_NAME ITEM_VECTORS // [DERIVE-C] for template
 #include <derive-c/container/vector/dynamic/template.h>
 
 #pragma pop_macro("ALLOC")
@@ -64,21 +60,17 @@ typedef ALLOC NS(SELF, alloc_t);
 typedef struct {
     ITEM_VECTORS front;
     ITEM_VECTORS back;
-    ALLOC* alloc;
-    gdb_marker derive_c_deque;
+    dc_gdb_marker derive_c_deque;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
-#define INVARIANT_CHECK(self)                                                                      \
-    ASSUME(self);                                                                                  \
-    ASSUME((self)->alloc);
+#define INVARIANT_CHECK(self) DC_ASSUME(self);
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     return (SELF){
         .front = NS(ITEM_VECTORS, new)(alloc),
         .back = NS(ITEM_VECTORS, new)(alloc),
-        .alloc = alloc,
-        .derive_c_deque = gdb_marker_new(),
+        .derive_c_deque = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -87,8 +79,7 @@ static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, ALLOC* a
     return (SELF){
         .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
         .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
-        .alloc = alloc,
-        .derive_c_deque = gdb_marker_new(),
+        .derive_c_deque = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
@@ -98,10 +89,19 @@ static SELF NS(SELF, clone)(SELF const* other) {
     return (SELF){
         .front = NS(ITEM_VECTORS, clone)(&other->front),
         .back = NS(ITEM_VECTORS, clone)(&other->back),
-        .alloc = other->alloc,
-        .derive_c_deque = gdb_marker_new(),
+        .derive_c_deque = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
+}
+
+static size_t NS(SELF, size)(SELF const* self) {
+    INVARIANT_CHECK(self);
+    return NS(ITEM_VECTORS, size)(&self->front) + NS(ITEM_VECTORS, size)(&self->back);
+}
+
+static bool NS(SELF, empty)(SELF const* self) {
+    INVARIANT_CHECK(self);
+    return NS(ITEM_VECTORS, size)(&self->front) == 0 && NS(ITEM_VECTORS, size)(&self->back) == 0;
 }
 
 static void NS(SELF, rebalance)(SELF* self) {
@@ -112,7 +112,7 @@ static void NS(SELF, rebalance)(SELF* self) {
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
     size_t const total_size = front_size + back_size;
 
-    if (!deque_rebalance_policy(total_size, front_size)) {
+    if (!dc_deque_rebalance_policy(total_size, front_size)) {
         return;
     }
 
@@ -127,7 +127,7 @@ static void NS(SELF, rebalance)(SELF* self) {
         source_size = front_size;
         target_size = back_size;
     } else {
-        ASSUME(back_size > front_size + 1);
+        DC_ASSUME(back_size > front_size + 1);
         source = &self->back;
         target = &self->front;
         source_size = back_size;
@@ -138,48 +138,28 @@ static void NS(SELF, rebalance)(SELF* self) {
     NS(ITEM_VECTORS, transfer_reverse)(source, target, to_move);
 }
 
-static ITEM const* NS(SELF, peek_front_read)(SELF const* self) {
+static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
 
-    size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
-    if (front_size > 0) {
-        return NS(ITEM_VECTORS, read)(&self->front, front_size - 1);
+    if (index < NS(ITEM_VECTORS, size)(&self->front)) {
+        size_t front_index = NS(ITEM_VECTORS, size)(&self->front) - 1 - index;
+        return NS(ITEM_VECTORS, read)(&self->front, front_index);
     }
 
-    return NS(ITEM_VECTORS, try_read)(&self->back, 0);
+    size_t back_index = index - NS(ITEM_VECTORS, size)(&self->front);
+    return NS(ITEM_VECTORS, try_read)(&self->back, back_index);
 }
 
-static ITEM* NS(SELF, peek_front_write)(SELF* self) {
-    INVARIANT_CHECK(self);
-
-    size_t const front_size = NS(ITEM_VECTORS, size)(&self->front);
-    if (front_size > 0) {
-        return NS(ITEM_VECTORS, write)(&self->front, front_size - 1);
-    }
-
-    return NS(ITEM_VECTORS, try_write)(&self->back, 0);
+static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
+    return NS(SELF, try_read_from_front)(self, NS(SELF, size)(self) - 1 - index);
 }
 
-static ITEM const* NS(SELF, peek_back_read)(SELF const* self) {
-    INVARIANT_CHECK(self);
-
-    size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
-    if (back_size > 0) {
-        return NS(ITEM_VECTORS, read)(&self->back, back_size - 1);
-    }
-
-    return NS(ITEM_VECTORS, try_read)(&self->front, 0);
+static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
+    return (ITEM*)NS(SELF, try_read_from_front)(self, index);
 }
 
-static ITEM* NS(SELF, peek_back_write)(SELF* self) {
-    INVARIANT_CHECK(self);
-
-    size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
-    if (back_size > 0) {
-        return NS(ITEM_VECTORS, write)(&self->back, back_size - 1);
-    }
-
-    return NS(ITEM_VECTORS, try_write)(&self->front, 0);
+static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
+    return (ITEM*)NS(SELF, try_read_from_back)(self, index);
 }
 
 static void NS(SELF, push_front)(SELF* self, ITEM item) {
@@ -224,16 +204,6 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
     return result;
 }
 
-static size_t NS(SELF, size)(SELF const* self) {
-    INVARIANT_CHECK(self);
-    return NS(ITEM_VECTORS, size)(&self->front) + NS(ITEM_VECTORS, size)(&self->back);
-}
-
-static bool NS(SELF, empty)(SELF const* self) {
-    INVARIANT_CHECK(self);
-    return NS(ITEM_VECTORS, size)(&self->front) == 0 && NS(ITEM_VECTORS, size)(&self->back) == 0;
-}
-
 #define ITER NS(SELF, iter)
 typedef ITEM* NS(ITER, item);
 
@@ -246,7 +216,7 @@ typedef struct {
 } ITER;
 
 static ITEM* NS(ITER, next)(ITER* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t const back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
@@ -267,13 +237,13 @@ static ITEM* NS(ITER, next)(ITER* iter) {
 
 static bool NS(ITER, empty)(ITER const* iter) {
     mutation_version_check(&iter->version);
-    ASSUME(iter);
+    DC_ASSUME(iter);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
 }
 
 static ITER NS(SELF, get_iter)(SELF* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     return (ITER){.deque = self,
                   .pos = 0,
                   .version = mutation_tracker_get(&self->iterator_invalidation_tracker)};
@@ -293,7 +263,7 @@ typedef struct {
 } ITER_CONST;
 
 static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
     size_t const back_size = NS(ITEM_VECTORS, size)(&iter->deque->back);
@@ -313,14 +283,14 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
 }
 
 static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
-    ASSUME(iter);
+    DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
 }
 
 static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     return (ITER_CONST){
         .deque = self,
         .pos = 0,
@@ -336,9 +306,32 @@ static void NS(SELF, delete)(SELF* self) {
     NS(ITEM_VECTORS, delete)(&self->back);
 }
 
-#undef INVARIANT_CHECK
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
 
-#include <derive-c/core/alloc/undef.h>
-TRAIT_QUEUE(SELF);
+    dc_debug_fmt_print(fmt, stream, "front: ");
+    NS(ITEM_VECTORS, debug)(&self->front, fmt, stream);
+    fprintf(stream, ",\n");
+
+    dc_debug_fmt_print(fmt, stream, "back: ");
+    NS(ITEM_VECTORS, debug)(&self->back, fmt, stream);
+    fprintf(stream, ",\n");
+
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}\n");
+}
+
+#undef INVARIANT_CHECK
+#undef ITEM_VECTORS
+#undef ITEM_DEBUG
+#undef ITEM_CLONE
+#undef ITEM_DELETE
+#undef ITEM
+
+DC_TRAIT_QUEUE(SELF);
 
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>

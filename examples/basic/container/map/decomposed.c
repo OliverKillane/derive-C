@@ -12,7 +12,7 @@
 #include <derive-c/algorithm/hash/hashers.h>
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
-#include <derive-c/derive/std.h>
+#include <derive-c/utils/for.h>
 
 #define KEY uint32_t
 #define KEY_EQ uint32_t_eq
@@ -23,12 +23,9 @@
 
 void print_map(id_to_name const* map) {
     printf("Map has items:\n");
-    id_to_name_iter_const iter = id_to_name_get_iter_const(map);
-
-    id_to_name_kv_const const* entry = NULL;
     size_t pos = 0;
-    while ((entry = id_to_name_iter_const_next(&iter))) {
-        printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry->key, *entry->value);
+    FOR_CONST(id_to_name, map, iter, entry) {
+        printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry.key, *entry.value);
         pos++;
     }
 }
@@ -40,15 +37,17 @@ void id_to_name_example() {
     id_to_name_insert(&map, 23, "hello");
     id_to_name_insert(&map, 10, "bob");
     id_to_name_insert(&map, 42, "meaning");
-    ASSERT(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
+    DC_ASSERT(strcmp(*id_to_name_read(&map, 42), "meaning") == 0);
 
     print_map(&map);
 
     char const** entry = id_to_name_write(&map, 23);
-    ASSERT(entry);
+    DC_ASSERT(entry);
     *entry = "a different string!";
 
     print_map(&map);
+
+    id_to_name_debug(&map, dc_debug_fmt_new(), stdout);
 
     id_to_name_delete(&map);
 }
@@ -57,6 +56,11 @@ struct report_id {
     char* name;
     uint32_t section;
 };
+
+void report_id_debug(struct report_id const* self, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, " report_id@%p { name: \"%s\", section: %d}", self, self->name, self->section);
+}
 
 bool report_id_equality(struct report_id const* report_1, struct report_id const* report_2) {
     return strcmp(report_1->name, report_2->name) == 0 && report_1->section == report_2->section;
@@ -74,14 +78,22 @@ struct report {
     int value;
 };
 
+void report_debug(struct report const* self, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, " report@%p { description: \"%s\", value: %d}", self, self->description,
+            self->value);
+}
+
 void report_delete(struct report* self) { free(self->description); }
 
 #define KEY struct report_id
 #define KEY_EQ report_id_equality
 #define KEY_HASH report_id_hash
 #define KEY_DELETE report_id_delete
+#define KEY_DEBUG report_id_debug
 #define VALUE struct report
 #define VALUE_DELETE report_delete
+#define VALUE_DEBUG report_debug
 #define NAME report_map
 #include <derive-c/container/map/decomposed/template.h>
 
@@ -97,21 +109,23 @@ void report_map_example() {
     report_map_insert(&map, id2,
                       (struct report){.description = strdup("Description B"), .value = 200});
 
-    ASSERT(strcmp(report_map_read(&map, id1)->description, "Description A") == 0);
+    DC_ASSERT(strcmp(report_map_read(&map, id1)->description, "Description A") == 0);
 
     {
-        report_map_iter_const iter = report_map_get_iter_const(&map);
-        report_map_kv_const const* entry = NULL;
         size_t pos = 0;
-        while ((entry = report_map_iter_const_next(&iter))) {
-            printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry->key->name,
-                   entry->key->section, entry->value->value);
+        FOR_CONST(report_map, &map, iter, entry) {
+            printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry.key->name,
+                   entry.key->section, entry.value->value);
             pos++;
         }
     }
 
+    report_map_debug(&map, dc_debug_fmt_new(), stdout);
+
     struct report entry = report_map_remove(&map, id1);
     report_delete(&entry);
+
+    report_map_debug(&map, dc_debug_fmt_new(), stdout);
 
     report_map_delete(&map);
 }
@@ -119,6 +133,11 @@ void report_map_example() {
 struct fixed_string {
     char value[4];
 };
+
+void fixed_string_debug(struct fixed_string const* self, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "fixed_string@%p { value: \"%.*s\" }", self, 4, self->value);
+}
 
 bool fixed_string_eq(struct fixed_string const* str1, struct fixed_string const* str2) {
     return memcmp(str1->value, str2->value, sizeof(str1->value)) == 0;
@@ -131,6 +150,7 @@ size_t fixed_string_hash(struct fixed_string const* str) {
 #define KEY struct fixed_string
 #define KEY_EQ fixed_string_eq
 #define KEY_HASH fixed_string_hash
+#define KEY_DEBUG fixed_string_debug
 #define VALUE uint32_t
 #define NAME fixed_string_map
 #include <derive-c/container/map/decomposed/template.h>
@@ -147,18 +167,17 @@ void fixed_string_example() {
     fixed_string_map_insert(&map, key2, 456);
     fixed_string_map_insert(&map, key3, 789);
 
-    ASSERT(*fixed_string_map_read(&map, key1) == 123);
-    ASSERT(*fixed_string_map_read(&map, key2) == 456);
-    ASSERT(*fixed_string_map_read(&map, key3) == 789);
+    DC_ASSERT(*fixed_string_map_read(&map, key1) == 123);
+    DC_ASSERT(*fixed_string_map_read(&map, key2) == 456);
+    DC_ASSERT(*fixed_string_map_read(&map, key3) == 789);
 
-    fixed_string_map_iter_const iter = fixed_string_map_get_iter_const(&map);
-
-    fixed_string_map_kv_const const* entry = NULL;
     size_t pos = 0;
-    while ((entry = fixed_string_map_iter_const_next(&iter))) {
-        printf("Position: %zu Key: %.3s Value: %u\n", pos, entry->key->value, *entry->value);
+    FOR_CONST(fixed_string_map, &map, iter, entry) {
+        printf("Position: %zu Key: %.3s Value: %u\n", pos, entry.key->value, *entry.value);
         pos++;
     }
+
+    fixed_string_map_debug(&map, dc_debug_fmt_new(), stdout);
 
     fixed_string_map_delete(&map);
 }

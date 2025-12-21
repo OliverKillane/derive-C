@@ -70,9 +70,12 @@ option(OPT_REPORTS "Create Clang Optimisation Reports" Off)
 option(TESTS "Build tests" ON)
 option(BENCH "Build benchmarks" ON)
 option(DOCS "Build documentation" ON)
+option(LINTING "Enable linting & formatting" ON)
 
 add_subdirectory(src)
 add_subdirectory(examples)
+add_subdirectory(scripts)
+
 if (TESTS)
     add_subdirectory(test)
 endif()
@@ -84,9 +87,6 @@ endif()
 if(DOCS)
    add_subdirectory(docs)
 endif()
-
-# Linting
-option(LINTING "Enable linting & formatting" ON)
 
 if(LINTING)
     # JUSTIFY: No formatting for cmake
@@ -157,6 +157,7 @@ if(LINTING)
           -p ${CMAKE_BINARY_DIR}
           --extra-arg-before=-xc 
           --extra-arg-before=-std=c23
+          --extra-arg=-D_GNU_SOURCE # For cookie_io from stdio.h
           --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR} 
           --extra-arg=-I${CMAKE_SOURCE_DIR}/src 
           --header-filter="^${CMAKE_SOURCE_DIR}/src/" 

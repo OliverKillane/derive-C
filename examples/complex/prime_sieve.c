@@ -80,7 +80,7 @@ void compute(sieve_vec* sieve) {
 
 int main() {
     size_t up_to = 28;
-    ASSERT(up_to < MAX_UP_TO);
+    DC_ASSERT(up_to < MAX_UP_TO);
     printf("Listing primes up to: %zu\n", up_to);
     bump_alloc_buffer buf;
     bump_alloc alloc = bump_alloc_new(&buf);

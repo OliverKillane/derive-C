@@ -1,10 +1,9 @@
-#include <derive-cpp/test/gtest_panic.hpp>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <derive-cpp/test/trampoline.hpp>
 
-extern "C" {
 #include <derive-c/test/mock.h>
 MOCKABLE(void, free_int, (int* ptr)) { (void)ptr; }
 MOCKABLE(int, clone_int, (int const* self)) { return *self; }
@@ -14,7 +13,6 @@ MOCKABLE(int, clone_int, (int const* self)) { return *self; }
 #define ITEM_CLONE clone_int
 #define ITEM_DELETE free_int
 #include <derive-c/utils/option/template.h>
-}
 
 using namespace testing;
 

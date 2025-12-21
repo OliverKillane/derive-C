@@ -1,0 +1,12 @@
+#pragma once
+#include <derive-c/core/math.h>
+
+#define DC_ARENA_CHUNKED_INDEX_TO_BLOCK(INDEX, BLOCK_INDEX_BITS) ((INDEX) >> (BLOCK_INDEX_BITS))
+
+#define DC_ARENA_CHUNKED_INDEX_TO_OFFSET(INDEX, BLOCK_INDEX_BITS)                                  \
+    ((INDEX) & ((1ULL << (BLOCK_INDEX_BITS)) - 1ULL))
+
+#define DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(BLOCK, OFFSET, BLOCK_INDEX_BITS)                    \
+    (((BLOCK) << (BLOCK_INDEX_BITS)) + OFFSET)
+
+#define DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS) (1ULL << (BLOCK_INDEX_BITS))

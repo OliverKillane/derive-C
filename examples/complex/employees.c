@@ -10,6 +10,7 @@
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
+#include <derive-c/utils/for.h>
 
 typedef struct {
     char const* forename;
@@ -28,9 +29,22 @@ bool name_eq(const name* name_1, const name* name_2) {
            strcmp(name_1->surname, name_2->surname) == 0;
 }
 
+void name_debug(const name* self, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "name@%p { forename: \"%s\", surname: \"%s\" }", self, self->forename,
+            self->surname);
+}
+
 typedef struct {
     int value;
 } age;
+
+bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->value; }
+size_t age_hash(age const* age) { return age->value; }
+void age_debug(age const* self, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "%d years", self->value);
+}
 
 typedef struct {
     name name;
@@ -38,22 +52,41 @@ typedef struct {
     age age;
 } employee;
 
-bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->value; }
-size_t age_hash(age const* age) { return age->value; }
+void employee_debug(employee const* self, dc_debug_fmt fmt, FILE* stream) {
+    fprintf(stream, "employee@%p {\n", self);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+
+    dc_debug_fmt_print(fmt, stream, "name: ");
+    name_debug(&self->name, fmt, stream);
+    fprintf(stream, ",\n");
+
+    dc_debug_fmt_print(fmt, stream, "email: \"%s\",\n", self->email);
+
+    dc_debug_fmt_print(fmt, stream, "age: ");
+    age_debug(&self->age, fmt, stream);
+    fprintf(stream, ",\n");
+
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
+}
 
 #define INDEX_BITS 16
 #define VALUE employee
+#define VALUE_DEBUG employee_debug
 #define NAME employees
-#include <derive-c/container/arena/basic/template.h>
+#include <derive-c/container/arena/contiguous/template.h>
 
 #define ITEM employees_index_t
+#define ITEM_DEBUG employees_index_t_debug
 #define NAME same_age_employees
 #include <derive-c/container/vector/dynamic/template.h>
 
 #define KEY age
 #define KEY_EQ age_eq
 #define KEY_HASH age_hash
+#define KEY_DEBUG age_debug
 #define VALUE same_age_employees
+#define VALUE_DEBUG same_age_employees_debug
 #define NAME employees_by_age
 #include <derive-c/container/map/decomposed/template.h>
 
@@ -93,14 +126,26 @@ employee const* hr_system_newest_of_age(hr_system const* self, age age) {
     return employees_read(&self->data, *idx);
 }
 
+void hr_system_debug(hr_system const* self, dc_debug_fmt fmt, FILE* stream) {
+    fprintf(stream, "hr_system@%p {\n", self);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+
+    dc_debug_fmt_print(fmt, stream, "data: ");
+    employees_debug(&self->data, fmt, stream);
+    fprintf(stream, ",\n");
+
+    dc_debug_fmt_print(fmt, stream, "by_age: ");
+    employees_by_age_debug(&self->by_age, fmt, stream);
+    fprintf(stream, ",\n");
+
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
+}
+
 void hr_system_delete(hr_system* self) {
     employees_delete(&self->data);
 
-    employees_by_age_iter iter = employees_by_age_get_iter(&self->by_age);
-    employees_by_age_kv const* entry = NULL;
-    while ((entry = employees_by_age_iter_next(&iter))) {
-        same_age_employees_delete(entry->value);
-    }
+    FOR(employees_by_age, &self->by_age, iter, entry) { same_age_employees_delete(entry.value); }
 
     employees_by_age_delete(&self->by_age);
 }
@@ -131,8 +176,10 @@ int main() {
     hr_system_new_employee(&hr, bob);
 
     employee const* newest_22 = hr_system_newest_of_age(&hr, (age){.value = 22});
-    ASSERT(newest_22);
-    ASSERT(name_eq(&newest_22->name, &bob_name));
+    DC_ASSERT(newest_22);
+    DC_ASSERT(name_eq(&newest_22->name, &bob_name));
+
+    hr_system_debug(&hr, dc_debug_fmt_new(), stdout);
 
     hr_system_delete(&hr);
 }

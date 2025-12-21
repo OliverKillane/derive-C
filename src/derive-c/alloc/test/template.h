@@ -6,13 +6,10 @@
 /// As this is entirely C, we do not get the niceties of a C++ RAII allocator guard shebang.
 /// However, this is usable inside unit tests written in C.
 
-// JUSTIFY: No custom memory tracking
-//  - already done by the wrapper allocator
-
-#include <stddef.h>
-
-#include <derive-c/alloc/trait.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/includes/def.h>
+#if !defined(SKIP_INCLUDES)
+    #include "includes.h"
+#endif
 
 #include <derive-c/core/alloc/def.h>
 #include <derive-c/core/self/def.h>
@@ -38,6 +35,14 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
 
 static void NS(SELF, free)(SELF* self, void* ptr) { NS(ALLOC, free)(self->alloc, ptr); }
 
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+    fprintf(stream, STRINGIFY(SELF) " @%p {", self);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "alloc: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
+}
+
 #else
     #include <derive-c/alloc/std.h>
     #define ENTRIES_VECTOR NS(NAME, entries)
@@ -55,9 +60,9 @@ typedef struct {
     //           - Much easier to explore a vector, than a hashmap in gdb.
     // JUSTIFY: Always use the std allocator for test book keeping
     //          - keeps the observed behaviour (e.g. allocator usage) the same as in release
-    #define ITEM TRACKED_ENTRY
-    #define ALLOC stdalloc
-    #define INTERNAL_NAME ENTRIES_VECTOR
+    #define ITEM TRACKED_ENTRY           // [DERIVE-C] for template
+    #define ALLOC stdalloc               // [DERIVE-C] for template
+    #define INTERNAL_NAME ENTRIES_VECTOR // [DERIVE-C] for template
     #include <derive-c/container/vector/dynamic/template.h>
 
     #pragma pop_macro("ALLOC")
@@ -72,7 +77,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
 }
 
 static ENTRIES_VECTOR const* NS(SELF, get_entries)(SELF const* self) {
-    ASSUME(self);
+    DC_ASSUME(self);
     return &self->entries;
 }
 
@@ -90,7 +95,7 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 }
 
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
-    ASSUME(self);
+    DC_ASSUME(self);
     void* ptr = NS(ALLOC, calloc)(self->alloc, count, size);
     if (ptr) {
         NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
@@ -102,7 +107,7 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
-    ASSUME(self);
+    DC_ASSUME(self);
     void* ptr = NS(ALLOC, malloc)(self->alloc, size);
     if (ptr) {
         NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
@@ -114,21 +119,21 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 }
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-    ASSUME(self);
-    ASSUME(ptr);
+    DC_ASSUME(self);
+    DC_ASSUME(ptr);
     return NS(ALLOC, realloc)(self->alloc, ptr, size);
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
-    ASSUME(ptr);
-    ASSUME(self);
+    DC_ASSUME(ptr);
+    DC_ASSUME(self);
 
     NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
     TRACKED_ENTRY* entry;
 
     while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
         if (entry->ptr == ptr) {
-            ASSUME(!entry->freed);
+            DC_ASSUME(!entry->freed);
             entry->freed = true;
             break;
         }
@@ -137,11 +142,21 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
     NS(ALLOC, free)(self->alloc, ptr);
 }
 
-    #undef ENTRIES_VECTOR
+static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+    fprintf(stream, STRINGIFY(SELF) " @%p {", self);
+    fmt = dc_debug_fmt_scope_begin(fmt);
+    dc_debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
+    NS(ENTRIES_VECTOR, debug)(&self->entries, fmt, stream);
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}");
+}
+
     #undef TRACKED_ENTRY
+    #undef ENTRIES_VECTOR
 #endif
 
-#include <derive-c/core/alloc/undef.h>
+DC_TRAIT_ALLOC(SELF);
 
-TRAIT_ALLOC(SELF);
 #include <derive-c/core/self/undef.h>
+#include <derive-c/core/alloc/undef.h>
+#include <derive-c/core/includes/undef.h>
