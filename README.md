@@ -69,6 +69,11 @@ infer explore
 ```
  - Statically detects generic bugs (e.g. use after free, buffer overrun, integer overflow)
 
+To check for dependency upgrades in the cpp code:
+```bash
+LOG_LEVEL=debug renovate --platform=local --dry-run=full
+```
+
 ### Remaining Work
 In development, remaining tasks:
  - Fix remaining infer-detected casting issues
