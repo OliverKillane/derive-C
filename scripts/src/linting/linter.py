@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Self, TypeAlias
+from typing import Self
 from concurrent.futures import ThreadPoolExecutor
 
 DERIVE_C_TAG: str = "[DERIVE-C]"
@@ -44,7 +44,7 @@ class ResultMultiple:
         return all(result.successful for result in self.results.values())
 
 
-Result: TypeAlias = ResultSingle | ResultMultiple
+type Result = ResultSingle | ResultMultiple
 
 
 @dataclass
