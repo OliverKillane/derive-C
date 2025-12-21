@@ -1,12 +1,10 @@
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/alloc/std.h>
 
 #define ALLOC stdalloc
 #define NAME stddebugalloc
 #include <derive-c/alloc/debug/template.h>
-}
 
 TEST(DebugAlloc, BasicAllocation) {
     stddebugalloc alloc = stddebugalloc_new("Test Allocator", stdalloc_get());

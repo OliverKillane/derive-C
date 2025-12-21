@@ -4,7 +4,6 @@
 #include <cerrno>
 #include <cstdio>
 
-extern "C" {
 #include <derive-c/alloc/std.h>
 
 #define ALLOC stdalloc
@@ -18,7 +17,6 @@ extern "C" {
 #define ALLOC alloc_128
 #define NAME string_builder_static
 #include <derive-c/utils/string_builder/template.h>
-}
 
 TEST(StringBuilder, Basic) {
     string_builder sb = string_builder_new(stdalloc_get());
@@ -58,7 +56,7 @@ TEST(StringBuilder, Release) {
 }
 
 TEST(StringBuilder, VeryLargeString) {
-    const auto repeat = "foooo!!!";
+    const auto* const repeat = "foooo!!!";
     string_builder sb = string_builder_new(stdalloc_get());
     std::string expected;
     for (auto i = 0; i < 1024; i++) {

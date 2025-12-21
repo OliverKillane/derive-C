@@ -1,9 +1,7 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/container/arena/geometric/utils.h>
-}
 
 TEST(ArenaGeometricUtils, MostSignificantBit) {
     EXPECT_EQ(0, DC_MATH_MSB_INDEX((uint8_t)0));

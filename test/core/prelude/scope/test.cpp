@@ -6,7 +6,6 @@
 
 #include <derive-cpp/test/trampoline.hpp>
 
-extern "C" {
 #include <derive-c/core/prelude.h>
 #include <derive-c/test/mock.h>
 typedef struct {
@@ -28,7 +27,6 @@ void foo_delete(foo* f) { foo_on_delete(f); }
 MOCKABLE(void, on_some_fcn, ()) {}
 
 void some_fcn(sentinel*) { on_some_fcn(); }
-}
 
 using namespace testing;
 

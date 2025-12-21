@@ -1,7 +1,6 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
@@ -9,7 +8,6 @@ extern "C" {
 #define VALUE size_t
 #define INDEX_BITS 8
 #include <derive-c/container/arena/contiguous/template.h>
-}
 
 TEST(ArenaTests, Full) {
     Sut sut = Sut_new_with_capacity_for(1, stdalloc_get());

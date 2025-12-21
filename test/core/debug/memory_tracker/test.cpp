@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 #include <initializer_list>
 
-extern "C" {
 // JUSTIFY: No customd defines for the checker implementation or global level.
 //  - Set and check should be usable regardless msan or asan usage
 //  - matrix build in CI covers configurations
@@ -12,7 +11,6 @@ void set_and_check(dc_memory_tracker_level level, dc_memory_tracker_capability c
                    const void* addr, size_t size) {
     dc_memory_tracker_set(level, cap, addr, size);
     dc_memory_tracker_check(level, cap, addr, size);
-}
 }
 
 TEST(MemoryTrackerTest, BasicChecks) {
@@ -46,13 +44,11 @@ TEST(MemoryTrackerTest, BasicChecks) {
     }
 }
 
-extern "C" {
 #include <derive-c/alloc/std.h>
 
 #define ALLOC stdalloc
 #define NAME string_builder
 #include <derive-c/utils/string_builder/template.h>
-}
 
 // TODO(oliverillane): Add msan output
 #if defined ASAN_ON

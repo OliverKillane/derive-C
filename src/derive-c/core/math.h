@@ -11,13 +11,39 @@
 // - So this can be used in static asserts
 #define DC_MATH_IS_POWER_OF_2(x) ((x) != 0 && ((x) & ((x) - 1)) == 0)
 
-#define DC_MATH_MSB_INDEX(x)                                                                       \
-    (x == 0 ? 0                                                                                    \
-            : _Generic((x),                                                                        \
-             uint8_t: (7u - __builtin_clz((uint32_t)((x)) << 24)),                                 \
-             uint16_t: (15u - __builtin_clz((uint32_t)((x)) << 16)),                               \
-             uint32_t: (31u - __builtin_clz((uint32_t)(x))),                                       \
-             uint64_t: (63u - __builtin_clzll((uint64_t)(x)))))
+#ifdef __cplusplus
+
+    #include <bit>
+    #include <type_traits>
+
+namespace dc::math {
+
+template <typename T> constexpr unsigned msb_index(T x) noexcept {
+    static_assert(std::is_unsigned_v<T>, "DC_MATH_MSB_INDEX requires an unsigned integer type");
+
+    if (x == 0) {
+        return 0U;
+    }
+
+    constexpr unsigned bits = sizeof(T) * 8U;
+    return bits - 1U - std::countl_zero(x);
+}
+
+} // namespace dc::math
+
+    #define DC_MATH_MSB_INDEX(x) ::dc::math::msb_index(x)
+
+#else /* C */
+
+    #define DC_MATH_MSB_INDEX(x)                                                                   \
+        ((x) == 0 ? 0                                                                              \
+                  : _Generic((x),                                                                  \
+                 uint8_t: (7u - __builtin_clz((uint32_t)((x)) << 24)),                             \
+                 uint16_t: (15u - __builtin_clz((uint32_t)((x)) << 16)),                           \
+                 uint32_t: (31u - __builtin_clz((uint32_t)(x))),                                   \
+                 uint64_t: (63u - __builtin_clzll((uint64_t)(x)))))
+
+#endif /* __cplusplus */
 
 static DC_INLINE DC_CONST size_t dc_math_next_power_of_2(size_t x) {
     if (x == 0)

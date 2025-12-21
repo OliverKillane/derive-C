@@ -1,7 +1,6 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/alloc/std.h>
 
 #define ITEM int
@@ -9,7 +8,6 @@ extern "C" {
 #include <derive-c/container/vector/dynamic/template.h>
 
 #include <derive-c/utils/for.h>
-}
 
 TEST(For, empty_iterator) {
     int_vec v = int_vec_new(stdalloc_get());

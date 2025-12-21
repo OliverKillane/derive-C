@@ -1,10 +1,8 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/container/bitset/static/utils.h>
 #include <derive-c/utils/for.h>
-}
 
 TEST(BitsetStaticUtils, OffsetToMask) {
     EXPECT_EQ(0x01, DC_BITSET_STATIC_OFFSET_TO_MASK((uint8_t)0));
@@ -48,11 +46,9 @@ TEST(BitsetStaticUtils, IndexToBytesAndOffset) {
     EXPECT_EQ(7, DC_BITSET_STATIC_INDEX_TO_OFFSET((uint8_t)23));
 }
 
-extern "C" {
 #define EXCLUSIVE_END_INDEX 16
 #define NAME Sut
 #include <derive-c/container/bitset/static/template.h>
-}
 
 TEST(BitsetStaticUtils, SutUsage) {
     Sut bitset = Sut_new();

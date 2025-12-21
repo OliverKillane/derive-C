@@ -1,12 +1,10 @@
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/core/debug/memory_tracker.h>
 
 #define CAPACITY 1024
 #define NAME staticbumpalloc
 #include <derive-c/alloc/staticbump/template.h>
-}
 
 TEST(StaticBumpAlloc, BasicAllocation) {
     staticbumpalloc_buffer buf;

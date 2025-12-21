@@ -51,7 +51,7 @@ include(GoogleTest)
 # ------------------------------------------------------------------------------
 # Discover test / fuzz sources (deep)
 # ------------------------------------------------------------------------------
-file(GLOB_RECURSE _ALL_TEST_CPP CONFIGURE_DEPENDS
+file(GLOB_RECURSE _ALL_TEST_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
 

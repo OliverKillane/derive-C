@@ -4,7 +4,6 @@
 
 #include <derive-cpp/test/trampoline.hpp>
 
-extern "C" {
 #include <derive-c/test/mock.h>
 
 static size_t none_count = 0;
@@ -12,7 +11,6 @@ MOCKABLE(void, none, (void)) { none_count++; }
 MOCKABLE(int, foo, (int a)) { return 2; }
 MOCKABLE(void, array, (int a[6])) {}
 MOCKABLE(void, fn_ptr, (void (*fn)(int))) {}
-}
 
 using namespace testing;
 

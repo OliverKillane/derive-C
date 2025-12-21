@@ -1,9 +1,7 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/container/arena/chunked/utils.h>
-}
 
 TEST(ArenaChunkedUtils, IndexToBlock) {
     EXPECT_EQ(DC_ARENA_CHUNKED_INDEX_TO_BLOCK(0, 1), 0);

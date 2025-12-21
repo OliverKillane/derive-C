@@ -1,7 +1,6 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
 #include <derive-c/utils/for.h>
 
 #define CAPACITY 256
@@ -10,7 +9,6 @@ extern "C" {
 #define VALUE size_t
 #define NAME Sut
 #include <derive-c/container/map/staticlinear/template.h>
-}
 
 TEST(StaticLinearMap, InsertAndRead) {
     Sut map = Sut_new();
