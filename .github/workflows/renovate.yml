@@ -5,7 +5,6 @@ on:
     - cron: "15 3 * * 0"
   workflow_dispatch:
 
-# Renovate creates branches + PRs, so it needs these.
 permissions:
   contents: write
   pull-requests: write
@@ -25,14 +24,9 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Renovate
+      - name: Run Renovate
         env:
-          RENOVATE_TOKEN: ${{ secrets.RENOVATE_GH_TOKEN }}
-          LOG_LEVEL: debug
-        run: |
-          nix-shell toolchain/clang.nix --run '
-            renovate \
-              --platform=github \
-              --dry-run=full \
-              "$GITHUB_REPOSITORY"
-          '
+            # Token Renovate uses for GitHub API + pushing branches
+            RENOVATE_TOKEN: ${{ secrets.RENOVATE_GH_TOKEN }}
+            LOG_LEVEL: info
+        run: nix-shell toolchain/clang.nix --run "renovate --platform=github \"\$GITHUB_REPOSITORY\""

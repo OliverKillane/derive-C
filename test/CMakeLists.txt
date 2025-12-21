@@ -31,10 +31,14 @@ add_compile_options(-Wno-deprecated-declarations)
 # ------------------------------------------------------------------------------
 # Externals
 # ------------------------------------------------------------------------------
+
+set(GOOGLE_TEST_VERSION v1.14.0)
+set(RAPID_CHECK_VERSION ff6af6fc683159deb51c543b065eba14dfcf329b)
+
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.14.0
+  GIT_TAG "${GOOGLE_TEST_VERSION}"
 )
 FetchContent_MakeAvailable(googletest)
 
@@ -42,7 +46,7 @@ set(RC_ENABLE_GTEST ON CACHE BOOL "Rapidcheck GTest Support" FORCE)
 FetchContent_Declare(
   rapidcheck
   GIT_REPOSITORY https://github.com/emil-e/rapidcheck.git
-  GIT_TAG ff6af6fc683159deb51c543b065eba14dfcf329b # Latest as of 3/30/2025
+  GIT_TAG "${RAPID_CHECK_VERSION}"
 )
 FetchContent_MakeAvailable(rapidcheck)
 
