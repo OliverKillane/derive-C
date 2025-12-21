@@ -2,6 +2,7 @@
 
 _Easy templated data strctures in C_
 
+## Elevator Pitch
 When using C for complex projects, the lack of generics is frustrating:
  - tradeoff performance and store runtime type information (e.g. size of items in a vector)
  - tradeoff usability and restrict sizes of types, use unions (e.g. vector of only 8 byte items, user must cast to their own type, debuggers unaware of _real_ type)
@@ -68,7 +69,7 @@ infer explore
 ```
  - Statically detects generic bugs (e.g. use after free, buffer overrun, integer overflow)
 
-### TODO
+### Remaining Work
 In development, remaining tasks:
  - Fix remaining infer-detected casting issues
  - Increase coverage
