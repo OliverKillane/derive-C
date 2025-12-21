@@ -22,6 +22,7 @@ llvm20.stdenv.mkDerivation {
       ninja
       doxygen
       graphviz
+      renovate   # <--- added
     ]) ++ [
       uv
     ] ++ (with llvm20; [
@@ -42,6 +43,7 @@ llvm20.stdenv.mkDerivation {
 
     echo "Sanitizer headers -> ${crt.dev}/include"
     echo "uv from nixpkgs-unstable: $(uv --version || echo 'not yet built')"
+    echo "renovate: $(renovate --version 2>/dev/null || echo 'not yet built')"
 
     # Generate VSCode settings
     (

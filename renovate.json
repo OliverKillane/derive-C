@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "timezone": "Europe/Amsterdam",
+
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 1,
+
+  "packageRules": [
+    {
+      "matchManagers": ["pep621"],
+      "matchFileNames": ["scripts/pyproject.toml"],
+      "groupName": "python (scripts) deps"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    },
+    {
+      "matchManagers": ["regex"],
+      "groupName": "cmake fetchcontent deps"
+    }
+  ],
+
+  "regexManagers": [
+    {
+      "fileMatch": ["(^|/)CMakeLists\\.txt$"],
+      "matchStrings": [
+        "FetchContent_Declare\\(\\s*googletest[\\s\\S]*?GIT_REPOSITORY\\s+https://github\\.com/google/googletest\\.git[\\s\\S]*?GIT_TAG\\s+(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "depNameTemplate": "google/googletest",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    },
+    {
+      "fileMatch": ["(^|/)CMakeLists\\.txt$"],
+      "matchStrings": [
+        "FetchContent_Declare\\(\\s*rapidcheck[\\s\\S]*?GIT_REPOSITORY\\s+https://github\\.com/emil-e/rapidcheck\\.git[\\s\\S]*?GIT_TAG\\s+(?<currentDigest>[0-9a-f]{40})"
+      ],
+      "depNameTemplate": "emil-e/rapidcheck",
+      "datasourceTemplate": "git-refs",
+      "packageNameTemplate": "github.com/emil-e/rapidcheck",
+      "currentValueTemplate": "refs/heads/master"
+    }
+  ]
+}
