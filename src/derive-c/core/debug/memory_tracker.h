@@ -178,9 +178,9 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
 static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size) {
     fprintf(stream, "memory tracker debug (%zu bytes) at %p ", size, addr);
 #if defined(MSAN_ON)
-    fprintf(stream, "[MSAN]: ")
-        // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
-        for (size_t i = 0; i < size; i++) {
+    fprintf(stream, "[MSAN]: ");
+    // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
+    for (size_t i = 0; i < size; i++) {
         fprintf(stream, "\n%p: ", (char*)addr + i);
         if (__msan_test_shadow((char*)addr + i, 1) == -1) {
             fprintf(stream, "U [%02x]", *((unsigned char*)addr + i));
