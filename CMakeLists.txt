@@ -5,17 +5,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # C & C++ Standards
 # - Use of `_Generic` means C11 minimum
-set(CMAKE_C_STANDARD            23  CACHE STRING "C standard"             FORCE)
-set(CMAKE_C_STANDARD_REQUIRED   ON  CACHE BOOL   "Require C std"          FORCE)
-set(CMAKE_C_EXTENSIONS          OFF CACHE BOOL   "No compiler extensions" FORCE)
-set(CMAKE_CXX_STANDARD          23  CACHE STRING "C++ standard"           FORCE)
-set(CMAKE_CXX_STANDARD_REQUIRED ON  CACHE BOOL   "Require C++ std"        FORCE)
-set(CMAKE_CXX_EXTENSIONS        OFF CACHE BOOL   "No compiler extensions" FORCE)
+set(CMAKE_C_STANDARD            23  CACHE STRING "C standard"            )
+set(CMAKE_C_STANDARD_REQUIRED   ON  CACHE BOOL   "Require C std"         )
+set(CMAKE_C_EXTENSIONS          OFF CACHE BOOL   "No compiler extensions")
+set(CMAKE_CXX_STANDARD          23  CACHE STRING "C++ standard"          )
+set(CMAKE_CXX_STANDARD_REQUIRED ON  CACHE BOOL   "Require C++ std"       )
+set(CMAKE_CXX_EXTENSIONS        OFF CACHE BOOL   "No compiler extensions")
 
 # Build type
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "No build type selected, defaulting to Debug")
-  set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type" FORCE)
+  set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type")
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
 endif()
 
@@ -28,7 +28,7 @@ else()
   set(DEFAULT_SANITIZERS "")
 endif()
 
-set(SANITIZERS "${DEFAULT_SANITIZERS}" CACHE STRING "Sanitizers to use" FORCE)
+set(SANITIZERS "${DEFAULT_SANITIZERS}" CACHE STRING "Sanitizers to use")
 set_property(CACHE SANITIZERS PROPERTY STRINGS "address,undefined" "memory" "thread")
 if (SANITIZERS)
 
