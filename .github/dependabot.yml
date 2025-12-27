@@ -5,3 +5,11 @@ updates:
     directory: "/scripts"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "update script dependencies"
+    reviewers:
+      - "oliverkillane"
+    groups:
+      python-packages:
+        patterns:
+          - "*"

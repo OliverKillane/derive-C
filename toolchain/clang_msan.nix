@@ -1,14 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  pkgsUnstable = import (builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz";
-    sha256 = "1zb5ca8jqavb19j7g06a41jg6bvpr20b9lihvham6qywhgaqprz9";
-  }) {};
-
-  uv = pkgsUnstable.uv;
-  renovate = pkgsUnstable.renovate;
-
   llvm = pkgs.llvmPackages_20;
   crt  = llvm.compiler-rt-libc;
 
@@ -94,16 +86,16 @@ let
 
 in
 pkgs.mkShell {
-  name = "derive-c-clang-msan";
+  name = "derive-c-clang-msan-min";
 
+  # Minimal: just enough to configure/build with clang, and provide MSan libc++
   buildInputs =
-    (with pkgs; [ cmake ninja doxygen graphviz ]) ++
-    [ uv renovate ] ++
-    (with llvm; [ clang clang-tools compiler-rt compiler-rt-libc ]) ++
+    (with pkgs; [ cmake ninja ]) ++
+    (with llvm; [ clang compiler-rt compiler-rt-libc ]) ++
     [ msanLibcxx ];
 
   shellHook = ''
-    echo "=== derive-C MSan shell (env only; enable MSan via CMake) ==="
+    echo "=== derive-C MSan shell (minimal) ==="
     echo "clang: $(${clang}/bin/clang --version | head -n1)"
     echo "msan libc++ prefix: ${msanLibcxx}"
     echo "msan libc++ headers: ${msanLibcxx}/include/c++/v1"

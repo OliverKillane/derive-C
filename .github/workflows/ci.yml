@@ -12,6 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: clang_debug_asan_ubsan_no_custom_poisoning
+            build_type: Debug
+            toolchain: clang_dev.nix
+            flags: "-DUSE_ASAN=On -DUSE_UBSAN=On -DUSE_MSAN=Off -DCUSTOM_MEMORY_TRACKING=0"
+            coverage: true
+            lint: On
           - name: clang_debug_asan_ubsan
             build_type: Debug
             toolchain: clang_dev.nix
@@ -22,6 +28,12 @@ jobs:
             build_type: Debug
             toolchain: clang_msan.nix
             flags: "-DUSE_ASAN=Off -DUSE_UBSAN=Off -DUSE_MSAN=On"
+            coverage: false
+            lint: Off
+          - name: clang_debug_msan_no_custom_poisoning
+            build_type: Debug
+            toolchain: clang_msan.nix
+            flags: "-DUSE_ASAN=Off -DUSE_UBSAN=Off -DUSE_MSAN=On -DCUSTOM_MEMORY_TRACKING=0"
             coverage: false
             lint: Off
           - name: clang_release

@@ -19,8 +19,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
 endif()
 
-
-
 # Sanitizers
 #  - Supporting address,undefined by default. Msan and tsan are enableable separately.
 #  - Defaulted only in debug
@@ -38,12 +36,10 @@ option(USE_ASAN  "Enable AddressSanitizer (ASan)"            ${_dbg_default})
 option(USE_UBSAN "Enable UndefinedBehaviorSanitizer (UBSan)" ${_dbg_default})
 option(USE_MSAN  "Enable MemorySanitizer (MSan)"             OFF)
 
-# MSan can't be mixed with others
 if (USE_MSAN AND (USE_ASAN OR USE_UBSAN))
   message(FATAL_ERROR "MSan cannot be enabled together with ASan/UBSan. Use only USE_MSAN=ON.")
 endif()
 
-# Build one -fsanitize=... string for ASan/UBSan so they can be enabled together cleanly
 set(_SAN_CSV "")
 if (USE_ASAN)
   set(_SAN_CSV "address")
@@ -56,7 +52,6 @@ if (USE_UBSAN)
   endif()
 endif()
 
-# Apply ASan/UBSan flags (possibly both)
 if (NOT _SAN_CSV STREQUAL "")
   add_compile_options(-fsanitize=${_SAN_CSV})
   add_link_options(-fsanitize=${_SAN_CSV})
@@ -70,9 +65,16 @@ if (USE_MSAN)
     message(FATAL_ERROR "msan is not supported with coverage")
   endif()
 
-  add_compile_options(-fsanitize-memory-track-origins)
+  # JUSTIFY: Remove optimisations
+  # For better stack traces (https://clang.llvm.org/docs/MemorySanitizer.html#how-to-build)
+  add_compile_options(
+    -fsanitize-memory-track-origins
+    -fno-optimize-sibling-calls
+  )
 
-  # Pull paths from nix-shell exports
+  # JUSTIFY: Using a different libc++
+  # - All libraries used must be instrumented, including libc++
+  # - Here we use variables exported by the clang_msan.nix shell
   set(_MSAN_LIBCXX "$ENV{NIX_MSAN_LIBCXX}")
   set(_MSAN_CXXINC "$ENV{NIX_MSAN_CXXINC}")
   set(_MSAN_LIBDIR "$ENV{NIX_MSAN_LIBDIR}")

@@ -1,15 +1,13 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  # Pull only uv + renovate from unstable
   pkgs = import <nixpkgs> {};
   pkgsUnstable = import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz";
-    sha256 = "1zb5ca8jqavb19j7g06a41jg6bvpr20b9lihvham6qywhgaqprz9";  # allow Nix to tell you the correct hash
+    sha256 = "1zb5ca8jqavb19j7g06a41jg6bvpr20b9lihvham6qywhgaqprz9";
   }) {};
 
   uv = pkgsUnstable.uv;
-  renovate = pkgsUnstable.renovate;
 
   llvm20 = pkgs.llvmPackages_20;
   crt    = llvm20.compiler-rt-libc;
@@ -25,7 +23,6 @@ llvm20.stdenv.mkDerivation {
       graphviz
     ]) ++ [
       uv
-      renovate
     ] ++ (with llvm20; [
       clang-tools
       libcxx
@@ -44,7 +41,6 @@ llvm20.stdenv.mkDerivation {
 
     echo "Sanitizer headers -> ${crt.dev}/include"
     echo "uv from nixpkgs-unstable: $(uv --version || echo 'not yet built')"
-    echo "renovate from nixpkgs-unstable: $(renovate --version 2>/dev/null || echo 'not yet built')"
 
     # Generate VSCode settings
     (
