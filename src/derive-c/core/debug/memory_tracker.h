@@ -114,19 +114,32 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
     if (level <= memory_tracker_global_level) {
 #if defined(MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
+        intptr_t poisoned_from = __msan_test_shadow((void*)addr, size);
         switch (cap) {
         case DC_MEMORY_TRACKER_CAP_NONE:
         case DC_MEMORY_TRACKER_CAP_WRITE: {
-            if (__msan_test_shadow((void*)addr, size) != -1) {
-                DC_PANIC("Memory region %p (%zu bytes) is not uninitialised, but should be", addr,
-                         size);
+            for (size_t offset = 0; offset < size; offset++) {
+                const unsigned char* p = (const unsigned char*)addr + offset;
+
+                // For size == 1:
+                //  - return -1  => unpoisoned (initialized)  -> ERROR here
+                //  - return 0   => poisoned (uninitialized)  -> OK
+                if (__msan_test_shadow((void*)p, 1) == -1) {
+                    DC_PANIC("Memory region %p (%zu bytes) is not fully uninitialised: "
+                             "byte %zu (%p) is unpoisoned",
+                             addr, size, offset, p);
+                }
             }
             return;
         }
         case DC_MEMORY_TRACKER_CAP_READ_WRITE: {
-            if (__msan_test_shadow((void*)addr, size) == -1) {
-                DC_PANIC("Memory region %p (%zu bytes) is not uninitialised, but should be", addr,
-                         size);
+            for (size_t offset = 0; offset < size; offset++) {
+                const unsigned char* p = (const unsigned char*)addr + offset;
+                if (__msan_test_shadow((void*)p, 1) != -1) {
+                    DC_PANIC("Memory region %p (%zu bytes) is not initialised: "
+                             "byte %zu (%p) is poisoned",
+                             addr, size, offset, p);
+                }
             }
             return;
         }

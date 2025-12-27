@@ -39,9 +39,9 @@ target_compile_definitions(${my_target} PRIVATE
 ```
 
 ## Develop
-For development, the [clang toolchain](./toolchain/clang.nix) is recommended.
+For development, the [clang toolchain](./toolchain/clang_dev.nix) is recommended.
 ```bash
-nix-shell toolchain/clang.nix # from repo root
+nix-shell toolchain/clang_dev.nix # from repo root
 ```
 ```bash
 cmake -S . -B build -GNinja

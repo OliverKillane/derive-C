@@ -1,4 +1,3 @@
-
 #include <gtest/gtest.h>
 
 #include <derive-c/container/arena/chunked/utils.h>

@@ -45,8 +45,8 @@ FetchContent_MakeAvailable(googletest)
 set(RC_ENABLE_GTEST ON CACHE BOOL "Rapidcheck GTest Support")
 FetchContent_Declare(
   rapidcheck
-  GIT_REPOSITORY https://github.com/emil-e/rapidcheck.git
-  GIT_TAG "${RAPID_CHECK_VERSION}"
+  GIT_REPOSITORY https://github.com/OliverKillane/rapidcheck.git
+  GIT_TAG fix/compile-with-libc++
 )
 FetchContent_MakeAvailable(rapidcheck)
 
@@ -102,7 +102,7 @@ foreach(TEST_FILE IN LISTS TEST_CPP_FILES)
 
   target_compile_definitions(${TEST_TARGET} PRIVATE
     ENABLE_MOCKING
-    DC_PANIC_HEADER=<derive-cpp/test/gtest_panic.hpp>
+    DC_PANIC_HEADER=<derive-cpp/test/runtime_panic.hpp>
   )
 
   target_link_libraries(${TEST_TARGET}
@@ -141,7 +141,7 @@ foreach(FUZZ_FILE IN LISTS FUZZ_CPP_FILES)
 
   target_compile_definitions(${FUZZ_TARGET} PRIVATE 
     ENABLE_MOCKING
-    DC_PANIC_HEADER=<derive-cpp/test/rapidcheck_panic.hpp>
+    DC_PANIC_HEADER=<derive-cpp/test/runtime_panic.hpp>
   )
 
   target_link_libraries(${FUZZ_TARGET}

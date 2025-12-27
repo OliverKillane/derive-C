@@ -125,10 +125,10 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         INDEX_TYPE free_index = self->free_list;
         SLOT* slot = &self->slots[free_index];
         DC_ASSUME(!slot->present);
+
         self->free_list = slot->next_free;
-        slot->present = true;
-        NS(SLOT, memory_tracker_present)(slot);
-        slot->value = value;
+        NS(SLOT, fill)(slot, value);
+
         self->count++;
         return (INDEX){.index = free_index};
     }
@@ -148,9 +148,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
     INDEX_TYPE new_index = self->exclusive_end;
     SLOT* slot = &self->slots[new_index];
-    slot->present = true;
-    NS(SLOT, memory_tracker_present)(slot);
-    slot->value = value;
+    NS(SLOT, fill)(slot, value);
+
     self->count++;
     self->exclusive_end++;
     return (INDEX){.index = new_index};
@@ -198,15 +197,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     DC_ASSERT(slots);
 
     for (INDEX_TYPE index = 0; index < self->exclusive_end; index++) {
-        if (self->slots[index].present) {
-            NS(SLOT, memory_tracker_present)(&slots[index]);
-            slots[index].present = true;
-            slots[index].value = VALUE_CLONE(&self->slots[index].value);
-        } else {
-            NS(SLOT, memory_tracker_empty)(&slots[index]);
-            slots[index].present = false;
-            slots[index].next_free = self->slots[index].next_free;
-        }
+        NS(SLOT, clone_from)(&self->slots[index], &slots[index]);
     }
 
     return (SELF){
@@ -249,9 +240,9 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     SLOT* entry = &self->slots[index.index];
     if (entry->present) {
         *destination = entry->value;
-        entry->present = false;
-        NS(SLOT, memory_tracker_empty)(entry);
-        entry->next_free = self->free_list;
+
+        NS(SLOT, set_empty)(entry, self->free_list);
+
         self->free_list = index.index;
         self->count--;
         return true;

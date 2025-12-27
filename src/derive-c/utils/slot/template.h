@@ -43,10 +43,20 @@ static void SLOT_VALUE_DEBUG(SLOT_VALUE const*, dc_debug_fmt, FILE* stream);
 #endif
 
 typedef struct {
+// JUSTIFY: Union for release, struct for debug
+// In order to allow for easy msan / uninitialised checks with debug
+//  - To allow derive-c's own tests to just check the value* goes to uninitialised
+//  - To allow for a throw on any access through user's pointers accessing the value
+// In release, we save memory by using a union.
+#if defined NDEBUG
     union {
         SLOT_VALUE value;
         SLOT_INDEX_TYPE next_free;
     };
+#else
+    SLOT_VALUE value;
+    SLOT_INDEX_TYPE next_free;
+#endif
     bool present;
 } SELF;
 
@@ -83,11 +93,9 @@ static void NS(SELF, fill)(SELF* slot, SLOT_VALUE value) {
 static void NS(SELF, clone_from)(SELF const* from_slot, SELF* to_slot) {
     to_slot->present = from_slot->present;
     if (from_slot->present) {
-        to_slot->value = SLOT_VALUE_CLONE(&from_slot->value);
-        NS(SELF, memory_tracker_present)(to_slot);
+        NS(SELF, fill)(to_slot, SLOT_VALUE_CLONE(&from_slot->value));
     } else {
-        to_slot->next_free = from_slot->next_free;
-        NS(SELF, memory_tracker_empty)(to_slot);
+        NS(SELF, set_empty)(to_slot, from_slot->next_free);
     }
 }
 

@@ -60,6 +60,9 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
         Wrapper wMut = w;
         for (const auto& [key, value] : m.mValues) {
             typename SutNS::Sut_index_t index = w.mModelToSut.at(key);
+            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_CONTAINER,
+                                    DC_MEMORY_TRACKER_CAP_READ_WRITE, w.getConst(),
+                                    sizeof(typename SutNS::Sut_value_t));
             RC_ASSERT(*SutNS::Sut_read(w.getConst(), index) == value);
             RC_ASSERT(*SutNS::Sut_write(wMut.get(), index) == value);
         }

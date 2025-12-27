@@ -138,9 +138,9 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
         DC_ASSUME(!slot->present);
         self->free_list = slot->next_free;
-        slot->present = true;
-        NS(SLOT, memory_tracker_present)(slot);
-        slot->value = value;
+
+        NS(SLOT, fill)(slot, value);
+
         self->count++;
         return (INDEX){.index = free_index};
     }
@@ -165,9 +165,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     }
 
     SLOT* slot = &(*self->blocks[self->block_current])[self->block_current_exclusive_end];
-    slot->present = true;
-    NS(SLOT, memory_tracker_present)(slot);
-    slot->value = value;
+    NS(SLOT, fill)(slot, value);
 
     INDEX_TYPE index = DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(
         self->block_current, self->block_current_exclusive_end, BLOCK_INDEX_BITS);
@@ -279,9 +277,9 @@ static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
 
     if (entry->present) {
         *destination = entry->value;
-        entry->present = false;
-        NS(SLOT, memory_tracker_empty)(entry);
-        entry->next_free = self->free_list;
+
+        NS(SLOT, set_empty)(entry, self->free_list);
+
         self->free_list = index.index;
         self->count--;
         return true;

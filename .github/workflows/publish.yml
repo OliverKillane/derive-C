@@ -55,7 +55,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           nix_path: nixpkgs=channel:nixos-unstable
       - name: Build docs via Nix shell
-        run:  nix-shell toolchain/clang.nix --run "cmake -S . -B build -GNinja && ninja -C build docs"
+        run:  nix-shell toolchain/clang_dev.nix --run "cmake -S . -B build -GNinja && ninja -C build docs"
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
