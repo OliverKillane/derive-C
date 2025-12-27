@@ -67,7 +67,19 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
 
       - name: CMake
-        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DLINTING=${{matrix.lint}} ${{ matrix.flags }}'
+        run: |
+          if [ "${{ matrix.coverage }}" = "true" ]; then
+            COV=On
+          else
+            COV=Off
+          fi
+
+          nix-shell toolchain/${{ matrix.toolchain }} --run \
+            "cmake -S . -B build -GNinja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DLINTING=${{ matrix.lint }} \
+            -DCOVERAGE=$COV \
+            ${{ matrix.flags }}"
 
       - name: Build
         run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ninja -C build'
