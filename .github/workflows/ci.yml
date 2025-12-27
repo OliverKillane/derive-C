@@ -21,25 +21,25 @@ jobs:
           - name: clang_debug_asan_ubsan
             build_type: Debug
             toolchain: clang_dev.nix
-            flags: "-DUSE_ASAN=On -DUSE_UBSAN=On -DUSE_MSAN=Off"
+            flags: "-DUSE_ASAN=On -DUSE_UBSAN=On -DUSE_MSAN=Off -DDOCS=Off"
             coverage: true
             lint: On
           - name: clang_debug_msan
             build_type: Debug
             toolchain: clang_msan.nix
-            flags: "-DUSE_ASAN=Off -DUSE_UBSAN=Off -DUSE_MSAN=On"
+            flags: "-DUSE_ASAN=Off -DUSE_UBSAN=Off -DUSE_MSAN=On -DDOCS=Off"
             coverage: false
             lint: Off
           - name: clang_debug_msan_no_custom_poisoning
             build_type: Debug
             toolchain: clang_msan.nix
-            flags: "-DUSE_ASAN=Off -DUSE_UBSAN=Off -DUSE_MSAN=On -DCUSTOM_MEMORY_TRACKING=0"
+            flags: "-DUSE_ASAN=Off -DUSE_UBSAN=Off -DUSE_MSAN=On -DDOCS=Off -DCUSTOM_MEMORY_TRACKING=0"
             coverage: false
             lint: Off
           - name: clang_release
             build_type: Release
             toolchain: clang_dev.nix
-            flags: ""
+            flags: "-DDOCS=Off"
             coverage: false
             lint: Off
           - name: gcc_debug_asan_ubsan
@@ -51,7 +51,7 @@ jobs:
           - name: gcc_release
             build_type: Release
             toolchain: gcc.nix
-            flags: ""
+            flags: "-DDOCS=Off"
             coverage: false
             lint: Off
 
