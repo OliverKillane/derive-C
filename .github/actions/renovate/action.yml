@@ -28,4 +28,4 @@ runs:
         fi
 
         nix-shell toolchain/renovate.nix --run \
-          "renovate --config-file .github/renovate.json --platform=github ${extra} \"$GITHUB_REPOSITORY\""
+          "renovate --platform=github ${extra} \"$GITHUB_REPOSITORY\""
