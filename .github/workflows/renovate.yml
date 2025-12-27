@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Renovate
-        uses: ./.github/actions/run-renovate
+        uses: ./.github/actions/renovate
         with:
           dry_run: "false"
         env:
