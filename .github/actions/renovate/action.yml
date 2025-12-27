@@ -1,0 +1,31 @@
+name: "Run Renovate (via Nix)"
+description: "Install Nix, enter renovate nix-shell, and run Renovate"
+inputs:
+  dry_run:
+    description: "If true, run Renovate with --dry-run"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31
+      with:
+        github_access_token: ${{ github.token }}
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: Run Renovate
+      shell: bash
+      env:
+        RENOVATE_TOKEN: ${{ env.RENOVATE_TOKEN }}
+        LOG_LEVEL: ${{ env.LOG_LEVEL }}
+      run: |
+        set -euo pipefail
+
+        extra=""
+        if [ "${{ inputs.dry_run }}" = "true" ]; then
+          extra="--dry-run"
+        fi
+
+        nix-shell toolchain/renovate.nix --run \
+          "renovate --config-file .github/renovate.json --platform=github ${extra} \"$GITHUB_REPOSITORY\""

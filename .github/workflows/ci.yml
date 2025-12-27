@@ -85,3 +85,17 @@ jobs:
         with:
           name: coverage-report-${{ matrix.name }}
           path: build/coverage_html/
+  check_renovate:
+    name: Run Renovate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Renovate
+        uses: ./.github/actions/run-renovate
+        with:
+          dry_run: "true"
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_GH_TOKEN }}
+          LOG_LEVEL: info
