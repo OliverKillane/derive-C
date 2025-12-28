@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rapidcheck/Assertions.h"
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>
@@ -86,9 +85,7 @@ template <typename SutNS> struct Push : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    typename SutNS::Sut_item_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_item_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_item_t>::max());
+    typename SutNS::Sut_item_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_item_t>();
 
     void checkPreconditions(const Model& s) const override {
         RC_PRE(s.size() < SutNS::Sut_max_size());
@@ -107,9 +104,7 @@ template <typename SutNS> struct Write : Command<SutNS> {
     using typename Base::Wrapper;
 
     std::optional<size_t> mIndex = std::nullopt;
-    typename SutNS::Sut_item_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_item_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_item_t>::max());
+    typename SutNS::Sut_item_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_item_t>();
 
     explicit Write(const Model& m) {
         if (!m.empty()) {
@@ -140,8 +135,7 @@ template <typename SutNS> struct TryInsertAt : Command<SutNS> {
     std::vector<typename SutNS::Sut_item_t> mValues =
         *rc::gen::container<std::vector<typename SutNS::Sut_item_t>>(
             *rc::gen::inRange(static_cast<size_t>(0), static_cast<size_t>(10)),
-            rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_item_t>::min(),
-                             std::numeric_limits<typename SutNS::Sut_item_t>::max()));
+            rc::gen::arbitrary<typename SutNS::Sut_item_t>());
     size_t mFromIndex;
 
     explicit TryInsertAt(const Model& m)
@@ -203,6 +197,9 @@ template <typename SutNS> struct Pop : Command<SutNS> {
 
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_back(); }
-    void runCommand(const Model& /*m*/, Wrapper& w) const override { SutNS::Sut_pop(w.get()); }
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
+        typename SutNS::Sut_item_t item = SutNS::Sut_pop(w.get());
+        SutNS::Sut_item_t::delete_(&item);
+    }
     void show(std::ostream& os) const override { os << "Pop()"; }
 };

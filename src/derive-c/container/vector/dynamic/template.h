@@ -51,7 +51,7 @@ typedef struct {
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
     DC_ASSUME((self)->size <= (self)->capacity);                                                   \
-    DC_ASSUME((self->alloc));                                                                      \
+    DC_ASSUME((self)->alloc);                                                                      \
     DC_ASSUME(DC_WHEN(!((self)->data), (self)->capacity == 0 && (self)->size == 0));
 
 static size_t NS(SELF, max_size)() { return SIZE_MAX; }
@@ -110,21 +110,30 @@ static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* a
 static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
     if (new_capacity > self->capacity) {
-        const size_t capacity_increase = new_capacity - self->capacity;
-        const size_t uninit_elements = self->capacity - self->size;
+        if (self->data == NULL) {
+            DC_ASSUME(self->capacity == 0);
 
-        // Set to writeable for allocator
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
-                              &self->data[self->size], uninit_elements * sizeof(ITEM));
+            ITEM* new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
+            self->data = new_data;
+            self->capacity = new_capacity;
+            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                                  self->data, self->capacity * sizeof(ITEM));
+        } else {
+            const size_t capacity_increase = new_capacity - self->capacity;
+            const size_t uninit_elements = self->capacity - self->size;
 
-        ITEM* new_data =
-            (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
-        DC_ASSERT(new_data);
-        self->data = new_data;
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
-                              &self->data[self->size],
-                              (uninit_elements + capacity_increase) * sizeof(ITEM));
-        self->capacity = new_capacity;
+            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                                  &self->data[self->size], uninit_elements * sizeof(ITEM));
+
+            ITEM* new_data =
+                (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
+            DC_ASSERT(new_data);
+            self->data = new_data;
+            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
+                                  &self->data[self->size],
+                                  (uninit_elements + capacity_increase) * sizeof(ITEM));
+            self->capacity = new_capacity;
+        }
     }
 }
 
@@ -252,7 +261,7 @@ static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
         self->size--;
         *destination = self->data[self->size];
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
-                              &self->data[self->size + 1], sizeof(ITEM));
+                              &self->data[self->size], sizeof(ITEM));
         return true;
     }
     return false;

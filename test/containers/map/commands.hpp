@@ -16,7 +16,6 @@ template <typename SutNS> struct SutWrapper {
     [[nodiscard]] SutNS::Sut* get() { return &mSut; }
     [[nodiscard]] SutNS::Sut const* getConst() const { return &mSut; }
 
-    // System Under Test
     SutNS::Sut mSut;
 };
 
@@ -63,11 +62,9 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
 
     void CheckFailedAccess(const Model& m, const Wrapper& w) const {
         Wrapper wrapperCopy = w;
-        typename SutNS::Sut_key_t invalid_key = 0;
-
-        while (m.find(invalid_key) != m.end()) {
-            invalid_key++;
-        }
+        typename SutNS::Sut_key_t const invalid_key =
+            *rc::gen::suchThat(rc::gen::arbitrary<typename SutNS::Sut_key_t>(),
+                               [&](auto const& k) { return m.find(k) == m.end(); });
         RC_ASSERT(SutNS::Sut_try_read(w.getConst(), invalid_key) == nullptr);
         RC_ASSERT(SutNS::Sut_try_write(wrapperCopy.get(), invalid_key) == nullptr);
         typename SutNS::Sut_value_t removed;
@@ -92,13 +89,8 @@ template <typename SutNS> struct Insert : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    typename SutNS::Sut_value_t mKey =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_key_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_key_t>::max());
-
-    typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+    typename SutNS::Sut_key_t mKey = *rc::gen::arbitrary<typename SutNS::Sut_key_t>();
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
     void checkPreconditions(const Model& s) const override { RC_PRE(s.find(mKey) == s.end()); }
     void apply(Model& s) const override { s[mKey] = mValue; }
@@ -115,9 +107,7 @@ template <typename SutNS> struct Write : Command<SutNS> {
     using typename Base::Wrapper;
 
     std::optional<typename SutNS::Sut_key_t> mKey = std::nullopt;
-    typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
     explicit Write(const Model& m) {
         if (!m.empty()) {
@@ -153,9 +143,7 @@ template <typename SutNS> struct DuplicateInsert : Command<SutNS> {
     using typename Base::Wrapper;
 
     std::optional<typename SutNS::Sut_key_t> mKey = std::nullopt;
-    typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
     explicit DuplicateInsert(const Model& m) {
         if (!m.empty()) {

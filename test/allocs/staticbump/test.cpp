@@ -48,8 +48,6 @@ TEST(StaticBumpAlloc, BasicAllocation) {
 
     // But we cannot allocate more than capacity
     void* ptr4 = staticbumpalloc_malloc(&alloc, 1024 - staticbumpalloc_metadata_size + 1);
-    dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, ptr4,
-                            1024 - staticbumpalloc_metadata_size + 1);
     ASSERT_EQ(ptr4, nullptr);
     ASSERT_EQ(staticbumpalloc_get_used(&alloc), 0);
 }

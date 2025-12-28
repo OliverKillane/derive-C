@@ -18,15 +18,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          nix_path: nixpkgs=channel:nixos-unstable
-
       - name: Run Renovate
+        uses: ./.github/actions/renovate
+        with:
+          dry_run: "false"
         env:
-            # Token Renovate uses for GitHub API + pushing branches
-            RENOVATE_TOKEN: ${{ secrets.RENOVATE_GH_TOKEN }}
-            LOG_LEVEL: info
-        run: nix-shell toolchain/clang.nix --run "renovate --platform=github \"\$GITHUB_REPOSITORY\""
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_GH_TOKEN }}
+          LOG_LEVEL: info

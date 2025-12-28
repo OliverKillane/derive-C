@@ -7,41 +7,36 @@
 #include <rapidcheck/state.h>
 
 #include "../commands.hpp"
+#include "../../objects.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
 #include <derive-c/container/vector/static/includes.h>
 
-template <typename Int> struct SutSmall {
+template <ObjectType Item> struct SutObject {
 #define EXPAND_IN_STRUCT
-#define ITEM Int
+#define ITEM Item
+#define ITEM_CLONE Item::clone_
+#define ITEM_DELETE Item::delete_
 #define INPLACE_CAPACITY 10
 #define NAME Sut
 #include <derive-c/container/vector/static/template.h>
 };
 
 namespace {
-
-namespace {
-template <typename SutNS> void TestVector(SutWrapper<SutNS> sutWrapper) {
+template <typename SutNS> void Test() {
     SutModel<SutNS> model;
-
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Push<SutNS>, Push<SutNS>, Push<SutNS>, Write<SutNS>,
                                           TryInsertAt<SutNS>, RemoveAt<SutNS>, Pop<SutNS>>());
 }
-} // namespace
 
-RC_GTEST_PROP(DequeueSmallCase1, Fuzz, ()) {
-    using SutNS = SutSmall<size_t>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
-
-RC_GTEST_PROP(DequeueSmallCase2, Fuzz, ()) {
-    using SutNS = SutSmall<uint8_t>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
+RC_GTEST_PROP(VectorStaticSmall, Fuzz, ()) { Test<SutObject<Primitive<uint8_t>>>(); }
+RC_GTEST_PROP(VectorStaticMedium, Fuzz, ()) { Test<SutObject<Primitive<size_t>>>(); }
+RC_GTEST_PROP(VectorStaticEmpty, Fuzz, ()) { Test<SutObject<Empty>>(); }
+RC_GTEST_PROP(VectorStaticComplex, Fuzz, ()) { Test<SutObject<Complex>>(); }
 
 } // namespace

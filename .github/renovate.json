@@ -24,11 +24,11 @@
     {
       "fileMatch": ["CMakeLists\\.txt$", "\\.cmake$"],
       "matchStrings": [
-        "set\\(\\s*RAPID_CHECK_REF\\s+(?<currentValue>refs/heads/master)\\s*\\)\\s*\\r?\\n\\s*set\\(\\s*RAPID_CHECK_DIGEST\\s+(?<currentDigest>[0-9a-fA-F]{40})\\s*\\)"
+        "set\\(\\s*RAPID_CHECK_REF\\s+(?<currentValue>refs/heads/derive-c-fork)\\s*\\)\\s*\\r?\\n\\s*set\\(\\s*RAPID_CHECK_DIGEST\\s+(?<currentDigest>[0-9a-fA-F]{40})\\s*\\)"
       ],
-      "depNameTemplate": "emil-e/rapidcheck",
+      "depNameTemplate": "oliverkillane/rapidcheck",
       "datasourceTemplate": "git-refs",
-      "packageNameTemplate": "https://github.com/emil-e/rapidcheck.git"
+      "packageNameTemplate": "https://github.com/oliverkillane/rapidcheck.git"
     }
   ]
 }

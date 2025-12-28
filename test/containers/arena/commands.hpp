@@ -99,11 +99,6 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
             invalid_index.index++;
         }
         auto const* x = SutNS::Sut_try_read(w.getConst(), invalid_index);
-        if (x != nullptr) {
-            std::cout << "fooooo!!!" << "\n";
-            abort();
-        }
-
         RC_ASSERT(x == nullptr);
 
         RC_ASSERT(SutNS::Sut_try_write(wMut.get(), invalid_index) == nullptr);
@@ -130,9 +125,7 @@ template <typename SutNS> struct Insert : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
     void checkPreconditions(const Model& s) const override {
         RC_ASSERT(s.mValues.size() < SutNS::max_size());
@@ -161,9 +154,7 @@ template <typename SutNS> struct Write : Command<SutNS> {
     using typename Base::Wrapper;
 
     std::optional<ModelIndex> mIndex = std::nullopt;
-    typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
     explicit Write(const Model& m) {
         if (!m.mValues.empty()) {
@@ -233,6 +224,8 @@ template <typename SutNS> struct Remove : Command<SutNS> {
                                 entry_ptr, sizeof(typename SutNS::Sut_value_t));
 
         RC_ASSERT(entry == m.mValues.at(mIndex.value()));
+
+        SutNS::Sut_value_t::delete_(&entry);
     }
 
     void show(std::ostream& os) const override {

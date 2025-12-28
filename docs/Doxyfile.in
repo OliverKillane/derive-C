@@ -9,7 +9,7 @@ QUIET                  = YES
 OPTIMIZE_OUTPUT_FOR_C  = YES
 
 # Source input
-INPUT                  = @CMAKE_SOURCE_DIR@/src/derive-c @CMAKE_SOURCE_DIR@/README.md @CMAKE_SOURCE_DIR@/examples 
+INPUT                  = @CMAKE_SOURCE_DIR@/src/derive-c @CMAKE_SOURCE_DIR@/README.md @CMAKE_SOURCE_DIR@/.github/CONTRIBUTING.md @CMAKE_SOURCE_DIR@/examples 
 FILE_PATTERNS          = *.c *.h *.cpp *.hpp *.md
 RECURSIVE              = YES
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@/examples

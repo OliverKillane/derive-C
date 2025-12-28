@@ -1,31 +1,27 @@
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <derive-cpp/test/trampoline.hpp>
+#include <derive-cpp/test/gtest_mock.hpp>
 
 #include <derive-c/test/mock.h>
 
-static size_t none_count = 0;
-MOCKABLE(void, none, (void)) { none_count++; }
-MOCKABLE(int, foo, (int a)) { return 2; }
-MOCKABLE(void, array, (int a[6])) {}
-MOCKABLE(void, fn_ptr, (void (*fn)(int))) {}
-
 using namespace testing;
 
+namespace {
+size_t none_count = 0;
+MOCKABLE(void, none, (void)) { none_count++; }
+
+MOCKABLE(int, foo, (int)) { return 2; }
+MOCKABLE(void, array, (int a[6])) {}
+MOCKABLE(void, fn_ptr, (void (*fn)(int))) {}
+} // namespace
+
 struct MockTests : Test {
-    MOCK_METHOD(void, none_mock, (), ());
-    derivecpp::Trampoline<&none, &MockTests::none_mock> none_tramp{this};
-
-    MOCK_METHOD(int, foo_mock, (int a), ());
-    derivecpp::Trampoline<&foo, &MockTests::foo_mock> foo_tramp{this};
-
-    MOCK_METHOD(void, array_mock, (int a[6]), ());
-    derivecpp::Trampoline<&array, &MockTests::array_mock> array_tramp{this};
-
-    MOCK_METHOD(void, fn_ptr_mock, (void (*fn)(int)), ());
-    derivecpp::Trampoline<&fn_ptr, &MockTests::fn_ptr_mock> fn_ptr_tramp{this};
+    FIXTURE_MOCK(MockTests, void, none, (), ());
+    FIXTURE_MOCK(MockTests, int, foo, (int a), ());
+    FIXTURE_MOCK(MockTests, void, array, (int a[6]), ());
+    FIXTURE_MOCK(MockTests, void, fn_ptr, (void (*fn)(int)), ());
 };
 
 TEST_F(MockTests, ArgTypes) {
