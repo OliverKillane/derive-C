@@ -6,6 +6,7 @@
 #include <rapidcheck/state.h>
 
 #include "../commands.hpp"
+#include "../../objects.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
@@ -32,17 +33,48 @@ template <typename Key, typename Value> struct SutIntegers {
 #include <derive-c/container/map/ankerl/template.h>
 };
 
+template <typename Key, typename Value> struct SutObjects {
+#define EXPAND_IN_STRUCT
+#define KEY Key
+#define KEY_EQ Key::equality_
+#define KEY_HASH Key::hash_
+#define KEY_DELETE Key::delete_
+#define KEY_CLONE Key::clone_
+#define VALUE Value
+#define VALUE_CLONE Value::clone_
+#define VALUE_DELETE Value::delete_
+#define NAME Sut
+#include <derive-c/container/map/ankerl/template.h>
+};
+
 namespace {
-
-RC_GTEST_PROP(Ankerl, Fuzz, ()) {
-    using SutNS = SutIntegers<size_t, size_t>;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
+template <typename SutNS> void Test(SutWrapper<SutNS> sutWrapper) {
     SutModel<SutNS> model;
-
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<
             Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, ExtendCapacity<SutNS>,
             Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
 }
+
+RC_GTEST_PROP(AnkerlSmall, Fuzz, ()) {
+    using SutNS = SutIntegers<uint32_t, uint8_t>;
+    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
+}
+
+RC_GTEST_PROP(AnkerlMedium, Fuzz, ()) {
+    using SutNS = SutIntegers<size_t, size_t>;
+    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
+}
+
+RC_GTEST_PROP(AnkerlComplexEmpty, Fuzz, ()) {
+    using SutNS = SutObjects<Complex, Empty>;
+    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
+}
+
+RC_GTEST_PROP(AnkerlComplexComplex, Fuzz, ()) {
+    using SutNS = SutObjects<Complex, Complex>;
+    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
+}
+
 } // namespace

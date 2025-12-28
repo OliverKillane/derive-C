@@ -63,11 +63,9 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
 
     void CheckFailedAccess(const Model& m, const Wrapper& w) const {
         Wrapper wrapperCopy = w;
-        typename SutNS::Sut_key_t invalid_key = 0;
-
-        while (m.find(invalid_key) != m.end()) {
-            invalid_key++;
-        }
+        typename SutNS::Sut_key_t const invalid_key =
+            *rc::gen::suchThat(rc::gen::arbitrary<typename SutNS::Sut_key_t>(),
+                               [&](auto const& k) { return m.find(k) == m.end(); });
         RC_ASSERT(SutNS::Sut_try_read(w.getConst(), invalid_key) == nullptr);
         RC_ASSERT(SutNS::Sut_try_write(wrapperCopy.get(), invalid_key) == nullptr);
         typename SutNS::Sut_value_t removed;
