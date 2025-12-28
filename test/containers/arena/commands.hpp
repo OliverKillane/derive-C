@@ -60,9 +60,6 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
         Wrapper wMut = w;
         for (const auto& [key, value] : m.mValues) {
             typename SutNS::Sut_index_t index = w.mModelToSut.at(key);
-            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_CONTAINER,
-                                    DC_MEMORY_TRACKER_CAP_READ_WRITE, w.getConst(),
-                                    sizeof(typename SutNS::Sut_value_t));
             RC_ASSERT(*SutNS::Sut_read(w.getConst(), index) == value);
             RC_ASSERT(*SutNS::Sut_write(wMut.get(), index) == value);
         }
@@ -102,11 +99,6 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
             invalid_index.index++;
         }
         auto const* x = SutNS::Sut_try_read(w.getConst(), invalid_index);
-        if (x != nullptr) {
-            std::cout << "fooooo!!!" << "\n";
-            abort();
-        }
-
         RC_ASSERT(x == nullptr);
 
         RC_ASSERT(SutNS::Sut_try_write(wMut.get(), invalid_index) == nullptr);
@@ -133,9 +125,7 @@ template <typename SutNS> struct Insert : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
     void checkPreconditions(const Model& s) const override {
         RC_ASSERT(s.mValues.size() < SutNS::max_size());
@@ -164,9 +154,7 @@ template <typename SutNS> struct Write : Command<SutNS> {
     using typename Base::Wrapper;
 
     std::optional<ModelIndex> mIndex = std::nullopt;
-    typename SutNS::Sut_value_t mValue =
-        *rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_value_t>::min(),
-                          std::numeric_limits<typename SutNS::Sut_value_t>::max());
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
     explicit Write(const Model& m) {
         if (!m.mValues.empty()) {

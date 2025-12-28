@@ -116,29 +116,6 @@ typedef struct {
     SLOT* blocks[DC_ARENA_GEO_MAX_NUM_BLOCKS(INDEX_BITS, INITIAL_BLOCK_INDEX_BITS)];
 } SELF;
 
-static void PRIV(NS(SELF, set_memory_tracking))(SELF const* self) {
-    for (uint8_t block_index = 0; block_index <= self->block_current; block_index++) {
-        size_t block_items =
-            block_index == self->block_current
-                ? self->block_current_exclusive_end
-                : DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
-        for (size_t offset = 0; offset < block_items; offset++) {
-            SLOT* slot = &self->blocks[block_index][offset];
-            if (slot->present) {
-                NS(SLOT, memory_tracker_present)(slot);
-            } else {
-                NS(SLOT, memory_tracker_empty)(slot);
-            }
-        }
-    }
-
-    size_t tail_slots = DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS) -
-                        (self->block_current_exclusive_end - 1);
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
-                          &self->blocks[self->block_current][self->block_current_exclusive_end],
-                          tail_slots * sizeof(SLOT));
-}
-
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
     DC_ASSUME(DC_ARENA_GEO_BLOCK_TO_SIZE((self)->block_current, INITIAL_BLOCK_INDEX_BITS) >=       \
@@ -166,7 +143,6 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
             },
     };
 
-    PRIV(NS(SELF, set_memory_tracking))(&self);
     return self;
 }
 
@@ -214,8 +190,6 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
     self->block_current_exclusive_end++;
     self->count++;
-
-    PRIV(NS(SELF, set_memory_tracking))(self);
 
     return (INDEX){.index = new_index};
 }
@@ -291,8 +265,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
         }
     }
 
-    PRIV(NS(SELF, set_memory_tracking))(&new_self);
-
     return new_self;
 }
 
@@ -347,9 +319,9 @@ static void NS(SELF, delete)(SELF* self) {
             }
         }
 
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
-                              self->blocks[block],
-                              DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS));
+        dc_memory_tracker_set(
+            DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE, self->blocks[block],
+            DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS) * sizeof(SLOT));
         NS(ALLOC, free)(self->alloc, self->blocks[block]);
     }
 }

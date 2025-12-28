@@ -1,4 +1,5 @@
 
+#include "derive-c/core/debug/memory_tracker.h"
 #include <gtest/gtest.h>
 
 #define NAME Sut
@@ -29,5 +30,14 @@ TEST(VectorTests, CreateWithZeroSize) {
 TEST(VectorTests, CreateWithCapacity) {
     Sut sut = Sut_new_with_capacity(64, stdalloc_get());
     ASSERT_EQ(Sut_size(&sut), 0);
+    Sut_delete(&sut);
+}
+
+TEST(VectorTests, CreateWithCapacity2) {
+    Sut sut = Sut_new_with_capacity(64, stdalloc_get());
+    Sut_push(&sut, 1);
+    const auto* a = Sut_read(&sut, 0);
+    dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_READ_WRITE, a,
+                            sizeof(*a));
     Sut_delete(&sut);
 }
