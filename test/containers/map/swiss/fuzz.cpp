@@ -13,27 +13,7 @@
 
 #include <derive-c/container/map/swiss/includes.h>
 
-template <typename Key, typename Value> struct SutIntegers {
-    static bool equality(Key const* key_1, Key const* key_2) { return *key_1 == *key_2; }
-    static size_t awful_hash(Key const* key) {
-        // Bad hash exposes more collisions in the map
-        constexpr size_t SMALL_MOD = 1000;
-        if (*key % 2 == 0) {
-            return SMALL_MOD + (*key % SMALL_MOD);
-        }
-        return 0;
-    }
-
-#define EXPAND_IN_STRUCT
-#define KEY Key
-#define KEY_EQ equality
-#define KEY_HASH awful_hash
-#define VALUE Value
-#define NAME Sut
-#include <derive-c/container/map/swiss/template.h>
-};
-
-template <typename Key, typename Value> struct SutObjects {
+template <ObjectType Key, ObjectType Value> struct SutObjects {
 #define EXPAND_IN_STRUCT
 #define KEY Key
 #define KEY_EQ Key::equality_
@@ -48,8 +28,9 @@ template <typename Key, typename Value> struct SutObjects {
 };
 
 namespace {
-template <typename SutNS> void Test(SutWrapper<SutNS> sutWrapper) {
+template <typename SutNS> void Test() {
     SutModel<SutNS> model;
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<
@@ -57,24 +38,11 @@ template <typename SutNS> void Test(SutWrapper<SutNS> sutWrapper) {
             Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
 }
 
-RC_GTEST_PROP(SwissSmall, Fuzz, ()) {
-    using SutNS = SutIntegers<uint32_t, uint8_t>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
-}
-
+RC_GTEST_PROP(SwissSmall, Fuzz, ()) { Test<SutObjects<Primitive<uint8_t>, Primitive<uint8_t>>>(); }
 RC_GTEST_PROP(SwissMediumMedium, Fuzz, ()) {
-    using SutNS = SutIntegers<size_t, size_t>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
+    Test<SutObjects<Primitive<size_t>, Primitive<size_t>>>();
 }
-
-RC_GTEST_PROP(SwissComplexEmpty, Fuzz, ()) {
-    using SutNS = SutObjects<Complex, Empty>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
-}
-
-RC_GTEST_PROP(SwissComplexComplex, Fuzz, ()) {
-    using SutNS = SutObjects<Complex, Complex>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new(stdalloc_get())));
-}
+RC_GTEST_PROP(SwissComplexEmpty, Fuzz, ()) { Test<SutObjects<Complex, Empty>>(); }
+RC_GTEST_PROP(SwissComplexComplex, Fuzz, ()) { Test<SutObjects<Complex, Complex>>(); }
 
 } // namespace

@@ -13,10 +13,12 @@
 
 #include <derive-c/container/arena/chunked/includes.h>
 
-template <typename Integer> struct SutPrimitive_8_2 {
+template <ObjectType Object> struct SutObject_8_2 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
-#define VALUE Integer
+#define VALUE Object
+#define VALUE_CLONE Object::clone_
+#define VALUE_DELETE Object::delete_
 #define INDEX_BITS 8
 #define BLOCK_INDEX_BITS 2
 #include <derive-c/container/arena/chunked/template.h>
@@ -24,16 +26,18 @@ template <typename Integer> struct SutPrimitive_8_2 {
     static size_t max_size() { return Sut_max_entries; }
 };
 
-using Sut_8_2_PrimitiveSmall = SutPrimitive_8_2<uint8_t>;
+using Sut_8_2_PrimitiveSmall = SutObject_8_2<Primitive<uint8_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_8_2_PrimitiveSmall);
 
-using Sut_8_2_PrimitiveMedium = SutPrimitive_8_2<size_t>;
+using Sut_8_2_PrimitiveMedium = SutObject_8_2<Primitive<size_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_8_2_PrimitiveMedium);
 
-template <typename Integer> struct SutPrimitive_16_8 {
+template <ObjectType Object> struct SutObject_16_8 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
-#define VALUE Integer
+#define VALUE Object
+#define VALUE_CLONE Object::clone_
+#define VALUE_DELETE Object::delete_
 #define INDEX_BITS 16
 #define BLOCK_INDEX_BITS 8
 #include <derive-c/container/arena/chunked/template.h>
@@ -41,13 +45,13 @@ template <typename Integer> struct SutPrimitive_16_8 {
     static size_t max_size() { return Sut_max_entries; }
 };
 
-using Sut_16_8_PrimitiveSmall = SutPrimitive_16_8<uint8_t>;
+using Sut_16_8_PrimitiveSmall = SutObject_16_8<Primitive<uint8_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_16_8_PrimitiveSmall);
 
-using Sut_16_8_PrimitiveMedium = SutPrimitive_16_8<size_t>;
+using Sut_16_8_PrimitiveMedium = SutObject_16_8<Primitive<size_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_16_8_PrimitiveMedium);
 
-template <typename Object> struct SutObject_16_5 {
+template <ObjectType Object> struct SutObject_16_5 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
 #define VALUE Object

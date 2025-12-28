@@ -16,7 +16,6 @@ template <typename SutNS> struct SutWrapper {
     [[nodiscard]] SutNS::Sut* get() { return &mSut; }
     [[nodiscard]] SutNS::Sut const* getConst() const { return &mSut; }
 
-    // System Under Test
     SutNS::Sut mSut;
 };
 

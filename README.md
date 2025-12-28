@@ -1,6 +1,6 @@
 # Derive C
 
-_Easy templated data strctures in C_
+_Easy templated data structures in C_
 
 ## Elevator Pitch
 When using C for complex projects, the lack of generics is frustrating:
@@ -16,6 +16,7 @@ Derive-C aims to avoid these, and to get an experience close to simple templates
  - easy to debug with in GDB
 
 See examples in [./examples](./examples/)
+See the dev guide in in [.github/CONTRIBUTING.md](./.github/CONTRIBUTING.md).
 
 ## Use
 In a `CMakeLists.txt`

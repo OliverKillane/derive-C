@@ -14,15 +14,7 @@
 
 #include <derive-c/container/vector/dynamic/includes.h>
 
-template <typename Int> struct SutPrimitive_3_8 {
-#define EXPAND_IN_STRUCT
-#define ITEM Int
-#define INPLACE_CAPACITY 10
-#define NAME Sut
-#include <derive-c/container/vector/dynamic/template.h>
-};
-
-template <typename Item> struct SutObject {
+template <ObjectType Item> struct SutObject {
 #define EXPAND_IN_STRUCT
 #define ITEM_CLONE Item::clone_
 #define ITEM_DELETE Item::delete_
@@ -35,9 +27,9 @@ template <typename Item> struct SutObject {
 namespace {
 
 namespace {
-template <typename SutNS> void TestVector(SutWrapper<SutNS> sutWrapper) {
+template <typename SutNS> void Test() {
     SutModel<SutNS> model;
-
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity(4, stdalloc_get()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Push<SutNS>, Push<SutNS>, Push<SutNS>, Write<SutNS>,
@@ -45,24 +37,9 @@ template <typename SutNS> void TestVector(SutWrapper<SutNS> sutWrapper) {
 }
 } // namespace
 
-RC_GTEST_PROP(VectorDynamicSmall, Fuzz, ()) {
-    using SutNS = SutPrimitive_3_8<uint8_t>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(4, stdalloc_get())));
-}
-
-RC_GTEST_PROP(VectorDynamicMedium, Fuzz, ()) {
-    using SutNS = SutPrimitive_3_8<size_t>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(1, stdalloc_get())));
-}
-
-RC_GTEST_PROP(VectorDynamicEmpty, Fuzz, ()) {
-    using SutNS = SutObject<Empty>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(1, stdalloc_get())));
-}
-
-RC_GTEST_PROP(VectorDynamicComplex, Fuzz, ()) {
-    using SutNS = SutObject<Complex>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(1, stdalloc_get())));
-}
+RC_GTEST_PROP(VectorDynamicSmall, Fuzz, ()) { Test<SutObject<Primitive<uint8_t>>>(); }
+RC_GTEST_PROP(VectorDynamicMedium, Fuzz, ()) { Test<SutObject<Primitive<size_t>>>(); }
+RC_GTEST_PROP(VectorDynamicEmpty, Fuzz, ()) { Test<SutObject<Empty>>(); }
+RC_GTEST_PROP(VectorDynamicComplex, Fuzz, ()) { Test<SutObject<Complex>>(); }
 
 } // namespace

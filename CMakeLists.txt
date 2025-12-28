@@ -28,7 +28,7 @@ endif()
 #
 # By default, asan and ubsan are run, provide the most benefit & are compatible with eachother.
 set(_dbg_default OFF)
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "")
   set(_dbg_default ON)
 endif()
 

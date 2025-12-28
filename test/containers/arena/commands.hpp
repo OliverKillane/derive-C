@@ -224,6 +224,8 @@ template <typename SutNS> struct Remove : Command<SutNS> {
                                 entry_ptr, sizeof(typename SutNS::Sut_value_t));
 
         RC_ASSERT(entry == m.mValues.at(mIndex.value()));
+
+        SutNS::Sut_value_t::delete_(&entry);
     }
 
     void show(std::ostream& os) const override {

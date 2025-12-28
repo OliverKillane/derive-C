@@ -12,16 +12,7 @@
 
 #include <derive-c/container/map/staticlinear/includes.h>
 
-template <typename Key, typename Value> struct SutPrimitive {
-#define EXPAND_IN_STRUCT
-#define CAPACITY 16
-#define KEY Key
-#define VALUE Value
-#define NAME Sut
-#include <derive-c/container/map/staticlinear/template.h>
-};
-
-template <typename Key, typename Value> struct SutObjects {
+template <ObjectType Key, ObjectType Value> struct SutObjects {
 #define CAPACITY 16
 #define KEY Key
 #define KEY_EQ Key::equality_
@@ -47,8 +38,9 @@ template <typename SutNS> struct InsertIfCapacity : Insert<SutNS> {
     }
 };
 
-template <typename SutNS> void Test(SutWrapper<SutNS> sutWrapper) {
+template <typename SutNS> void Test() {
     SutModel<SutNS> model;
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<InsertIfCapacity<SutNS>, InsertIfCapacity<SutNS>,
@@ -58,23 +50,12 @@ template <typename SutNS> void Test(SutWrapper<SutNS> sutWrapper) {
 }
 
 RC_GTEST_PROP(StaticLinearSmall, Fuzz, ()) {
-    using SutNS = SutPrimitive<uint32_t, uint8_t>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new()));
+    Test<SutObjects<Primitive<uint8_t>, Primitive<uint8_t>>>();
 }
-
-RC_GTEST_PROP(StaticLinearMedium, Fuzz, ()) {
-    using SutNS = SutPrimitive<size_t, size_t>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new()));
+RC_GTEST_PROP(StaticLinearMediumMedium, Fuzz, ()) {
+    Test<SutObjects<Primitive<size_t>, Primitive<size_t>>>();
 }
-
-RC_GTEST_PROP(StaticLinearComplexEmpty, Fuzz, ()) {
-    using SutNS = SutObjects<Complex, Empty>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
-
-RC_GTEST_PROP(StaticLinearComplexComplex, Fuzz, ()) {
-    using SutNS = SutObjects<Complex, Complex>;
-    Test(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
+RC_GTEST_PROP(StaticLinearComplexEmpty, Fuzz, ()) { Test<SutObjects<Complex, Empty>>(); }
+RC_GTEST_PROP(StaticLinearComplexComplex, Fuzz, ()) { Test<SutObjects<Complex, Complex>>(); }
 
 } // namespace

@@ -19,7 +19,7 @@ struct SutSmall {
 #include <derive-c/container/bitset/static/template.h>
 };
 
-struct SutPrimitive_3_16 {
+struct SutMedium {
 #define EXPAND_IN_STRUCT
 #define EXCLUSIVE_END_INDEX 256
 #define NAME Sut
@@ -39,7 +39,7 @@ RC_GTEST_PROP(StaticSmallTests, Fuzz, ()) {
 }
 
 RC_GTEST_PROP(StaticMediumTests, Fuzz, ()) {
-    using SutNS = SutPrimitive_3_16;
+    using SutNS = SutMedium;
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
     SutModel model;
 

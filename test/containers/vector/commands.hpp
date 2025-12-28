@@ -197,6 +197,9 @@ template <typename SutNS> struct Pop : Command<SutNS> {
 
     void checkPreconditions(const Model& m) const override { RC_PRE(!m.empty()); }
     void apply(Model& m) const override { m.pop_back(); }
-    void runCommand(const Model& /*m*/, Wrapper& w) const override { SutNS::Sut_pop(w.get()); }
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
+        typename SutNS::Sut_item_t item = SutNS::Sut_pop(w.get());
+        SutNS::Sut_item_t::delete_(&item);
+    }
     void show(std::ostream& os) const override { os << "Pop()"; }
 };

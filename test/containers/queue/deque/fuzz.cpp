@@ -14,14 +14,7 @@
 
 #include <derive-c/container/queue/deque/includes.h>
 
-template <typename Int> struct SutPrimitive_3_8 {
-#define EXPAND_IN_STRUCT
-#define ITEM Int
-#define NAME Sut
-#include <derive-c/container/queue/deque/template.h>
-};
-
-template <typename Item> struct SutObject {
+template <ObjectType Item> struct SutObject {
 #define EXPAND_IN_STRUCT
 #define ITEM_CLONE Item::clone_
 #define ITEM_DELETE Item::delete_
@@ -33,9 +26,9 @@ template <typename Item> struct SutObject {
 namespace {
 
 namespace {
-template <typename SutNS> void TestDequeue(SutWrapper<SutNS> sutWrapper) {
+template <typename SutNS> void Test() {
     SutModel<SutNS> model;
-
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity(4, stdalloc_get()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<PushFront<SutNS>, PushFront<SutNS>, PushBack<SutNS>,
@@ -43,24 +36,9 @@ template <typename SutNS> void TestDequeue(SutWrapper<SutNS> sutWrapper) {
 }
 } // namespace
 
-RC_GTEST_PROP(QueueDequeueSmall, Fuzz, ()) {
-    using SutNS = SutPrimitive_3_8<uint8_t>;
-    TestDequeue(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(4, stdalloc_get())));
-}
-
-RC_GTEST_PROP(QueueDequeueMedium, Fuzz, ()) {
-    using SutNS = SutPrimitive_3_8<size_t>;
-    TestDequeue(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(1, stdalloc_get())));
-}
-
-RC_GTEST_PROP(QueueDequeueEmpty, Fuzz, ()) {
-    using SutNS = SutObject<Empty>;
-    TestDequeue(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(1, stdalloc_get())));
-}
-
-RC_GTEST_PROP(QueueDequeueComplex, Fuzz, ()) {
-    using SutNS = SutObject<Complex>;
-    TestDequeue(SutWrapper<SutNS>(SutNS::Sut_new_with_capacity(1, stdalloc_get())));
-}
+RC_GTEST_PROP(QueueDequeueSmall, Fuzz, ()) { Test<SutObject<Primitive<uint8_t>>>(); }
+RC_GTEST_PROP(QueueDequeueMedium, Fuzz, ()) { Test<SutObject<Primitive<size_t>>>(); }
+RC_GTEST_PROP(QueueDequeueEmpty, Fuzz, ()) { Test<SutObject<Empty>>(); }
+RC_GTEST_PROP(QueueDequeueComplex, Fuzz, ()) { Test<SutObject<Complex>>(); }
 
 } // namespace

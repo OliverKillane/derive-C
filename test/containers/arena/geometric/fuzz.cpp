@@ -13,10 +13,12 @@
 
 #include <derive-c/container/arena/geometric/includes.h>
 
-template <typename Integer> struct SutPrimitive_3_8 {
+template <ObjectType Object> struct SutObject_3_8 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
-#define VALUE Integer
+#define VALUE Object
+#define VALUE_CLONE Object::clone_
+#define VALUE_DELETE Object::delete_
 #define INITIAL_BLOCK_INDEX_BITS 3
 #define INDEX_BITS 8
 #include <derive-c/container/arena/geometric/template.h>
@@ -24,16 +26,18 @@ template <typename Integer> struct SutPrimitive_3_8 {
     static size_t max_size() { return Sut_max_entries; }
 };
 
-using Sut_3_8_PrimitiveSmall = SutPrimitive_3_8<uint8_t>;
+using Sut_3_8_PrimitiveSmall = SutObject_3_8<Primitive<uint8_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_3_8_PrimitiveSmall);
 
-using Sut_3_8_PrimitiveMedium = SutPrimitive_3_8<size_t>;
+using Sut_3_8_PrimitiveMedium = SutObject_3_8<Primitive<size_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_3_8_PrimitiveMedium);
 
-template <typename Integer> struct SutPrimitive_3_16 {
+template <ObjectType Object> struct SutObject_3_16 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
-#define VALUE Integer
+#define VALUE Object
+#define VALUE_CLONE Object::clone_
+#define VALUE_DELETE Object::delete_
 #define INITIAL_BLOCK_INDEX_BITS 3
 #define INDEX_BITS 16
 #include <derive-c/container/arena/geometric/template.h>
@@ -41,13 +45,13 @@ template <typename Integer> struct SutPrimitive_3_16 {
     static size_t max_size() { return Sut_max_entries; }
 };
 
-using Sut_16_PrimitiveSmall = SutPrimitive_3_16<uint8_t>;
+using Sut_16_PrimitiveSmall = SutObject_3_16<Primitive<uint8_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_16_PrimitiveSmall);
 
-using Sut_16_PrimitiveMedium = SutPrimitive_3_16<size_t>;
+using Sut_16_PrimitiveMedium = SutObject_3_16<Primitive<size_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_16_PrimitiveMedium);
 
-template <typename Object> struct SutObject_5_32 {
+template <ObjectType Object> struct SutObject_5_32 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
 #define VALUE Object

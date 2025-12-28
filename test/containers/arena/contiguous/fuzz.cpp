@@ -13,39 +13,43 @@
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/container/arena/contiguous/includes.h>
 
-template <typename Integer> struct SutPrimitive_8 {
+template <ObjectType Object> struct SutObject_8 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
-#define VALUE Integer
+#define VALUE Object
+#define VALUE_CLONE Object::clone_
+#define VALUE_DELETE Object::delete_
 #define INDEX_BITS 8
 #include <derive-c/container/arena/contiguous/template.h>
 
     static size_t max_size() { return Sut_max_entries; }
 };
 
-using Sut_8_PrimitiveSmall = SutPrimitive_8<uint8_t>;
+using Sut_8_PrimitiveSmall = SutObject_8<Primitive<uint8_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_8_PrimitiveSmall);
 
-using Sut_8_PrimitiveMedium = SutPrimitive_8<size_t>;
+using Sut_8_PrimitiveMedium = SutObject_8<Primitive<size_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_8_PrimitiveMedium);
 
-template <typename Integer> struct SutPrimitive_16 {
+template <ObjectType Object> struct SutObject_16 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
-#define VALUE Integer
+#define VALUE Object
+#define VALUE_CLONE Object::clone_
+#define VALUE_DELETE Object::delete_
 #define INDEX_BITS 16
 #include <derive-c/container/arena/contiguous/template.h>
 
     static size_t max_size() { return Sut_max_entries; }
 };
 
-using Sut_16_PrimitiveSmall = SutPrimitive_16<uint8_t>;
+using Sut_16_PrimitiveSmall = SutObject_16<Primitive<uint8_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_16_PrimitiveSmall);
 
-using Sut_16_PrimitiveMedium = SutPrimitive_16<size_t>;
+using Sut_16_PrimitiveMedium = SutObject_16<Primitive<size_t>>;
 INDEX_ITEMS_EQ_HASH(Sut_16_PrimitiveMedium);
 
-template <typename Object> struct SutObject_32 {
+template <ObjectType Object> struct SutObject_32 {
 #define EXPAND_IN_STRUCT
 #define NAME Sut
 #define VALUE Object

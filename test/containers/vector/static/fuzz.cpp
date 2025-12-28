@@ -14,15 +14,7 @@
 
 #include <derive-c/container/vector/static/includes.h>
 
-template <typename Item> struct SutPrimitive_3_8 {
-#define EXPAND_IN_STRUCT
-#define ITEM Item
-#define INPLACE_CAPACITY 10
-#define NAME Sut
-#include <derive-c/container/vector/static/template.h>
-};
-
-template <typename Item> struct SutObject {
+template <ObjectType Item> struct SutObject {
 #define EXPAND_IN_STRUCT
 #define ITEM Item
 #define ITEM_CLONE Item::clone_
@@ -33,33 +25,18 @@ template <typename Item> struct SutObject {
 };
 
 namespace {
-template <typename SutNS> void TestVector(SutWrapper<SutNS> sutWrapper) {
+template <typename SutNS> void Test() {
     SutModel<SutNS> model;
-
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Push<SutNS>, Push<SutNS>, Push<SutNS>, Write<SutNS>,
                                           TryInsertAt<SutNS>, RemoveAt<SutNS>, Pop<SutNS>>());
 }
 
-RC_GTEST_PROP(VectorStaticSmall, Fuzz, ()) {
-    using SutNS = SutPrimitive_3_8<uint8_t>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
-
-RC_GTEST_PROP(VectorStaticMedium, Fuzz, ()) {
-    using SutNS = SutPrimitive_3_8<size_t>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
-
-RC_GTEST_PROP(VectorStaticEmpty, Fuzz, ()) {
-    using SutNS = SutObject<Empty>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
-
-RC_GTEST_PROP(VectorStaticComplex, Fuzz, ()) {
-    using SutNS = SutObject<Complex>;
-    TestVector(SutWrapper<SutNS>(SutNS::Sut_new()));
-}
+RC_GTEST_PROP(VectorStaticSmall, Fuzz, ()) { Test<SutObject<Primitive<uint8_t>>>(); }
+RC_GTEST_PROP(VectorStaticMedium, Fuzz, ()) { Test<SutObject<Primitive<size_t>>>(); }
+RC_GTEST_PROP(VectorStaticEmpty, Fuzz, ()) { Test<SutObject<Empty>>(); }
+RC_GTEST_PROP(VectorStaticComplex, Fuzz, ()) { Test<SutObject<Complex>>(); }
 
 } // namespace
