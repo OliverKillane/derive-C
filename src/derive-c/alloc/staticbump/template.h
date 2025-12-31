@@ -12,23 +12,40 @@
 
 #if !defined CAPACITY
     #if !defined PLACEHOLDERS
-        #error "The capacity of the static allocator must be defined"
+TEMPLATE_ERROR("No CAPACITY")
     #endif
     #define CAPACITY 1024
 #endif
 
 #if CAPACITY > (1ULL << 30)
-    #error "CAPACITY must not exceed 1 GiB"
+TEMPLATE_ERROR("CAPACITY must not exceed 1 GiB")
 #endif
 
 #if CAPACITY <= UINT8_MAX
     #define USED uint8_t
+    #define UNALIGNED_VALID
 #elif CAPACITY <= UINT16_MAX
     #define USED uint16_t
 #elif CAPACITY <= UINT32_MAX
     #define USED uint32_t
 #else
     #define USED uint64_t
+#endif
+
+#if defined UNALIGNED_VALID
+static USED PRIV(NS(SELF, read_used))(const void* ptr) { return *(const USED*)ptr; }
+static void PRIV(NS(SELF, write_used))(void* ptr, USED value) { *((USED*)ptr) = value; }
+    #undef UNALIGNED_VALID
+#else
+// JUSTIFY: Special functions for reading the used count
+//  - These values are misaligned, so would be UB to access directly.
+static USED PRIV(NS(SELF, read_used))(const void* ptr) {
+    USED value;
+    memcpy(&value, ptr, sizeof(USED));
+    return value;
+}
+
+static void PRIV(NS(SELF, write_used))(void* ptr, USED value) { memcpy(ptr, &value, sizeof(USED)); }
 #endif
 
 typedef char NS(SELF, buffer)[CAPACITY];
@@ -39,7 +56,8 @@ typedef struct {
     dc_gdb_marker derive_c_staticbumpalloc;
 } SELF;
 
-static size_t NS(SELF, metadata_size) = sizeof(USED);
+static size_t const NS(SELF, capacity) = CAPACITY;
+static size_t const NS(SELF, metadata_size) = sizeof(USED);
 
 static SELF NS(SELF, new)(NS(SELF, buffer) * buffer) {
     SELF self = {
@@ -89,6 +107,8 @@ static USED NS(SELF, get_used)(SELF const* self) {
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
     DC_ASSUME(self);
+    DC_ASSERT(size > 0, "Cannot allocate zero sized");
+
     if (self->used + (size + sizeof(USED)) > CAPACITY) {
         return NULL;
     }
@@ -97,7 +117,8 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, used_ptr,
                           sizeof(USED));
-    *used_ptr = size;
+    USED size_value = (USED)size;
+    PRIV(NS(SELF, write_used))(used_ptr, size_value);
     char* allocation_ptr = ptr + sizeof(USED);
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, used_ptr,
                           sizeof(USED));
@@ -120,9 +141,12 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
     USED* used_ptr = (USED*)((char*)ptr - sizeof(USED));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, used_ptr,
                           sizeof(USED));
-    memset(ptr, 0, *used_ptr);
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr, *used_ptr);
-    *used_ptr = 0;
+    USED old_size_value = PRIV(NS(SELF, read_used))(used_ptr);
+    memset(ptr, 0, old_size_value);
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr,
+                          old_size_value);
+    USED zero = 0;
+    PRIV(NS(SELF, write_used))(used_ptr, zero);
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, used_ptr,
                           sizeof(USED));
 #endif
@@ -130,28 +154,30 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
 
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
     DC_ASSUME(self);
+    DC_ASSERT(new_size > 0, "Cannot allocate zero sized");
 
     if (!ptr) {
         return NS(SELF, malloc)(self, new_size);
     }
 
     char* byte_ptr = (char*)ptr;
-    USED* old_size = (USED*)(byte_ptr - sizeof(USED));
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, old_size,
-                          sizeof(USED));
-    const bool was_last_alloc = (byte_ptr + *old_size == &(*self->buffer)[self->used]);
+    USED* old_size_ptr = (USED*)(byte_ptr - sizeof(USED));
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
+                          old_size_ptr, sizeof(USED));
+    USED old_size_value = PRIV(NS(SELF, read_used))(old_size_ptr);
+    const bool was_last_alloc = (byte_ptr + old_size_value == &(*self->buffer)[self->used]);
 
     if (was_last_alloc) {
-        if (new_size > *old_size) {
-            size_t increase = new_size - *old_size;
+        if (new_size > old_size_value) {
+            size_t increase = new_size - old_size_value;
             if (self->used + increase > CAPACITY) {
                 return NULL;
             }
             self->used += increase;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
-                                  (char*)ptr + *old_size, increase);
-        } else if (new_size < *old_size) {
-            size_t decrease = *old_size - new_size;
+                                  (char*)ptr + old_size_value, increase);
+        } else if (new_size < old_size_value) {
+            size_t decrease = old_size_value - new_size;
             self->used -= decrease;
 
             // JUSTIFY: Zeroing the end of the old allocation
@@ -162,18 +188,20 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
                                   (char*)ptr + new_size, decrease);
         }
 
-        *old_size = new_size;
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, old_size,
+        USED new_size_value = (USED)new_size;
+        PRIV(NS(SELF, write_used))(old_size_ptr, new_size_value);
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, old_size_ptr,
                               sizeof(USED));
         return ptr;
     }
 
-    if (new_size < *old_size) {
+    if (new_size < old_size_value) {
         // JUSTIFY: Shrinking an allocation
         //           - Can become a noop - as we cannot re-extend the allocation
         //             afterwards - no metadata for unused capacity not at end of buffer.
-        *old_size = new_size;
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, old_size,
+        USED new_size_value = (USED)new_size;
+        PRIV(NS(SELF, write_used))(old_size_ptr, new_size_value);
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, old_size_ptr,
                               sizeof(USED));
         return ptr;
     }
@@ -183,7 +211,7 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
         return NULL;
     }
 
-    memcpy(new_buff, ptr, *old_size);
+    memcpy(new_buff, ptr, old_size_value);
 
     NS(SELF, free)(self, ptr);
     return new_buff;
@@ -196,6 +224,7 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+    DC_ASSUME(self);
     fprintf(stream, STRINGIFY(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", CAPACITY);
@@ -207,6 +236,10 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
 
 #undef USED
 #undef CAPACITY
+
+static void NS(SELF, delete)(SELF* self) { DC_ASSUME(self); }
+
+DC_TRAIT_REFERENCABLE_BY_PTR(SELF);
 
 DC_TRAIT_ALLOC(SELF);
 

@@ -2,48 +2,24 @@
 ///        This macro wraps the allocator in debug, to allow clearing leaks after an exception.
 ///
 /// In release, it is a no-op / pass through.
+/// - Not entirely zero cost, as the reference type is pointer size, even if the wrapped allocator's
+/// reference is not.
 ///
 /// As this is entirely C, we do not get the niceties of a C++ RAII allocator guard shebang.
 /// However, this is usable inside unit tests written in C.
 
-#include <derive-c/core/includes/def.h>
-#if !defined(SKIP_INCLUDES)
-    #include "includes.h"
-#endif
-
-#include <derive-c/core/alloc/def.h>
-#include <derive-c/core/self/def.h>
-
 #ifdef NDEBUG
-typedef struct {
-    ALLOC* alloc;
-} SELF;
-
-static SELF NS(SELF, new)(ALLOC* alloc) { return (SELF){.alloc = alloc}; }
-
-static void* NS(SELF, malloc)(SELF* self, size_t size) {
-    return NS(ALLOC, malloc)(self->alloc, size);
-}
-
-static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
-    return NS(ALLOC, calloc)(self->alloc, count, size);
-}
-
-static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
-    return NS(ALLOC, realloc)(self->alloc, ptr, size);
-}
-
-static void NS(SELF, free)(SELF* self, void* ptr) { NS(ALLOC, free)(self->alloc, ptr); }
-
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, STRINGIFY(SELF) " @%p {", self);
-    fmt = dc_debug_fmt_scope_begin(fmt);
-    dc_debug_fmt_print(fmt, stream, "alloc: " STRINGIFY(ALLOC) "@%p,\n", self->alloc);
-    fmt = dc_debug_fmt_scope_end(fmt);
-    dc_debug_fmt_print(fmt, stream, "}");
-}
-
+    #include <derive-c/alloc/wrap/template.h>
 #else
+
+    #include <derive-c/core/includes/def.h>
+    #if !defined(SKIP_INCLUDES)
+        #include "includes.h"
+    #endif
+
+    #include <derive-c/core/alloc/def.h>
+    #include <derive-c/core/self/def.h>
+
     #include <derive-c/alloc/std.h>
     #define ENTRIES_VECTOR NS(NAME, entries)
     #define TRACKED_ENTRY NS(EXPAND(ENTRIES), entry)
@@ -81,6 +57,8 @@ static ENTRIES_VECTOR const* NS(SELF, get_entries)(SELF const* self) {
     return &self->entries;
 }
 
+static void NS(SELF, delete)(SELF* self) { NS(ENTRIES_VECTOR, delete)(&self->entries); }
+
 static void NS(SELF, unleak_and_delete)(SELF* self) {
     NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
     TRACKED_ENTRY* entry;
@@ -91,7 +69,7 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
         }
     }
 
-    NS(ENTRIES_VECTOR, delete)(&self->entries);
+    NS(SELF, delete)(self);
 }
 
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
@@ -153,10 +131,13 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
 
     #undef TRACKED_ENTRY
     #undef ENTRIES_VECTOR
-#endif
+
+DC_TRAIT_REFERENCABLE_BY_PTR(SELF);
 
 DC_TRAIT_ALLOC(SELF);
 
-#include <derive-c/core/self/undef.h>
-#include <derive-c/core/alloc/undef.h>
-#include <derive-c/core/includes/undef.h>
+    #include <derive-c/core/self/undef.h>
+    #include <derive-c/core/alloc/undef.h>
+    #include <derive-c/core/includes/undef.h>
+
+#endif

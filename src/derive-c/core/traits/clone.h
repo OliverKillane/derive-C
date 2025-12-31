@@ -1,3 +1,6 @@
+/// @brief The clone trait.
+/// For cloning an object into another owned object.
+
 #pragma once
 
 #include <derive-c/core/namespace.h>

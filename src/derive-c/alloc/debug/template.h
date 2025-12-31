@@ -13,20 +13,26 @@
 
 typedef struct {
     char const* name;
+    FILE* stream;
     ALLOC* base;
 } SELF;
 
-static SELF NS(SELF, new)(char const* name, ALLOC* alloc) {
-    return (SELF){.name = name, .base = alloc};
+static SELF NS(SELF, new)(char const* name, FILE* stream, ALLOC* alloc) {
+    fprintf(stream, "%s: Creating debug allocator wrapping " STRINGIFY(ALLOC) "@%p\n", name, alloc);
+    return (SELF){
+        .name = name,
+        .stream = stream,
+        .base = alloc,
+    };
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, malloc)(self->base, size);
     if (ptr) {
-        printf("%s allocated %zu bytes at %p\n", self->name, size, ptr);
+        fprintf(self->stream, "%s allocated %zu bytes at %p\n", self->name, size, ptr);
     } else {
-        printf("%s failed to allocate %zu bytes\n", self->name, size);
+        fprintf(self->stream, "%s failed to allocate %zu bytes\n", self->name, size);
     }
     return ptr;
 }
@@ -35,9 +41,9 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, calloc)(self->base, count, size);
     if (ptr) {
-        printf("%s allocated %zu bytes at %p\n", self->name, count * size, ptr);
+        fprintf(self->stream, "%s allocated %zu bytes at %p\n", self->name, count * size, ptr);
     } else {
-        printf("%s failed to allocate %zu bytes\n", self->name, count * size);
+        fprintf(self->stream, "%s failed to allocate %zu bytes\n", self->name, count * size);
     }
     return ptr;
 }
@@ -46,16 +52,18 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     void* new_ptr = NS(ALLOC, realloc)(self->base, ptr, size);
     if (new_ptr) {
-        printf("%s reallocated memory at %p to %zu bytes\n", self->name, new_ptr, size);
+        fprintf(self->stream, "%s reallocated memory at %p to %zu bytes\n", self->name, new_ptr,
+                size);
     } else {
-        printf("%s failed to reallocate memory at %p to %zu bytes\n", self->name, ptr, size);
+        fprintf(self->stream, "%s failed to reallocate memory at %p to %zu bytes\n", self->name,
+                ptr, size);
     }
     return new_ptr;
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
     DC_ASSUME(self);
-    printf("%s freeing memory at %p\n", self->name, ptr);
+    fprintf(self->stream, "%s freeing memory at %p\n", self->name, ptr);
     NS(ALLOC, free)(self->base, ptr);
 }
 
@@ -67,6 +75,14 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");
 }
+
+static void NS(SELF, delete)(SELF* self) {
+    DC_ASSUME(self);
+    fprintf(self->stream, "%s: Deleting debug allocator wrapping " STRINGIFY(ALLOC) "@%p\n",
+            self->name, self->base);
+}
+
+DC_TRAIT_REFERENCABLE_BY_PTR(SELF);
 
 DC_TRAIT_ALLOC(SELF);
 

@@ -2,6 +2,21 @@
 
 #include <derive-c/core/debug/memory_tracker.h>
 
+#define CAPACITY 0
+#define NAME staticbumpallocempty
+#include <derive-c/alloc/staticbump/template.h>
+
+TEST(StaticBumpAlloc, EmptyAllocator) {
+    staticbumpallocempty_buffer buf;
+    staticbumpallocempty alloc = staticbumpallocempty_new(&buf);
+
+    void* ptr1 = staticbumpallocempty_malloc(&alloc, 100);
+    ASSERT_EQ(ptr1, nullptr);
+    ASSERT_EQ(staticbumpallocempty_get_used(&alloc), 0);
+
+    staticbumpallocempty_delete(&alloc);
+}
+
 #define CAPACITY 1024
 #define NAME staticbumpalloc
 #include <derive-c/alloc/staticbump/template.h>
@@ -50,4 +65,6 @@ TEST(StaticBumpAlloc, BasicAllocation) {
     void* ptr4 = staticbumpalloc_malloc(&alloc, 1024 - staticbumpalloc_metadata_size + 1);
     ASSERT_EQ(ptr4, nullptr);
     ASSERT_EQ(staticbumpalloc_get_used(&alloc), 0);
+
+    staticbumpalloc_delete(&alloc);
 }

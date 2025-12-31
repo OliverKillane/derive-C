@@ -18,8 +18,10 @@
     DC_STATIC_ASSERT(DC_REQUIRE_METHOD_EXPR(ret, obj, name, args),                                 \
                      "Method " #obj "." #name " must exist with type " #ret " (*)" #args)
 
-#define DC_REQUIRE_TYPE(obj, name)                                                                 \
-    DC_STATIC_ASSERT(sizeof(NS(obj, name)), "Type " #obj "." #name " must exist")
+// JUSTIFY: +1 on sizeof
+//  - We use the sizeof to enforce the type exists
+//  - For zero sized types, we need the expression to not be zero.
+#define DC_REQUIRE_TYPE(obj, name) DC_STATIC_ASSERT(sizeof(NS(obj, name)) + 1)
 
 #define DC_REQUIRE_CONSTANT_TYPE(obj, name, type)                                                  \
     DC_STATIC_ASSERT(DC_REQUIRE_CONSTANT_TYPE_EXPR(obj, name, type),                               \
