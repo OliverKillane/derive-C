@@ -10,9 +10,10 @@
 #define NAME string_builder
 #include <derive-c/utils/string_builder/template.h>
 
+#define ALLOC stdalloc
 #define CAPACITY 128
 #define NAME alloc_128
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 
 #define ALLOC alloc_128
 #define NAME string_builder_static
@@ -28,7 +29,7 @@ TEST(StringBuilder, Basic) {
 
 TEST(StringBuilder, BasicStatic) {
     alloc_128_buffer buf;
-    alloc_128 alloc = alloc_128_new(&buf);
+    alloc_128 alloc = alloc_128_new(&buf, stdalloc_get_ref());
     string_builder_static sb = string_builder_static_new(&alloc);
     std::string hello_world = "hello world";
     fprintf(string_builder_static_stream(&sb), "%s", hello_world.c_str());
@@ -110,24 +111,4 @@ TEST(StringBuilder, UnsupportedSeek) {
     EXPECT_EQ(errno, EPERM);
 
     string_builder_delete(&sb);
-}
-
-TEST(StringBuilder, FailedAlloc) {
-    alloc_128_buffer buf;
-    alloc_128 alloc = alloc_128_new(&buf);
-    string_builder_static sb = string_builder_static_new(&alloc);
-
-    // Write a string larger than the buffer size
-    // - buffer - (metadata, + the additional required + 1 for null),
-    size_t const largest_size =
-        sizeof(buf) - alloc_128_metadata_size - string_builder_additional_alloc_size - 1;
-    std::string s(largest_size, 'A');
-
-    EXPECT_EQ(s.size(), fprintf(string_builder_static_stream(&sb), "%s", s.c_str()));
-
-    errno = 0;
-    EXPECT_EQ(-1, fprintf(string_builder_static_stream(&sb), "%s", s.c_str()));
-    EXPECT_EQ(errno, ENOMEM);
-
-    string_builder_static_delete(&sb);
 }

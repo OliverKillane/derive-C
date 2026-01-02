@@ -22,7 +22,7 @@ namespace {
 RC_GTEST_PROP(AllocTest, Fuzz, ()) {
     FILE* stream = dc_null_stream();
     SutModel model;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new("test", stream, stdalloc_get()));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new("test", stream, stdalloc_get_ref()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Malloc<SutNS>, Calloc<SutNS>, ReallocLarger<SutNS>,

@@ -8,14 +8,14 @@
 
 #include <derive-c/alloc/std.h>
 
-#include <derive-c/alloc/staticbump/includes.h>
+#include <derive-c/alloc/hybridstatic/includes.h>
 
 struct SutNone {
 #define EXPAND_IN_STRUCT
 #define ALLOC stdalloc
 #define NAME Sut
 #define CAPACITY 0
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 };
 
 struct SutUint8Size {
@@ -23,7 +23,7 @@ struct SutUint8Size {
 #define ALLOC stdalloc
 #define NAME Sut
 #define CAPACITY 256
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 };
 
 struct SutUint8Larger {
@@ -31,7 +31,7 @@ struct SutUint8Larger {
 #define ALLOC stdalloc
 #define NAME Sut
 #define CAPACITY 257
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 };
 
 struct SutMedium {
@@ -39,15 +39,15 @@ struct SutMedium {
 #define ALLOC stdalloc
 #define NAME Sut
 #define CAPACITY 4096
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 };
 
 namespace {
 
 template <typename SutNS> void Test() {
-    char buffer[SutNS::Sut_capacity] = {};
+    typename SutNS::Sut_buffer buffer = {};
     SutModel model;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(&buffer));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(&buffer, stdalloc_get_ref()));
 
     rc::state::check(
         model, sutWrapper,

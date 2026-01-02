@@ -4,12 +4,12 @@
 #if defined __cplusplus
     #include <type_traits> // NOLINT(misc-include-cleaner)
     #define DC_REQUIRE_METHOD_EXPR(ret, obj, name, args)                                           \
-        std::is_same_v<decltype(&NS(obj, name)), ret(*) args>
+        std::is_same_v<decltype(+NS(obj, name)), ret(*) args>
     #define DC_REQUIRE_CONSTANT_TYPE_EXPR(obj, name, Type)                                         \
         std::is_same_v<std::remove_cv_t<std::remove_reference_t<decltype(NS(obj, name))>>, Type>
 #else
     #define DC_REQUIRE_METHOD_EXPR(ret, obj, name, args)                                           \
-        _Generic(&NS(obj, name), ret(*) args: 1, default: 0)
+        _Generic(NS(obj, name), ret(*) args: 1, default: 0)
     #define DC_REQUIRE_CONSTANT_TYPE_EXPR(obj, name, Type)                                         \
         _Generic((NS(obj, name)), Type: 1, default: 0)
 #endif

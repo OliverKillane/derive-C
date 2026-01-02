@@ -9,7 +9,7 @@
 
 TEST(DebugAlloc, BasicAllocation) {
     FILE* stream = dc_null_stream();
-    stddebugalloc alloc = stddebugalloc_new("Test Allocator", stream, stdalloc_get());
+    stddebugalloc alloc = stddebugalloc_new("Test Allocator", stream, stdalloc_get_ref());
 
     void* malloced = stddebugalloc_malloc(&alloc, 100);
     void* calloced = stddebugalloc_calloc(&alloc, 10, 10);

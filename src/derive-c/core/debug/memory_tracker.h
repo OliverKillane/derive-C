@@ -111,6 +111,7 @@ static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_track
 
 static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
                                     const void* addr, size_t size) {
+    DC_ASSERT(size > 0, "Cannot check zero sized region");
     if (level <= memory_tracker_global_level) {
 #if defined(MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.

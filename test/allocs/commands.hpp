@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rapidcheck/Assertions.h"
+#include <cstring>
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>
@@ -12,30 +14,28 @@
 using ModelIndex = size_t;
 
 struct ModelIndexGen {
-    ModelIndex next() { return mIndex++; }
+    ModelIndex increment() { return mIndex++; }
+    ModelIndex next() const { return mIndex; }
     ModelIndex mIndex{0};
 };
 
 struct SutModel {
     ModelIndexGen mModelIndexGen;
-    std::unordered_map<ModelIndex, size_t> mSizes;
-};
 
-struct IAlloc {
-    virtual ~IAlloc();
-};
+    struct Allocation {
+        char mFill;
+        size_t mSize;
+    };
 
-template <typename SutNS> struct AllocWrapper : IAlloc {
-    SutNS::Sut mSut;
-    ~AllocWrapper() override { SutNS::Sut_delete(&mSut); }
+    std::unordered_map<ModelIndex, Allocation> mAllocations;
 };
 
 template <typename SutNS> struct SutWrapper {
     SutWrapper(SutNS::Sut sut) : mSut(sut) {}
     SutWrapper(const SutWrapper& other) = delete;
     ~SutWrapper() {
-        for (auto& [_, alloc] : mAllocations) {
-            SutNS::Sut_free(&mSut, alloc.ptr);
+        for (auto& [_, ptr] : mAllocations) {
+            SutNS::Sut_free(&mSut, ptr);
         }
         SutNS::Sut_delete(&mSut);
     }
@@ -44,14 +44,7 @@ template <typename SutNS> struct SutWrapper {
     [[nodiscard]] SutNS::Sut const* getConst() const { return &mSut; }
 
     SutNS::Sut mSut;
-
-    struct Data {
-        void* ptr;
-        char fill_byte;
-        size_t size;
-    };
-    ModelIndexGen mIndexGen;
-    std::unordered_map<ModelIndex, Data> mAllocations;
+    std::unordered_map<ModelIndex, void*> mAllocations;
 };
 
 static char GetFill(size_t num_allocations) {
@@ -62,6 +55,18 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel, SutWrapp
     using Model = SutModel;
     using Wrapper = SutWrapper<SutNS>;
 
+    static std::optional<ModelIndex> GetModelIndex(const Model& m) {
+        if (!m.mAllocations.empty()) {
+            std::vector<ModelIndex> indices;
+            indices.reserve(m.mAllocations.size());
+            for (const auto& [k, _] : m.mAllocations) {
+                indices.push_back(k);
+            }
+            return *rc::gen::elementOf(indices);
+        }
+        return std::nullopt;
+    }
+
     virtual void runCommand(const Model& m, Wrapper& w) const = 0;
     virtual void AdditionalChecks(const Model& m, const Wrapper& w) const {}
 
@@ -69,12 +74,11 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel, SutWrapp
         runCommand(m, w);
 
         Model next = this->nextState(m);
-        for (const auto& [idx, data] : w.mAllocations) {
-            bool validPtr = data.ptr != nullptr;
-            RC_ASSERT(validPtr);
-            char* char_ptr = static_cast<char*>(data.ptr);
-            for (size_t i = 0; i < data.size; ++i) {
-                RC_ASSERT(char_ptr[i] == data.fill_byte);
+        for (const auto& [idx, alloc] : next.mAllocations) {
+            void* ptr = w.mAllocations.at(idx);
+            char* char_ptr = static_cast<char*>(ptr);
+            for (size_t i = 0; i < alloc.mSize; ++i) {
+                RC_ASSERT(char_ptr[i] == alloc.mFill);
             }
         }
     }
@@ -85,59 +89,43 @@ template <typename SutNS> struct Malloc : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    size_t mSize = *rc::gen::inRange<size_t>(1, 1000);
+    size_t mSize;
+    ModelIndex mIndex;
+    char mFill;
+
+    Malloc(const Model& m)
+        : mSize(*rc::gen::inRange<size_t>(1, 1000)), mIndex(m.mModelIndexGen.next()),
+          mFill(GetFill(mIndex)) {}
 
     void checkPreconditions(const Model& m) const override {}
+
     void apply(Model& m) const override {
-        ModelIndex model_index = m.mModelIndexGen.next();
-        m.mSizes[model_index] = mSize;
+        ModelIndex index = m.mModelIndexGen.increment();
+        RC_ASSERT(index == mIndex);
+        m.mAllocations[index] = {
+            .mFill = mFill,
+            .mSize = mSize,
+        };
     }
+
     void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        char fill = GetFill(w.mAllocations.size());
         void* ptr = SutNS::Sut_malloc(w.get(), mSize);
-        if (ptr != nullptr) {
-            char* char_ptr = static_cast<char*>(ptr);
-            for (size_t i = 0; i < mSize; ++i) {
-                char_ptr[i] = fill;
-            }
-            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, ptr,
-                                    mSize);
-            ModelIndex alloc_index = w.mIndexGen.next();
-            w.mAllocations[alloc_index] = {ptr, fill, mSize};
-        }
+        bool const success = ptr != nullptr;
+        RC_ASSERT(success);
+
+        // Check for correct msan/asan poisoning
+        dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, ptr,
+                                mSize);
+
+        // Fill with data (for checking overwrites)
+        std::memset(ptr, mFill, mSize);
+
+        // Sync with the model
+        w.mAllocations[mIndex] = ptr;
     }
-    void show(std::ostream& os) const override { os << "Malloc(" << mSize << ")"; }
-};
-
-template <typename SutNS> struct Free : Command<SutNS> {
-    using Base = Command<SutNS>;
-    using typename Base::Model;
-    using typename Base::Wrapper;
-
-    std::optional<ModelIndex> mIndex = std::nullopt;
-
-    explicit Free(const Model& m) {
-        if (!m.mSizes.empty()) {
-            std::vector<ModelIndex> indices;
-            indices.reserve(m.mSizes.size());
-            for (const auto& [k, _] : m.mSizes) {
-                indices.push_back(k);
-            }
-            mIndex = *rc::gen::elementOf(indices);
-        }
+    void show(std::ostream& os) const override {
+        os << "Malloc(index=" << mIndex << ", size=" << mSize << ", fill=" << mFill << ")";
     }
-
-    void checkPreconditions(const Model& /*m*/) const override { RC_PRE(mIndex.has_value()); }
-    void apply(Model& m) const override { m.mSizes.erase(mIndex.value()); }
-    void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        const auto& data = w.mAllocations.at(mIndex.value());
-        void* ptr = data.ptr;
-        size_t size = data.size;
-        SutNS::Sut_free(w.get(), ptr);
-        dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr, size);
-        w.mAllocations.erase(mIndex.value());
-    }
-    void show(std::ostream& os) const override { os << "Free()"; }
 };
 
 template <typename SutNS> struct Calloc : Command<SutNS> {
@@ -145,36 +133,75 @@ template <typename SutNS> struct Calloc : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    size_t mNmemb = *rc::gen::inRange<size_t>(1, 100);
-    size_t mSize = *rc::gen::inRange<size_t>(1, 10);
+    size_t mItems;
+    size_t mItemSize;
+    ModelIndex mIndex;
+    char mFill;
+
+    Calloc(const Model& m)
+        : mItems(*rc::gen::inRange<size_t>(1, 100)), mItemSize(*rc::gen::inRange<size_t>(1, 10)),
+          mIndex(m.mModelIndexGen.next()), mFill(GetFill(mIndex)) {}
 
     void checkPreconditions(const Model& m) const override {}
+
     void apply(Model& m) const override {
-        ModelIndex model_index = m.mModelIndexGen.next();
-        size_t total_size = mNmemb * mSize;
-        m.mSizes[model_index] = total_size;
+        ModelIndex index = m.mModelIndexGen.increment();
+        RC_ASSERT(index == mIndex);
+        m.mAllocations[index] = {
+            .mFill = mFill,
+            .mSize = mItems * mItemSize,
+        };
     }
+
     void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        void* ptr = SutNS::Sut_calloc(w.get(), mNmemb, mSize);
-        if (ptr != nullptr) {
-            char* char_ptr = static_cast<char*>(ptr);
-            size_t total_size = mNmemb * mSize;
-            for (size_t i = 0; i < total_size; ++i) {
-                RC_ASSERT(char_ptr[i] == 0);
-            }
-            char fill = GetFill(w.mAllocations.size());
-            for (size_t i = 0; i < total_size; ++i) {
-                char_ptr[i] = fill;
-            }
-            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
-                                    ptr, total_size);
-            ModelIndex alloc_index = w.mIndexGen.next();
-            w.mAllocations[alloc_index] = {ptr, fill, total_size};
+        void* ptr = SutNS::Sut_calloc(w.get(), mItems, mItemSize);
+        bool const success = ptr != nullptr;
+        RC_ASSERT(success);
+
+        // Check for correct msan/asan poisoning
+        dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, ptr,
+                                mItems * mItemSize);
+
+        //  Check all bytes zeroed
+        char const* char_ptr = static_cast<char const*>(ptr);
+        for (size_t i = 0; i < mItems * mItemSize; ++i) {
+            RC_ASSERT(char_ptr[i] == 0);
         }
+
+        // Fill with data (for checking overwrites)
+        std::memset(ptr, mFill, mItems * mItemSize);
+
+        // Sync with the model
+        w.mAllocations[mIndex] = ptr;
     }
     void show(std::ostream& os) const override {
-        os << "Calloc(" << mNmemb << ", " << mSize << ")";
+        os << "Calloc(index=" << mIndex << ", items=" << mItems << ", itemSize=" << mItemSize
+           << ", fill=" << mFill << ")";
     }
+};
+
+template <typename SutNS> struct Free : Command<SutNS> {
+    using Base = Command<SutNS>;
+    using typename Base::Model;
+    using typename Base::Wrapper;
+
+    std::optional<ModelIndex> mIndex;
+
+    explicit Free(const Model& m) : mIndex(Base::GetModelIndex(m)) {}
+
+    void checkPreconditions(const Model& /*m*/) const override { RC_PRE(mIndex.has_value()); }
+
+    void apply(Model& m) const override { m.mAllocations.erase(mIndex.value()); }
+    void runCommand(const Model& m, Wrapper& w) const override {
+        void* ptr = w.mAllocations.at(mIndex.value());
+        size_t const size = m.mAllocations.at(mIndex.value()).mSize;
+
+        SutNS::Sut_free(w.get(), ptr);
+
+        dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr, size);
+        w.mAllocations.erase(mIndex.value());
+    }
+    void show(std::ostream& os) const override { os << "Free(index=" << mIndex.value() << ")"; }
 };
 
 template <typename SutNS> struct ReallocLarger : Command<SutNS> {
@@ -182,56 +209,50 @@ template <typename SutNS> struct ReallocLarger : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    std::optional<ModelIndex> mIndex = std::nullopt;
-    size_t mNewSize = 0;
+    std::optional<ModelIndex> mIndex;
+    size_t mIncreaseBy;
 
-    explicit ReallocLarger(const Model& m) {
-        if (!m.mSizes.empty()) {
-            std::vector<ModelIndex> indices;
-            indices.reserve(m.mSizes.size());
-            for (const auto& [k, _] : m.mSizes) {
-                indices.push_back(k);
-            }
-            mIndex = *rc::gen::elementOf(indices);
-            if (mIndex.has_value()) {
-                size_t old_size = m.mSizes.at(mIndex.value());
-                mNewSize = *rc::gen::inRange<size_t>(old_size + 1, old_size + 1000);
-            }
-        }
-    }
+    explicit ReallocLarger(const Model& m)
+        : mIndex(Base::GetModelIndex(m)), mIncreaseBy(*rc::gen::inRange<size_t>(0, 100)) {}
 
     void checkPreconditions(const Model& /*m*/) const override { RC_PRE(mIndex.has_value()); }
-    void apply(Model& m) const override { m.mSizes.at(mIndex.value()) = mNewSize; }
-    void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        const auto& data = w.mAllocations.at(mIndex.value());
-        // Ensure old data is correct before realloc
-        for (size_t i = 0; i < data.size; ++i) {
-            RC_ASSERT(static_cast<char*>(data.ptr)[i] == data.fill_byte);
+
+    void apply(Model& m) const override { m.mAllocations.at(mIndex.value()).mSize += mIncreaseBy; }
+
+    void runCommand(const Model& m, Wrapper& w) const override {
+        void* original_ptr = w.mAllocations.at(mIndex.value());
+        const auto& alloc = m.mAllocations.at(mIndex.value());
+        void* new_ptr = SutNS::Sut_realloc(w.get(), original_ptr, alloc.mSize + mIncreaseBy);
+
+        // Update tracking for index
+        w.mAllocations[mIndex.value()] = new_ptr;
+
+        if (new_ptr != original_ptr) {
+            // Check the bytes for the old allocation are poisoned
+            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
+                                    original_ptr, alloc.mSize);
         }
-        void* old_ptr = data.ptr;
-        char fill = data.fill_byte;
-        void* new_ptr = SutNS::Sut_realloc(w.get(), old_ptr, mNewSize);
-        if (new_ptr == nullptr) {
-            // If realloc fails, check that the original data is unchanged
-            for (size_t i = 0; i < data.size; ++i) {
-                RC_ASSERT(static_cast<char*>(data.ptr)[i] == data.fill_byte);
-            }
-        } else {
-            char* char_ptr = static_cast<char*>(new_ptr);
-            for (size_t i = 0; i < data.size; ++i) {
-                RC_ASSERT(char_ptr[i] == fill);
-            }
-            for (size_t i = data.size; i < mNewSize; ++i) {
-                char_ptr[i] = fill;
-            }
-            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
-                                    new_ptr, data.size);
+
+        // Check the original bytes are unchanged
+        char const* original_start = static_cast<char const*>(new_ptr);
+        dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
+                                original_start, alloc.mSize);
+        for (size_t offset = 0; offset < alloc.mSize; offset++) {
+            RC_ASSERT(original_start[offset] == alloc.mFill);
+        }
+
+        // Check the new bytes are correctly poisoned
+        if (mIncreaseBy > 0) {
+            char* start_of_extension = static_cast<char*>(new_ptr) + alloc.mSize;
             dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
-                                    static_cast<char*>(new_ptr) + data.size, mNewSize - data.size);
-            w.mAllocations[mIndex.value()] = {new_ptr, fill, mNewSize};
+                                    static_cast<char*>(new_ptr) + alloc.mSize, mIncreaseBy);
+            // Set new bytes
+            std::memset(start_of_extension, alloc.mFill, mIncreaseBy);
         }
     }
-    void show(std::ostream& os) const override { os << "ReallocLarger()"; }
+    void show(std::ostream& os) const override {
+        os << "ReallocLarger(index=" << mIndex.value() << ", increaseBy=" << mIncreaseBy << ")";
+    }
 };
 
 template <typename SutNS> struct ReallocSmaller : Command<SutNS> {
@@ -239,51 +260,41 @@ template <typename SutNS> struct ReallocSmaller : Command<SutNS> {
     using typename Base::Model;
     using typename Base::Wrapper;
 
-    std::optional<ModelIndex> mIndex = std::nullopt;
-    size_t mNewSize = 0;
+    std::optional<ModelIndex> mIndex;
+    size_t mNewSize;
 
-    explicit ReallocSmaller(const Model& m) {
-        if (!m.mSizes.empty()) {
-            std::vector<ModelIndex> indices;
-            indices.reserve(m.mSizes.size());
-            for (const auto& [k, _] : m.mSizes) {
-                indices.push_back(k);
-            }
-            mIndex = *rc::gen::elementOf(indices);
-            if (mIndex.has_value()) {
-                size_t old_size = m.mSizes.at(mIndex.value());
-                mNewSize = *rc::gen::inRange<size_t>(1, old_size);
-            }
-        }
-    }
+    explicit ReallocSmaller(const Model& m)
+        : mIndex(Base::GetModelIndex(m)),
+          mNewSize(mIndex.has_value()
+                       ? *rc::gen::inRange<size_t>(1, m.mAllocations.at(mIndex.value()).mSize)
+                       : 0) {}
 
     void checkPreconditions(const Model& /*m*/) const override { RC_PRE(mIndex.has_value()); }
-    void apply(Model& m) const override { m.mSizes.at(mIndex.value()) = mNewSize; }
-    void runCommand(const Model& /*m*/, Wrapper& w) const override {
-        const auto& data = w.mAllocations.at(mIndex.value());
-        // Ensure old data is correct before realloc
-        for (size_t i = 0; i < data.size; ++i) {
-            RC_ASSERT(static_cast<char*>(data.ptr)[i] == data.fill_byte);
-        }
-        void* old_ptr = data.ptr;
-        char fill = data.fill_byte;
-        void* new_ptr = SutNS::Sut_realloc(w.get(), old_ptr, mNewSize);
-        if (new_ptr == nullptr) {
-            // If realloc fails, check that the original data is unchanged
-            for (size_t i = 0; i < data.size; ++i) {
-                RC_ASSERT(static_cast<char*>(data.ptr)[i] == data.fill_byte);
-            }
+    void apply(Model& m) const override { m.mAllocations.at(mIndex.value()).mSize = mNewSize; }
+    void runCommand(const Model& m, Wrapper& w) const override {
+        const auto& alloc = m.mAllocations.at(mIndex.value());
+        void* original_ptr = w.mAllocations.at(mIndex.value());
+
+        void* new_ptr = SutNS::Sut_realloc(w.get(), original_ptr, mNewSize);
+        w.mAllocations[mIndex.value()] = new_ptr;
+
+        if (new_ptr == original_ptr) {
+            // Need to check that the memory removed was poisoned
+            char const* end = static_cast<char const*>(original_ptr) + mNewSize;
+            size_t poisonedBytes = alloc.mSize - mNewSize;
+            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, end,
+                                    poisonedBytes);
         } else {
-            char* char_ptr = static_cast<char*>(new_ptr);
-            for (size_t i = 0; i < mNewSize; ++i) {
-                RC_ASSERT(char_ptr[i] == fill);
-            }
-            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
-                                    new_ptr, mNewSize);
+            // Need to check the entire old allocation was poisoned
             dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                                    static_cast<char*>(new_ptr) + mNewSize, data.size - mNewSize);
-            w.mAllocations[mIndex.value()] = {new_ptr, fill, mNewSize};
+                                    original_ptr, alloc.mSize);
+        }
+
+        // Check the data is preserved
+        char* char_ptr = static_cast<char*>(new_ptr);
+        for (size_t i = 0; i < mNewSize; ++i) {
+            RC_ASSERT(char_ptr[i] == alloc.mFill);
         }
     }
-    void show(std::ostream& os) const override { os << "ReallocSmaller()"; }
+    void show(std::ostream& os) const override { os << "ReallocSmaller(" << mNewSize << ")"; }
 };

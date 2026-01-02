@@ -20,7 +20,7 @@ struct SutNS {
 namespace {
 RC_GTEST_PROP(AllocStd, Fuzz, ()) {
     SutModel model;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get_ref()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Malloc<SutNS>, Calloc<SutNS>, ReallocLarger<SutNS>,
