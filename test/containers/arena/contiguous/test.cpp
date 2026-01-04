@@ -98,7 +98,13 @@ TEST(ArenaTests, Debug) {
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
-            ""
+            "int_arena@" DC_PTR_REPLACE " {\n"
+            "  capacity: 16,\n"
+            "  count: 0,\n"
+            "  slots: " DC_PTR_REPLACE ",\n"
+            "  alloc: stdalloc@" DC_PTR_REPLACE " { },\n"
+            "  items: [  ],\n"
+            "}"
             // clang-format on
             ,
             derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));

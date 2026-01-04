@@ -164,7 +164,33 @@ TEST(GeometricArena, Debug) {
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
-            ""
+            "int_arena@<ptr> {\n"
+            "  count: 0,\n"
+            "  free_list: 2,\n"
+            "  alloc: stdalloc@" DC_PTR_REPLACE " { },\n"
+            "  blocks: [\n"
+            "    {\n"
+            "      block_index: 0,\n"
+            "      block_ptr: " DC_PTR_REPLACE ",\n"
+            "      capacity: 8,\n"
+            "      size: 3,\n"
+            "      slots: [\n"
+            "        {\n"
+            "          present: false,\n"
+            "          next_free: 255,\n"
+            "        },\n"
+            "        {\n"
+            "          present: false,\n"
+            "          next_free: 0,\n"
+            "        },\n"
+            "        {\n"
+            "          present: false,\n"
+            "          next_free: 1,\n"
+            "        },\n"
+            "      ],\n"
+            "    },\n"
+            "  ],\n"
+            "}"
             // clang-format on
             ,
             derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));

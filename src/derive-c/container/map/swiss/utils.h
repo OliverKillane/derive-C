@@ -21,7 +21,7 @@ DC_STATIC_ASSERT(DC_MATH_IS_POWER_OF_2(DC_SWISS_SIMD_PROBE_SIZE));
 typedef uint8_t dc_swiss_id;
 typedef uint8_t dc_swiss_ctrl;
 
-static bool dc_swiss_is_present(dc_swiss_ctrl ctrl) {
+DC_PURE static bool dc_swiss_is_present(dc_swiss_ctrl ctrl) {
     switch (ctrl) {
     case DC_SWISS_VAL_EMPTY:
     case DC_SWISS_VAL_DELETED:

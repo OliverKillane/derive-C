@@ -141,22 +141,16 @@ static void PRIV(NS(SELF, static_free))(SELF* self, void* ptr) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
 
-#if !defined NDEBUG
-    // JUSTIFY: Zero memory in debug.
-    //           - Expensive for release, but helpful when debugging
-    // NOTE: This means that users should free, before they clear and reuse the buffer.
     USED* used_ptr = (USED*)((char*)ptr - sizeof(USED));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, used_ptr,
                           sizeof(USED));
     USED old_size_value = PRIV(NS(SELF, read_used))(used_ptr);
-    memset(ptr, 0, old_size_value);
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr,
                           old_size_value);
     USED zero = 0;
     PRIV(NS(SELF, write_used))(used_ptr, zero);
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, used_ptr,
                           sizeof(USED));
-#endif
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {

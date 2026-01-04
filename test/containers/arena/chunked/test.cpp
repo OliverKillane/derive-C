@@ -109,7 +109,20 @@ TEST(ArenaChunked, Debug) {
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
-            ""
+            "int_arena@" DC_PTR_REPLACE " {\n"
+            "  count: 0,\n"
+            "  free_list: 2,\n"
+            "  alloc: stdalloc@" DC_PTR_REPLACE " { },\n"
+            "  current_block: 0\n"
+            "  block_current_exclusive_end: 3\n"
+            "  blocks: [\n"
+            "    block[0]: @" DC_PTR_REPLACE " [\n"
+            "      [index=0]{ next_free=255 }\n"
+            "      [index=1]{ next_free=0 }\n"
+            "      [index=2]{ next_free=1 }\n"
+            "    ],\n"
+            "  ],\n"
+            "}"
             // clang-format on
             ,
             derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));

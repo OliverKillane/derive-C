@@ -1,20 +1,21 @@
-#include <gtest/gtest.h>
+#if !defined NDEBUG
+    #include <gtest/gtest.h>
 
-#include <rapidcheck.h>
-#include <rapidcheck/gtest.h>
-#include <rapidcheck/state.h>
+    #include <rapidcheck.h>
+    #include <rapidcheck/gtest.h>
+    #include <rapidcheck/state.h>
 
-#include "../commands.hpp"
+    #include "../commands.hpp"
 
-#include <derive-c/alloc/std.h>
+    #include <derive-c/alloc/std.h>
 
-#include <derive-c/alloc/test/includes.h>
+    #include <derive-c/alloc/test/includes.h>
 
 struct SutNS {
-#define EXPAND_IN_STRUCT
-#define ALLOC stdalloc
-#define NAME Sut
-#include <derive-c/alloc/test/template.h>
+    #define EXPAND_IN_STRUCT
+    #define ALLOC stdalloc
+    #define NAME Sut
+    #include <derive-c/alloc/test/template.h>
 };
 
 namespace {
@@ -27,3 +28,4 @@ RC_GTEST_PROP(AllocTest, Fuzz, ()) {
                                           ReallocSmaller<SutNS>, Free<SutNS>>());
 }
 } // namespace
+#endif

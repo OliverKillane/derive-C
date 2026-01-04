@@ -1,15 +1,15 @@
 
-#include <gtest/gtest.h>
-
-#include <derive-c/alloc/std.h>
-#include <derive-c/utils/debug.h>
-
-#define ALLOC stdalloc
-#define ENTRIES allocs
-#define NAME testalloc
-#include <derive-c/alloc/test/template.h>
-
 #if !defined NDEBUG
+
+    #include <gtest/gtest.h>
+
+    #include <derive-c/alloc/std.h>
+    #include <derive-c/utils/debug.h>
+
+    #define ALLOC stdalloc
+    #define ENTRIES allocs
+    #define NAME testalloc
+    #include <derive-c/alloc/test/template.h>
 
 namespace {
 void allocate_and_throw(testalloc* alloc) {
@@ -45,7 +45,7 @@ TEST(TestAlloc, DebugAllocations) {
             "  }\n"
             "}",
             // clang-format on
-            &alloc, stdalloc_get_ref(), &alloc.entries, stdalloc_get_ref());
+            &alloc, &stdalloc_instance, &alloc.entries, &stdalloc_instance);
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(debug_string, debug_string_expected);
     }
@@ -74,7 +74,7 @@ TEST(TestAlloc, DebugAllocations) {
             "  }\n"
             "}",
             // clang-format on
-            &alloc, stdalloc_get_ref(), &alloc.entries, stdalloc_get_ref(), alloc.entries.data,
+            &alloc, &stdalloc_instance, &alloc.entries, &stdalloc_instance, alloc.entries.data,
             ptr1, ptr2, ptr3);
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(debug_string, debug_string_expected);
@@ -104,7 +104,7 @@ TEST(TestAlloc, DebugAllocations) {
             "  }\n"
             "}",
             // clang-format on
-            &alloc, stdalloc_get_ref(), &alloc.entries, stdalloc_get_ref(), alloc.entries.data,
+            &alloc, &stdalloc_instance, &alloc.entries, &stdalloc_instance, alloc.entries.data,
             ptr1, ptr2, ptr3);
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(debug_string, debug_string_expected);
