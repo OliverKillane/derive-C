@@ -60,11 +60,6 @@ static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t siz
             new_buf = (char*)NS(ALLOC, malloc)(self->alloc, new_capacity);
         }
 
-        if (!new_buf) {
-            errno = ENOMEM; // NOLINT(misc-include-cleaner)
-            return -1;
-        }
-
         self->capacity = new_capacity;
         self->buf = new_buf;
     }

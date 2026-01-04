@@ -2,6 +2,7 @@
 #include <assert.h>
 
 #include <derive-c/core/placeholder.h>
+#include <derive-c/core/compiler.h>
 
 // JUSTIFY: Disabled under clangd to avoid spurious errors in C code.
 // - We have tests & fuzz tests with panic defined using C++ headers from gtest & rapidcheck
@@ -15,10 +16,10 @@
 #endif
 
 #if !defined DC_STATIC_ASSERT
-    #if defined __cplusplus
-        #define DC_STATIC_ASSERT static_assert
-    #else
+    #if defined DC_STATIC_ASSERT_SUPPORTED
         #define DC_STATIC_ASSERT _Static_assert
+    #else
+        #define DC_STATIC_ASSERT static_assert
     #endif
 #endif
 

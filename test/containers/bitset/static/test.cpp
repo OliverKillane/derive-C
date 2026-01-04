@@ -56,15 +56,15 @@ TEST(BitsetStaticUtils, IndexToBytesAndOffset) {
 TEST(BitsetStatic, SutUsage) {
     DC_SCOPED(sut) bitset = sut_new();
 
-    for (sut_index_t i = sut_min_index(); i <= sut_max_index(); i++) {
+    for (sut_index_t i = sut_min_index; i <= sut_max_index; i++) {
         EXPECT_FALSE(sut_get(&bitset, i));
     }
 
-    for (sut_index_t i = sut_min_index(); i <= sut_max_index(); i++) {
+    for (sut_index_t i = sut_min_index; i <= sut_max_index; i++) {
         sut_set(&bitset, i, true);
     }
 
-    for (sut_index_t i = sut_min_index(); i <= sut_max_index(); i++) {
+    for (sut_index_t i = sut_min_index; i <= sut_max_index; i++) {
         EXPECT_TRUE(sut_get(&bitset, i));
     }
 

@@ -89,6 +89,8 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
+DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = dc_swiss_index_capacity;
+
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
     DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                            \
@@ -267,6 +269,10 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
+
+    if (self->count >= NS(SELF, max_capacity)) {
+        return NULL;
+    }
 
     switch (dc_swiss_heuristic_should_extend(self->tombstones, self->count, self->capacity)) {
     case DC_SWISS_DOUBLE_CAPACITY:

@@ -8,6 +8,8 @@
 #include "../commands.hpp"
 #include "../../objects.hpp"
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
@@ -33,18 +35,17 @@ template <typename SutNS> void Test() {
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
     rc::state::check(
         model, sutWrapper,
-        rc::state::gen::execOneOfWithArgs<
-            Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, Insert<SutNS>, ExtendCapacity<SutNS>,
-            Write<SutNS>, Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>>());
+        rc::state::gen::execOneOfWithArgs<Insert<SutNS>, Insert<SutNS>, Insert<SutNS>,
+                                          Insert<SutNS>, ExtendCapacity<SutNS>, Write<SutNS>,
+                                          Remove<SutNS>, DeleteEntry<SutNS>, DuplicateInsert<SutNS>,
+                                          InsertOverMaxSize<SutNS>>());
 }
 
-RC_GTEST_PROP(DecomposedSmall, Fuzz, ()) {
-    Test<SutObjects<Primitive<uint8_t>, Primitive<uint8_t>>>();
-}
-RC_GTEST_PROP(DecomposedMediumMedium, Fuzz, ()) {
-    Test<SutObjects<Primitive<size_t>, Primitive<size_t>>>();
-}
-RC_GTEST_PROP(DecomposedComplexEmpty, Fuzz, ()) { Test<SutObjects<Complex, Empty>>(); }
-RC_GTEST_PROP(DecomposedComplexComplex, Fuzz, ()) { Test<SutObjects<Complex, Complex>>(); }
+// clang-format off
+FUZZ(ByteByte,       SutObjects<Primitive<uint8_t>, Primitive<uint8_t>>)
+FUZZ(SizeByte,       SutObjects<Primitive<size_t>,  Primitive<size_t> >)
+FUZZ(ComplexEmpty,   SutObjects<Complex,            Empty             >)
+FUZZ(ComplexComplex, SutObjects<Complex,            Complex           >)
+// clang-format on
 
 } // namespace

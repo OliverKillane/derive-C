@@ -11,6 +11,8 @@
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/container/arena/geometric/includes.h>
 
 template <ObjectType Object> struct SutObject_3_8 {
@@ -79,11 +81,13 @@ template <typename SutNS> void Test() {
                                                        Write<SutNS>, Remove<SutNS>>());
 }
 
-RC_GTEST_PROP(GeometricArenaFuzz, Sut_3_8_PrimitiveSmall, ()) { Test<Sut_3_8_PrimitiveSmall>(); }
-RC_GTEST_PROP(GeometricArenaFuzz, Sut_3_8_PrimitiveMedium, ()) { Test<Sut_3_8_PrimitiveMedium>(); }
-RC_GTEST_PROP(GeometricArenaFuzz, Sut_3_16_PrimitiveSmall, ()) { Test<Sut_16_PrimitiveSmall>(); }
-RC_GTEST_PROP(GeometricArenaFuzz, Sut_3_16_PrimitiveMedium, ()) { Test<Sut_16_PrimitiveMedium>(); }
-RC_GTEST_PROP(GeometricArenaFuzz, Sut_5_32_Empty, ()) { Test<Sut_32_Empty>(); }
-RC_GTEST_PROP(GeometricArenaFuzz, Sut_5_32_Complex, ()) { Test<Sut_32_Complex>(); }
+// clang-format off
+FUZZ(Sut_3_8_PrimitiveSmall,  Sut_3_8_PrimitiveSmall )
+FUZZ(Sut_3_8_PrimitiveMedium, Sut_3_8_PrimitiveMedium)
+FUZZ(Sut_16_PrimitiveSmall,   Sut_16_PrimitiveSmall  )
+FUZZ(Sut_16_PrimitiveMedium,  Sut_16_PrimitiveMedium )
+FUZZ(Sut_32_Empty,            Sut_32_Empty           )
+FUZZ(Sut_32_Complex,          Sut_32_Complex         )
+// clang-format on
 
 } // namespace

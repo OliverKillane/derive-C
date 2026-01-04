@@ -6,13 +6,21 @@
 
 #include <derive-c/core/attributes.h>
 #include <derive-c/core/panic.h>
+#include <derive-c/core/compiler.h>
 
 // JUSTIFY: Macro rather than function
 // - So this can be used in static asserts
 #define DC_MATH_IS_POWER_OF_2(x) ((x) != 0 && ((x) & ((x) - 1)) == 0)
 
-#ifdef __cplusplus
-
+#if defined DC_GENERIC_KEYWORD_SUPPORTED
+    #define DC_MATH_MSB_INDEX(x)                                                                   \
+        ((x) == 0 ? 0                                                                              \
+                  : _Generic((x),                                                                  \
+                 uint8_t: (7u - __builtin_clz((uint32_t)((x)) << 24)),                             \
+                 uint16_t: (15u - __builtin_clz((uint32_t)((x)) << 16)),                           \
+                 uint32_t: (31u - __builtin_clz((uint32_t)(x))),                                   \
+                 uint64_t: (63u - __builtin_clzll((uint64_t)(x)))))
+#else
     #include <bit>
     #include <type_traits>
 
@@ -32,18 +40,7 @@ template <typename T> constexpr unsigned msb_index(T x) noexcept {
 } // namespace dc::math
 
     #define DC_MATH_MSB_INDEX(x) ::dc::math::msb_index(x)
-
-#else /* C */
-
-    #define DC_MATH_MSB_INDEX(x)                                                                   \
-        ((x) == 0 ? 0                                                                              \
-                  : _Generic((x),                                                                  \
-                 uint8_t: (7u - __builtin_clz((uint32_t)((x)) << 24)),                             \
-                 uint16_t: (15u - __builtin_clz((uint32_t)((x)) << 16)),                           \
-                 uint32_t: (31u - __builtin_clz((uint32_t)(x))),                                   \
-                 uint64_t: (63u - __builtin_clzll((uint64_t)(x)))))
-
-#endif /* __cplusplus */
+#endif
 
 static DC_INLINE DC_CONST size_t dc_math_next_power_of_2(size_t x) {
     if (x == 0)

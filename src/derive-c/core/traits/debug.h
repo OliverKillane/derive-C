@@ -13,6 +13,7 @@
 #include <derive-c/core/namespace.h>
 #include <derive-c/core/require.h>
 #include <derive-c/core/std/reflect.h>
+#include <derive-c/core/compiler.h>
 
 #define DC_TRAIT_DEBUGABLE(SELF)                                                                   \
     DC_REQUIRE_METHOD(void, SELF, debug, (SELF const*, dc_debug_fmt fmt, FILE*));
@@ -51,7 +52,16 @@ static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* s
     fprintf(stream, "char*@%p \"%s\"", *string, *string);
 }
 
-#if defined __cplusplus
+#if defined DC_GENERIC_KEYWORD_SUPPORTED
+    #define _DC_DEFAULT_DEBUG_CASE(TYPE, _, x)                                                     \
+    TYPE:                                                                                          \
+        NS(TYPE, debug),
+
+    #define _DC_DEFAULT_DEBUG(SELF, FMT, STREAM)                                                   \
+        _Generic(*(SELF),                                                                          \
+            DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, f) char const*: dc_string_debug,                \
+            default: PRIV(no_debug))(SELF, FMT, STREAM);
+#else
     #include <type_traits>
 
     #define _DC_DEFAULT_DEBUG_CASE(TYPE, _, FMT, STREAM)                                           \
@@ -73,16 +83,6 @@ static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* s
                 NO_DEBUG(item, FMT, STREAM);                                                       \
             }                                                                                      \
         }(SELF)
-
-#else
-    #define _DC_DEFAULT_DEBUG_CASE(TYPE, _, x)                                                     \
-    TYPE:                                                                                          \
-        NS(TYPE, debug),
-
-    #define _DC_DEFAULT_DEBUG(SELF, FMT, STREAM)                                                   \
-        _Generic(*(SELF),                                                                          \
-            DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, f) char const*: dc_string_debug,                \
-            default: PRIV(no_debug))(SELF, FMT, STREAM);
 #endif
 
 #define DC_DEFAULT_DEBUG _DC_DEFAULT_DEBUG

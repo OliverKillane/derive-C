@@ -1,6 +1,7 @@
 /// @brief A vector storing the first N elements in-place, and optionally spilling additional
 /// elements to a heap vector.
 
+#include "derive-c/core/attributes.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -83,7 +84,7 @@ static SELF NS(SELF, new)() {
     return self;
 }
 
-static size_t NS(SELF, max_size)() { return INPLACE_CAPACITY; }
+DC_STATIC_CONSTANT size_t NS(SELF, max_size) = INPLACE_CAPACITY;
 
 static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();

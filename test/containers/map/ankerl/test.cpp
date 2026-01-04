@@ -12,14 +12,6 @@
 #include <derive-c/container/map/ankerl/template.h>
 
 TEST(AnkerlTest, Debug) {
-    char const* a = "lol";
-    {
-
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
-        DC_DEFAULT_DEBUG(&a, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
-        std::cout << dc_debug_string_builder_string(&sb) << std::endl;
-    }
-
     DC_SCOPED(test_map) map = test_map_new(stdalloc_get());
 
     {

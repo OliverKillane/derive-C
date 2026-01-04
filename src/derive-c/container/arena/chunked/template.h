@@ -149,7 +149,6 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         self->blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, realloc)(
             self->alloc, (void*)self->blocks,
             (self->block_current + 1) * sizeof(PRIV(NS(SELF, block))*));
-        DC_ASSERT(self->blocks);
 
         PRIV(NS(SELF, block))* new_block =
             (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(self->alloc, sizeof(PRIV(NS(SELF, block))));

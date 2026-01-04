@@ -9,6 +9,8 @@
 #include "../commands.hpp"
 #include "../../objects.hpp"
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/container/arena/contiguous/includes.h>
@@ -76,11 +78,13 @@ template <typename SutNS> void Test() {
                                                        Write<SutNS>, Remove<SutNS>>());
 }
 
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_8_PrimitiveSmall, ()) { Test<Sut_8_PrimitiveSmall>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_8_PrimitiveMedium, ()) { Test<Sut_8_PrimitiveMedium>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_16_PrimitiveSmall, ()) { Test<Sut_16_PrimitiveSmall>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_16_PrimitiveMedium, ()) { Test<Sut_16_PrimitiveMedium>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_32_Empty, ()) { Test<Sut_32_Empty>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_32_Complex, ()) { Test<Sut_32_Complex>(); }
+// clang-format off
+FUZZ(Sut_8_PrimitiveSmall,   Sut_8_PrimitiveSmall  )
+FUZZ(Sut_8_PrimitiveMedium,  Sut_8_PrimitiveMedium )
+FUZZ(Sut_16_PrimitiveSmall,  Sut_16_PrimitiveSmall )
+FUZZ(Sut_16_PrimitiveMedium, Sut_16_PrimitiveMedium)
+FUZZ(Sut_32_Empty,           Sut_32_Empty          )
+FUZZ(Sut_32_Complex,         Sut_32_Complex        )
+// clang-format on
 
 } // namespace

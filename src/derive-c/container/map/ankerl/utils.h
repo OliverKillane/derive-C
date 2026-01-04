@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -45,44 +46,4 @@ typedef struct {
 
 static bool dc_ankerl_mdata_present(dc_ankerl_mdata const* bucket) {
     return bucket->dfd != dc_ankerl_dfd_none;
-}
-
-typedef struct {
-    uint16_t dense_index_hi;
-    uint32_t dense_index_lo;
-} __attribute__((packed)) dc_ankerl_index_large;
-
-uint64_t const NS(dc_ankerl_index_large, max) = ((((int64_t)1) << 47) - 1);
-
-DC_STATIC_ASSERT(sizeof(dc_ankerl_index_large) == 6);
-
-static size_t NS(dc_ankerl_index_large, get)(dc_ankerl_index_large const* index) {
-    return (size_t)index->dense_index_lo + ((size_t)index->dense_index_hi << 32);
-}
-
-static dc_ankerl_index_large NS(dc_ankerl_index_large, new)(size_t to) {
-    DC_ASSERT(to <= dc_ankerl_index_large_max, "Index too large for ankerl");
-    return (dc_ankerl_index_large){
-        .dense_index_hi = (uint16_t)(to >> 32),
-        .dense_index_lo = (uint32_t)to,
-    };
-}
-
-typedef struct {
-    uint16_t dense_index;
-} dc_ankerl_index_small;
-
-static uint64_t const NS(dc_ankerl_index_small, max) = UINT16_MAX;
-
-DC_STATIC_ASSERT(sizeof(dc_ankerl_index_small) == 2);
-
-static size_t NS(dc_ankerl_index_small, get)(dc_ankerl_index_small const* index) {
-    return (size_t)index->dense_index;
-}
-
-static dc_ankerl_index_small NS(dc_ankerl_index_small, new)(size_t to) {
-    DC_ASSERT(to <= dc_ankerl_index_small_max, "Index too large for ankerl map with small buckets");
-    return (dc_ankerl_index_small){
-        .dense_index = (uint16_t)to,
-    };
 }

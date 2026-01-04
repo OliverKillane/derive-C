@@ -1,5 +1,7 @@
 /// @brief A simple vector
 
+#include "derive-c/core/attributes.h"
+#include "derive-c/core/panic.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -54,7 +56,7 @@ typedef struct {
     DC_ASSUME((self)->alloc);                                                                      \
     DC_ASSUME(DC_WHEN(!((self)->data), (self)->capacity == 0 && (self)->size == 0));
 
-static size_t NS(SELF, max_size)() { return SIZE_MAX; }
+DC_STATIC_CONSTANT size_t NS(SELF, max_size) = SIZE_MAX;
 
 static SELF NS(SELF, new)(ALLOC* alloc) {
     SELF self = (SELF){
@@ -125,7 +127,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 
             ITEM* new_data =
                 (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
-            DC_ASSERT(new_data);
+
             self->data = new_data;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
                                   &self->data[self->size],
@@ -220,7 +222,7 @@ static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
                           &self->data[self->size], count * sizeof(ITEM));
 }
 
-static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
+static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -248,6 +250,12 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     ITEM* entry = &self->data[self->size];
     *entry = item;
     self->size++;
+    return entry;
+}
+
+static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
+    ITEM* entry = NS(SELF, try_push)(self, item);
+    DC_ASSERT(entry != NULL);
     return entry;
 }
 

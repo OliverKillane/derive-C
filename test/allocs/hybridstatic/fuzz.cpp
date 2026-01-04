@@ -6,6 +6,8 @@
 
 #include "../commands.hpp"
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/alloc/std.h>
 
 #include <derive-c/alloc/hybridstatic/includes.h>
@@ -55,9 +57,10 @@ template <typename SutNS> void Test() {
                                           ReallocSmaller<SutNS>, Free<SutNS>>());
 }
 
-RC_GTEST_PROP(AllocSutNone, Fuzz, ()) { Test<SutNone>(); }
-RC_GTEST_PROP(AllocSutUint8Size, Fuzz, ()) { Test<SutUint8Size>(); }
-RC_GTEST_PROP(AllocSutUint8Larger, Fuzz, ()) { Test<SutUint8Larger>(); }
-RC_GTEST_PROP(AllocSutMedium, Fuzz, ()) { Test<SutMedium>(); }
-
+// clang-format off
+FUZZ(SutNone,        SutNone       )
+FUZZ(SutUint8Size,   SutUint8Size  )
+FUZZ(SutUint8Larger, SutUint8Larger)
+FUZZ(SutMedium,      SutMedium     )
+// clang-format on
 } // namespace

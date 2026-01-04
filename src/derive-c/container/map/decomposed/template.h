@@ -91,6 +91,8 @@ typedef struct {
     DC_ASSUME((self)->values);                                                                     \
     DC_ASSUME((self)->alloc);
 
+DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = SIZE_MAX;
+
 static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     DC_ASSERT(capacity > 0);
     size_t const real_capacity = dc_apply_capacity_policy(capacity);
@@ -243,6 +245,11 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+
+    if (self->items >= NS(SELF, max_capacity)) {
+        return NULL;
+    }
+
     if (dc_apply_capacity_policy(self->items) > self->capacity / 2) {
         NS(SELF, extend_capacity_for)(self, self->items * 2);
     }

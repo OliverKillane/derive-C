@@ -15,7 +15,7 @@
 TEST(StaticLinearMap, InsertAndRead) {
     DC_SCOPED(int_map) map = int_map_new();
 
-    for (size_t i = 0; i < int_map_capacity(); i++) {
+    for (size_t i = 0; i < int_map_max_capacity; i++) {
         size_t* placed = int_map_insert(&map, i, i * 10);
         ASSERT_NE(placed, nullptr);
         ASSERT_EQ(*placed, i * 10);
@@ -77,4 +77,36 @@ TEST(StaticLinearMap, Debug) {
             ,
             derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
     }
+}
+
+#define CAPACITY 2
+#define KEY size_t
+#define VALUE size_t
+#define NAME tiny_map
+#include <derive-c/container/map/staticlinear/template.h>
+
+TEST(StaticLinearMap, TinyOutOfBounds) {
+    DC_SCOPED(tiny_map) map = tiny_map_new();
+
+    tiny_map_insert(&map, 0, 0);
+    tiny_map_insert(&map, 1, 0);
+    // tiny_map_insert(&map, 2, 0);
+    // tiny_map_insert(&map, 3, 0);
+    // tiny_map_insert(&map, 4, 0);
+    // tiny_map_insert(&map, 5, 0);
+    // tiny_map_insert(&map, 6, 0);
+    // tiny_map_insert(&map, 7, 0);
+    // tiny_map_insert(&map, 8, 0);
+    // tiny_map_insert(&map, 9, 0);
+    // tiny_map_insert(&map, 10, 0);
+    // tiny_map_insert(&map, 11, 0);
+    // tiny_map_insert(&map, 12, 0);
+    // tiny_map_insert(&map, 15, 0);
+    // tiny_map_insert(&map, 16, 0);
+    // tiny_map_insert(&map, 13, 0);
+
+    EXPECT_EQ(tiny_map_try_insert(&map, 14, 0), nullptr);
+    EXPECT_EQ(tiny_map_try_insert(&map, 14, 0), nullptr);
+    EXPECT_EQ(tiny_map_try_insert(&map, 14, 0), nullptr);
+    EXPECT_EQ(tiny_map_try_insert(&map, 14, 0), nullptr);
 }

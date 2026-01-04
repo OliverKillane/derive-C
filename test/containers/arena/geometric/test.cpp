@@ -114,9 +114,9 @@ TEST(GeometricArena, Debug) {
             derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
     }
 
-    int_arena_insert(&arena, 1);
-    int_arena_insert(&arena, 2);
-    int_arena_insert(&arena, 3);
+    int_arena_index_t index1 = int_arena_insert(&arena, 1);
+    int_arena_index_t index2 = int_arena_insert(&arena, 2);
+    int_arena_index_t index3 = int_arena_insert(&arena, 3);
 
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
@@ -150,6 +150,21 @@ TEST(GeometricArena, Debug) {
             "    },\n"
             "  ],\n"
             "}"
+            // clang-format on
+            ,
+            derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
+    }
+
+    int_arena_remove(&arena, index1);
+    int_arena_remove(&arena, index2);
+    int_arena_remove(&arena, index3);
+
+    {
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+        EXPECT_EQ(
+            // clang-format off
+            ""
             // clang-format on
             ,
             derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));

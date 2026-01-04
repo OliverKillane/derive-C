@@ -145,7 +145,6 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
         ITEM* new_data =
             (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
 
-        DC_ASSERT(new_data);
         if (self->head > self->tail) {
             // The queue wraps at the old end, so we need to either:
             //  - shift elements of the tail around into the new area at the end of the buffer
