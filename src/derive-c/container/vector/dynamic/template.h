@@ -74,7 +74,6 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
     }
 
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
-    DC_ASSERT(DC_LIKELY(data));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, data,
                           capacity * sizeof(ITEM));
     return (SELF){
@@ -96,7 +95,6 @@ static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* a
             data[i] = ITEM_CLONE(&default_item);
         }
     }
-    DC_ASSERT(DC_LIKELY(data));
     return (SELF){
         .size = size,
         .capacity = size,
@@ -140,7 +138,6 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(self->alloc, self->capacity * sizeof(ITEM));
-    DC_ASSUME(data);
 
     for (size_t index = 0; index < self->size; index++) {
         data[index] = ITEM_CLONE(&self->data[index]);

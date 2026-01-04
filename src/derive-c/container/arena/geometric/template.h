@@ -127,7 +127,6 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
     size_t initial_block_items =
         DC_ARENA_GEO_BLOCK_TO_SIZE(initial_block, INITIAL_BLOCK_INDEX_BITS);
     SLOT* initial_block_slots = (SLOT*)NS(ALLOC, malloc)(alloc, initial_block_items * sizeof(SLOT));
-    DC_ASSERT(initial_block_slots);
 
     SELF self = {
         .free_list = INDEX_NONE,
@@ -177,7 +176,6 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         size_t block_items =
             DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS);
         SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
-        DC_ASSERT(block_slots);
 
         self->blocks[self->block_current] = block_slots;
         self->block_current_exclusive_end = 0;
@@ -252,7 +250,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
     for (size_t block_index = 0; block_index <= self->block_current; block_index++) {
         size_t block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
         SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
-        DC_ASSERT(block_slots);
         new_self.blocks[block_index] = block_slots;
 
         size_t const to_offset =

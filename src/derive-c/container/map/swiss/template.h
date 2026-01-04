@@ -105,7 +105,6 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* allo
     dc_swiss_ctrl* ctrl =
         (dc_swiss_ctrl*)NS(ALLOC, calloc)(alloc, sizeof(dc_swiss_ctrl), ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, malloc)(alloc, sizeof(SLOT) * capacity);
-    DC_ASSERT(ctrl && slots);
 
     for (size_t i = 0; i < capacity; i++) {
         ctrl[i] = DC_SWISS_VAL_EMPTY;
@@ -145,7 +144,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
     dc_swiss_ctrl* ctrl =
         (dc_swiss_ctrl*)NS(ALLOC, malloc)(self->alloc, sizeof(dc_swiss_ctrl) * ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, sizeof(SLOT) * self->capacity);
-    DC_ASSERT(ctrl && slots);
 
     memcpy(ctrl, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
 

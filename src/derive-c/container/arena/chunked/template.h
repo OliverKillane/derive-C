@@ -99,11 +99,8 @@ typedef struct {
 static SELF NS(SELF, new)(ALLOC* alloc) {
     PRIV(NS(SELF, block))* first_block =
         (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))));
-    DC_ASSERT(first_block);
-
     PRIV(NS(SELF, block))** blocks =
         (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))*));
-    DC_ASSERT(blocks);
 
     blocks[0] = first_block;
 

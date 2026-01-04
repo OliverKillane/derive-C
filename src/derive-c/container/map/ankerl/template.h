@@ -183,7 +183,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     BUCKET* new_buckets =
         (BUCKET*)NS(ALLOC, malloc)(self->alloc, self->buckets_capacity * sizeof(BUCKET));
-    DC_ASSERT(new_buckets);
     memcpy(new_buckets, self->buckets, self->buckets_capacity * sizeof(BUCKET));
 
     return (SELF){

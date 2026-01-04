@@ -100,7 +100,6 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
     //  - for the values, we do not need this (no precense checks are done on values)
     KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
     VALUE* values = (VALUE*)NS(ALLOC, malloc)(alloc, sizeof(VALUE) * real_capacity);
-    DC_ASSERT(keys && values);
 
     // JUSTIFY: no access for values & but keys are fine
     // - Keys are calloced/zeroed as we use this for item lookup, therefore it is valid to read
@@ -136,7 +135,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(self->alloc, sizeof(KEY_ENTRY), self->capacity);
     VALUE* values = (VALUE*)NS(ALLOC, malloc)(self->alloc, sizeof(VALUE) * self->capacity);
-    DC_ASSERT(keys && values);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {

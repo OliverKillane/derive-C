@@ -78,7 +78,6 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, ALLOC* alloc) {
     size_t const capacity = dc_math_next_power_of_2(capacity_for);
     DC_ASSERT(DC_MATH_IS_POWER_OF_2(capacity));
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
-    DC_ASSERT(data);
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, data,
                           capacity * sizeof(ITEM));
@@ -384,7 +383,6 @@ static SELF NS(SELF, clone)(SELF const* self) {
     if (old_size > 0) {
         new_capacity = dc_math_next_power_of_2(old_size);
         new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
-        DC_ASSERT(new_data);
 
         ITER_CONST iter = NS(SELF, get_iter_const)(self);
         ITEM const* item;
