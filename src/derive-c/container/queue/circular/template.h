@@ -433,7 +433,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "],\n");
     fmt = dc_debug_fmt_scope_end(fmt);
-    dc_debug_fmt_print(fmt, stream, "}\n");
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef ITER_CONST

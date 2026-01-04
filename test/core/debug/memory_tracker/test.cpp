@@ -2,16 +2,20 @@
 #include <gtest/gtest.h>
 #include <initializer_list>
 
+#include <derive-c/utils/debug.h>
+
 // JUSTIFY: No customd defines for the checker implementation or global level.
 //  - Set and check should be usable regardless msan or asan usage
 //  - matrix build in CI covers configurations
 #include <derive-c/core/debug/memory_tracker.h>
 
+namespace {
 void set_and_check(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
                    const void* addr, size_t size) {
     dc_memory_tracker_set(level, cap, addr, size);
     dc_memory_tracker_check(level, cap, addr, size);
 }
+} // namespace
 
 TEST(MemoryTrackerTest, BasicChecks) {
     char buf[8];
@@ -44,14 +48,6 @@ TEST(MemoryTrackerTest, BasicChecks) {
     }
 }
 
-#include <derive-c/alloc/std.h>
-
-#define ALLOC stdalloc
-#define NAME string_builder
-#include <derive-c/utils/string_builder/template.h>
-
-// TODO(oliverillane): Add msan output
-#if defined ASAN_ON
 TEST(MemoryTrackerTest, AsanDebugOutput) {
     uint8_t buf[32] = {};
 
@@ -61,8 +57,10 @@ TEST(MemoryTrackerTest, AsanDebugOutput) {
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, &buf[2], 3);
 
-    string_builder sb = string_builder_new(stdalloc_get());
-    dc_memory_tracker_debug(string_builder_stream(&sb), buf, 7);
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+    dc_memory_tracker_debug(dc_debug_string_builder_stream(&sb), buf, 7);
+
+#if defined ASAN_ON
     EXPECT_EQ(
         std::string(std::format(
             "memory tracker debug (7 bytes) at {:p} [ASAN]:"
@@ -73,7 +71,10 @@ TEST(MemoryTrackerTest, AsanDebugOutput) {
             "\n"
             "\n",
             static_cast<const void*>(buf), static_cast<const void*>(buf))),
-        std::string(string_builder_string(&sb)));
-    string_builder_delete(&sb);
-}
+        std::string(dc_debug_string_builder_string(&sb)));
 #endif
+
+#if defined MSAN_ON
+    EXPECT_EQ(std::string(""), std::string(dc_debug_string_builder_string(&sb)));
+#endif
+}

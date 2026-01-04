@@ -33,7 +33,6 @@ def generate_settings(config: Config) -> None:
         f"--resource-dir={config.resource_dir}",
         f"--compile-commands-dir={config.compile_commands_dir}",
         "--log=verbose",
-        "--pch-storage=memory",
     ]
 
     # Ensure .vscode directory exists

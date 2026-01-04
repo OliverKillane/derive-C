@@ -9,14 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <derive-c/algorithm/hash/hashers.h>
+#include <derive-c/algorithm/hash/default.h>
+#include <derive-c/algorithm/hash/murmur.h>
+#include <derive-c/algorithm/hash/combine.h>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
 #include <derive-c/utils/for.h>
 
 #define KEY uint32_t
-#define KEY_EQ uint32_t_eq
-#define KEY_HASH hash_id_uint32_t
+#define KEY_HASH DC_DEFAULT_HASH
 #define VALUE char const*
 #define NAME id_to_name
 #include <derive-c/container/map/decomposed/template.h>
@@ -67,8 +69,8 @@ bool report_id_equality(struct report_id const* report_1, struct report_id const
 }
 
 size_t report_id_hash(struct report_id const* report_id) {
-    return hash_combine(hash_murmurhash_string(report_id->name),
-                        hash_id_uint32_t(&report_id->section));
+    return dc_hash_combine(dc_murmur_hash_string(report_id->name),
+                           uint32_t_hash_id(&report_id->section));
 }
 
 void report_id_delete(struct report_id* self) { free(self->name); }
@@ -144,7 +146,7 @@ bool fixed_string_eq(struct fixed_string const* str1, struct fixed_string const*
 }
 
 size_t fixed_string_hash(struct fixed_string const* str) {
-    return hash_murmurhash_string_4(str->value);
+    return dc_murmur_hash_string_4(str->value);
 }
 
 #define KEY struct fixed_string

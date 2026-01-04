@@ -72,7 +72,6 @@ typedef ALLOC NS(SELF, alloc_t);
 
 #define SLOT NS(SELF, slot_t)
 typedef struct {
-    // TODO: determine ordering
     VALUE value;
     KEY key;
 } SLOT;
@@ -498,6 +497,9 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
+    dc_debug_fmt_print(fmt, stream, "entries: [\n");
+    fmt = dc_debug_fmt_scope_begin(fmt);
+
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
     KV_PAIR_CONST item;
 
@@ -517,6 +519,9 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
         fmt = dc_debug_fmt_scope_end(fmt);
         dc_debug_fmt_print(fmt, stream, "},\n");
     }
+
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "]\n");
 
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");

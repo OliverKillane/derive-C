@@ -249,11 +249,14 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     DC_ASSUME(self);
-    fprintf(stream, STRINGIFY(SELF) "@%p {\n", self);
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", CAPACITY);
     dc_debug_fmt_print(fmt, stream, "used: %lu,\n", self->head_offset);
     dc_debug_fmt_print(fmt, stream, "buffer: %p,\n", self->buffer);
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), read)(&self->alloc_ref), fmt, stream);
+    fprintf(stream, "\n");
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");
 }

@@ -406,7 +406,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     NS(ALLOC, debug)(self->alloc, fmt, stream);
     fprintf(stream, ",\n");
 
-    dc_debug_fmt_print(fmt, stream, "blocks: [");
+    dc_debug_fmt_print(fmt, stream, "blocks: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
     for (size_t block = 0; block <= self->block_current; block++) {
         dc_debug_fmt_print(fmt, stream, "{\n");

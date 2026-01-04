@@ -26,8 +26,7 @@ struct SutMedium {
 #include <derive-c/container/bitset/static/template.h>
 };
 
-namespace containers::bitset::staticbitset {
-
+namespace {
 RC_GTEST_PROP(StaticSmallTests, Fuzz, ()) {
     using SutNS = SutSmall;
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
@@ -48,4 +47,4 @@ RC_GTEST_PROP(StaticMediumTests, Fuzz, ()) {
         rc::state::gen::execOneOfWithArgs<SetTrue<SutNS>, SetTrue<SutNS>, SetFalse<SutNS>>());
 }
 
-} // namespace containers::bitset::staticbitset
+} // namespace

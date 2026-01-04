@@ -22,7 +22,7 @@
 static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)self;
     (void)fmt;
-    fprintf(stream, "(no debug provided)");
+    fprintf(stream, "(no DEBUG function provided)");
 }
 
 #define _DC_DERIVE_DEBUG_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                          \
@@ -64,7 +64,10 @@ static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* s
         [&]<typename T>(T item) {                                                                  \
             DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, FMT, STREAM)                                    \
             if constexpr (std::is_same_v<char*, std::remove_cv_t<                                  \
-                                                    std::remove_reference_t<decltype(*item)>>>) {  \
+                                                    std::remove_reference_t<decltype(*item)>>> ||  \
+                          std::is_same_v<                                                          \
+                              char const*,                                                         \
+                              std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {       \
                 dc_string_debug(item, FMT, STREAM);                                                \
             } else {                                                                               \
                 NO_DEBUG(item, FMT, STREAM);                                                       \

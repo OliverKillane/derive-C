@@ -91,11 +91,11 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
-    dc_debug_fmt_print(fmt, stream, "blocks: [");
+    dc_debug_fmt_print(fmt, stream, "blocks: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
     for (INDEX_TYPE index = 0; index < EXCLUSIVE_END_INDEX; index++) {
         if (NS(SELF, get)(self, index)) {
-            dc_debug_fmt_print(fmt, stream, "(byte: %lu, offset: %lu, index: %lu)",
+            dc_debug_fmt_print(fmt, stream, "{ byte: %lu, offset: %lu, index: %lu},\n",
                                (size_t)DC_BITSET_STATIC_INDEX_TO_BYTES(index),
                                (size_t)DC_BITSET_STATIC_INDEX_TO_OFFSET(index), (size_t)index);
         }

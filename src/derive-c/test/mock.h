@@ -30,9 +30,12 @@
         MOCK_TYPE(name) name = MOCK_REAL(name);                                                    \
         void MOCK_SET(name)(MOCK_TYPE(name) func) { name = func; }                                 \
         ret MOCK_REAL(name) args
+
+    #define MOCKABLE_ENABLED(name) (name != MOCK_REAL(name))
 #else
     #define MOCKABLE_DECLARE(ret, name, args) ret name args
     #define MOCKABLE_DEFINE(ret, name, args) ret name args
+    #define MOCKABLE_ENABLED(name) false
 #endif
 
 /// Defines a function as mockable, combining declaration & definition.

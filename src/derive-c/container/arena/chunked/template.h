@@ -466,12 +466,12 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "current_block: %lu\n", (size_t)self->block_current);
     dc_debug_fmt_print(fmt, stream, "block_current_exclusive_end: %lu\n",
                        (size_t)self->block_current_exclusive_end);
-    dc_debug_fmt_print(fmt, stream, "blocks: [");
+    dc_debug_fmt_print(fmt, stream, "blocks: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
 
-        dc_debug_fmt_print(fmt, stream, "block[%lu]: @%p [", (size_t)b, self->blocks[b]);
+        dc_debug_fmt_print(fmt, stream, "block[%lu]: @%p [\n", (size_t)b, self->blocks[b]);
         fmt = dc_debug_fmt_scope_begin(fmt);
 
         INDEX_TYPE block_entry_exclusive_end = b == self->block_current
@@ -485,13 +485,10 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
 
             if (entry->present) {
                 dc_debug_fmt_print(
-                    fmt, stream, "[index=%lu]{\n",
+                    fmt, stream, "[index=%lu] ",
                     (size_t)DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(b, i, BLOCK_INDEX_BITS));
-                fmt = dc_debug_fmt_scope_begin(fmt);
                 VALUE_DEBUG(&entry->value, fmt, stream);
                 fprintf(stream, ",\n");
-                fmt = dc_debug_fmt_scope_end(fmt);
-                dc_debug_fmt_print(fmt, stream, "},\n");
             } else {
                 dc_debug_fmt_print(
                     fmt, stream, "[index=%lu]{ next_free=%lu }\n",

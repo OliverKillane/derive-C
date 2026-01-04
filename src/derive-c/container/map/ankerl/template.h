@@ -86,7 +86,7 @@ static SLOT NS(SLOT, clone)(SLOT const* slot) {
 }
 
 static void NS(SLOT, debug)(SLOT const* slot, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SLOT) " @%p {\n", slot);
+    fprintf(stream, EXPAND_STRING(SLOT) "@%p {\n", slot);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "key: ");

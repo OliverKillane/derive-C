@@ -2,7 +2,7 @@
 #include <derive-c/core/zerosized.h>
 
 /// RAII in C. Call the destructor when the variable goes out of scope.
-#define DC_SCOPED(type) __attribute__((cleanup(type##_delete))) type
+#define DC_SCOPED(type, ...) __attribute__((cleanup(type##_delete))) type __VA_ARGS__
 
 /// Simple zero sized value for `DC_DEFER`
 DC_ZERO_SIZED(sentinel);

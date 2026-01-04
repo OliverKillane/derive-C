@@ -320,7 +320,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, ",\n");
 
     fmt = dc_debug_fmt_scope_end(fmt);
-    dc_debug_fmt_print(fmt, stream, "}\n");
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef INVARIANT_CHECK

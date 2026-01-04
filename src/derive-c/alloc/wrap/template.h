@@ -39,10 +39,29 @@ MOCKABLE(void, NS(SELF, free), (SELF * self, void* ptr)) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, STRINGIFY(SELF) " @%p {", self);
+    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
-    dc_debug_fmt_print(fmt, stream, "alloc: " STRINGIFY(ALLOC) "@%p,\n",
-                       NS(NS(ALLOC, ref), read)(&self->alloc_ref));
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), read)(&self->alloc_ref), fmt, stream);
+    fprintf(stream, ",\n");
+
+    dc_debug_fmt_print(fmt, stream, "mocking: {\n");
+    fmt = dc_debug_fmt_scope_begin(fmt);
+
+#define DEBUG_MOCK_TOGGLE(name)                                                                    \
+    dc_debug_fmt_print(fmt, stream, EXPAND_STRING(NS(SELF, name)) ": %s,\n",                       \
+                       MOCKABLE_ENABLED(NS(SELF, name)) ? "enabled" : "disabled")
+
+    DEBUG_MOCK_TOGGLE(malloc);
+    DEBUG_MOCK_TOGGLE(calloc);
+    DEBUG_MOCK_TOGGLE(realloc);
+    DEBUG_MOCK_TOGGLE(free);
+
+#undef DEBUG_MOCK_TOGGLE
+
+    fmt = dc_debug_fmt_scope_end(fmt);
+    dc_debug_fmt_print(fmt, stream, "}\n");
+
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");
 }

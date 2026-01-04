@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "derive-c/core/panic.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -46,7 +45,19 @@ static void* NS(stdalloc, calloc)(stdalloc* self, size_t count, size_t size) {
 static void NS(stdalloc, free)(stdalloc* self, void* ptr) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
-    free(ptr);
+
+    // JUSTIFY: Ignoring malloc clang static analyser warnings in this branch
+    // To make this safe we need to prove:
+    //  1. the ptr was allocated by self
+    //
+    // Allocators such as the hybridstatic allocator make it harder it harder
+    //  - provenance: clang static analyser cannot prove a pointer's origin
+    //  - can be shown by wrapping allocator's returns, but this adds substantial
+    //    complexity, and makes the returned ptr-types less easy to use
+    //  - can also use special headers on allocations, but this adds complexity
+    // So we settle for ignoring here:
+
+    free(ptr); // NOLINT(clang-analyzer-unix.Malloc)
 }
 
 static void NS(stdalloc, debug)(stdalloc const* self, dc_debug_fmt fmt, FILE* stream) {

@@ -5,8 +5,6 @@
 #include <rapidcheck/state.h>
 #include <unordered_set>
 
-namespace containers::bitset {
-
 using SutModel = std::unordered_set<size_t>;
 
 template <typename SutNS> struct SutWrapper {
@@ -120,5 +118,3 @@ template <typename SutNS> struct SetFalse : Command<SutNS> {
         os << "Set(" << static_cast<size_t>(mIndex) << " = false)";
     }
 };
-
-} // namespace containers::bitset

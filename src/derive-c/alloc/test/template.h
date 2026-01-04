@@ -29,6 +29,11 @@ typedef struct {
     bool freed;
 } TRACKED_ENTRY;
 
+static void NS(TRACKED_ENTRY, debug)(TRACKED_ENTRY const* self, dc_debug_fmt /* fmt */,
+                                     FILE* stream) {
+    fprintf(stream, "{ ptr: %p, state: %s }", self->ptr, self->freed ? "freed" : "alive");
+}
+
     #pragma push_macro("ALLOC")
 
     // JUSTIFY: Using a vector rather than a faster lookup map.
@@ -36,7 +41,8 @@ typedef struct {
     //           - Much easier to explore a vector, than a hashmap in gdb.
     // JUSTIFY: Always use the std allocator for test book keeping
     //          - keeps the observed behaviour (e.g. allocator usage) the same as in release
-    #define ITEM TRACKED_ENTRY           // [DERIVE-C] for template
+    #define ITEM TRACKED_ENTRY // [DERIVE-C] for template
+    #define ITEM_DEBUG NS(TRACKED_ENTRY, debug)
     #define ALLOC stdalloc               // [DERIVE-C] for template
     #define INTERNAL_NAME ENTRIES_VECTOR // [DERIVE-C] for template
     #include <derive-c/container/vector/dynamic/template.h>
@@ -75,24 +81,20 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, calloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), count, size);
-    if (ptr) {
-        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
-                                                     .ptr = ptr,
-                                                     .freed = false,
-                                                 });
-    }
+    NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
+                                                 .ptr = ptr,
+                                                 .freed = false,
+                                             });
     return ptr;
 }
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, malloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), size);
-    if (ptr) {
-        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
-                                                     .ptr = ptr,
-                                                     .freed = false,
-                                                 });
-    }
+    NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
+                                                 .ptr = ptr,
+                                                 .freed = false,
+                                             });
     return ptr;
 }
 
@@ -121,11 +123,15 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, STRINGIFY(SELF) " @%p {", self);
+    fprintf(stream, EXPAND_STRING(SELF) " @%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
-    dc_debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n",
+    dc_debug_fmt_print(fmt, stream, "base: " EXPAND_STRING(ALLOC) "@%p,\n",
                        NS(NS(ALLOC, ref), read)(&self->alloc_ref));
+
+    dc_debug_fmt_print(fmt, stream, "entries: ");
     NS(ENTRIES_VECTOR, debug)(&self->entries, fmt, stream);
+    fprintf(stream, "\n");
+
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");
 }

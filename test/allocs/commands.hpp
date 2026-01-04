@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rapidcheck/Assertions.h"
 #include <cstring>
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
@@ -10,6 +9,9 @@
 #include <memory>
 
 #include <derive-c/core/debug/memory_tracker.h>
+
+#define NAME debug_builder
+#include <derive-c/utils/string_builder/template.h>
 
 using ModelIndex = size_t;
 

@@ -1,8 +1,11 @@
 
 #include <gtest/gtest.h>
 
+#include <derive-cpp/fmt/remove_ptrs.hpp>
+
 #include <derive-c/container/bitset/static/utils.h>
 #include <derive-c/utils/for.h>
+#include <derive-c/utils/debug.h>
 
 TEST(BitsetStaticUtils, OffsetToMask) {
     EXPECT_EQ(0x01, DC_BITSET_STATIC_OFFSET_TO_MASK((uint8_t)0));
@@ -47,40 +50,62 @@ TEST(BitsetStaticUtils, IndexToBytesAndOffset) {
 }
 
 #define EXCLUSIVE_END_INDEX 16
-#define NAME Sut
+#define NAME sut
 #include <derive-c/container/bitset/static/template.h>
 
-TEST(BitsetStaticUtils, SutUsage) {
-    Sut bitset = Sut_new();
+TEST(BitsetStatic, SutUsage) {
+    DC_SCOPED(sut) bitset = sut_new();
 
-    for (Sut_index_t i = Sut_min_index(); i <= Sut_max_index(); i++) {
-        EXPECT_FALSE(Sut_get(&bitset, i));
+    for (sut_index_t i = sut_min_index(); i <= sut_max_index(); i++) {
+        EXPECT_FALSE(sut_get(&bitset, i));
     }
 
-    for (Sut_index_t i = Sut_min_index(); i <= Sut_max_index(); i++) {
-        Sut_set(&bitset, i, true);
+    for (sut_index_t i = sut_min_index(); i <= sut_max_index(); i++) {
+        sut_set(&bitset, i, true);
     }
 
-    for (Sut_index_t i = Sut_min_index(); i <= Sut_max_index(); i++) {
-        EXPECT_TRUE(Sut_get(&bitset, i));
+    for (sut_index_t i = sut_min_index(); i <= sut_max_index(); i++) {
+        EXPECT_TRUE(sut_get(&bitset, i));
     }
 
-    FOR(Sut, &bitset, iter, item) { Sut_get(&bitset, item); }
-
-    Sut_delete(&bitset);
+    FOR(sut, &bitset, iter, item) { sut_get(&bitset, item); }
 }
 
-TEST(BitsetStaticUtils, IterEmpty) {
-    Sut bitset = Sut_new();
+TEST(BitsetStatic, Debug) {
+    DC_SCOPED(sut) bitset = sut_new();
 
-    Sut_set(&bitset, 0, true);
-
-    Sut_debug(&bitset, dc_debug_fmt_new(), stdout);
-
-    FOR(Sut, &bitset, iter, item) {
-        // std::cout << static_cast<size_t>(item) << "\n";
-        Sut_get(&bitset, item);
+    {
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        sut_debug(&bitset, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+        EXPECT_EQ(
+            // clang-format off
+            "sut@" DC_PTR_REPLACE " {\n"
+            "  blocks: [\n"
+            "  ],\n"
+            "}"
+            // clang-format on
+            ,
+            derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
     }
 
-    Sut_delete(&bitset);
+    sut_set(&bitset, 0, true);
+    sut_set(&bitset, 3, true);
+    sut_set(&bitset, 4, true);
+
+    {
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        sut_debug(&bitset, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+        EXPECT_EQ(
+            // clang-format off
+            "sut@" DC_PTR_REPLACE " {\n"
+            "  blocks: [\n"
+            "    { byte: 0, offset: 0, index: 0},\n"
+            "    { byte: 0, offset: 3, index: 3},\n"
+            "    { byte: 0, offset: 4, index: 4},\n"
+            "  ],\n"
+            "}"
+            // clang-format on
+            ,
+            derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
+    }
 }

@@ -140,7 +140,8 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     ITEM* data = (ITEM*)NS(ALLOC, malloc)(self->alloc, self->capacity * sizeof(ITEM));
-    DC_ASSERT(data);
+    DC_ASSUME(data);
+
     for (size_t index = 0; index < self->size; index++) {
         data[index] = ITEM_CLONE(&self->data[index]);
     }

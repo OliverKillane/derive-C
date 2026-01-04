@@ -9,11 +9,14 @@
         //  - All are defined in `mock.h`
         #pragma push_macro("MOCKABLE_DECLARE")
         #pragma push_macro("MOCKABLE_DEFINE")
+        #pragma push_macro("MOCKABLE_ENABLED")
 
         #undef MOCKABLE_DECLARE // [DERIVE-C] argument
         #undef MOCKABLE_DEFINE  // [DERIVE-C] argument
+        #undef MOCKABLE_ENABLED // [DERIVE-C] argument
 
-        #define MOCKABLE_DECLARE(ret, name, args) 
+        #define MOCKABLE_DECLARE(ret, name, args)
         #define MOCKABLE_DEFINE(ret, name, args) static ret name args
+        #define MOCKABLE_ENABLED(name) false
     #endif
 #endif

@@ -7,7 +7,7 @@
 #endif
 
 #if !defined _GNU_SOURCE
-    #error "_GNU_SOURCE must be defined (is in the src/derive-c CMakeLists.txt) to use cookie_io"
+    #error "_GNU_SOURCE must be defined to use cookie_io"
 #endif
 
 #include <derive-c/core/alloc/def.h>
@@ -144,6 +144,8 @@ static char const* NS(SELF, string)(SELF const* self) {
 }
 
 /// Disowns the current string, free/management with chosen allocator determined by user.
+/// DANGER: The user needs to be careful to cleanup the string using the same allocator as the
+/// string builder.
 static char* NS(SELF, release_string)(SELF* self) {
     INVARIANT_CHECK(self);
     char* buf = self->buf;

@@ -211,16 +211,16 @@ static void NS(SELF, delete)(SELF* self) {
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
-
-    dc_debug_fmt_print(fmt, stream, "entries: [");
+    dc_debug_fmt_print(fmt, stream, "capacity: %zu,\n", (size_t)CAPACITY);
+    dc_debug_fmt_print(fmt, stream, "entries: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
     for (INDEX_TYPE index = 0; index < CAPACITY; index++) {
         if (NS(BITSET, get)(&self->presence, index)) {
-            dc_debug_fmt_print(fmt, stream, "(index: %lu, key: ", (size_t)index);
+            dc_debug_fmt_print(fmt, stream, "{index: %lu, key: ", (size_t)index);
             KEY_DEBUG(&self->keys[index], fmt, stream);
-            dc_debug_fmt_print(fmt, stream, ", value: ");
+            fprintf(stream, ", value: ");
             VALUE_DEBUG(&self->values[index], fmt, stream);
-            dc_debug_fmt_print(fmt, stream, "), ");
+            fprintf(stream, "},\n");
         }
     }
     fmt = dc_debug_fmt_scope_end(fmt);
