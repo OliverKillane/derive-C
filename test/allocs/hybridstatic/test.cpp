@@ -55,7 +55,7 @@ TEST(HybridStaticTests, Debug) {
     void* ptr2 = hybridstatic_calloc(&alloc, 1, 5);
     void* ptr3 = hybridstatic_malloc(&alloc, 15);
 
-    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
     hybridstatic_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
     EXPECT_EQ(

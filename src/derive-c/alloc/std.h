@@ -13,37 +13,31 @@ DC_ZERO_SIZED(stdalloc);
 static stdalloc stdalloc_instance = {};
 DC_TRAIT_REFERENCABLE_SINGLETON(stdalloc, stdalloc_instance);
 
-static stdalloc* NS(stdalloc, get)() { return &stdalloc_instance; }
-
-static void* NS(stdalloc, malloc)(stdalloc* self, size_t size) {
-    DC_ASSUME(self);
+static void* NS(stdalloc, malloc)(stdalloc_ref /* ref */, size_t size) {
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
     void* alloc = malloc(size);
     DC_ASSERT(alloc != NULL, "Standard allocator failed to malloc");
     return alloc;
 }
 
-static void* NS(stdalloc, realloc)(stdalloc* self, void* ptr, size_t size) {
-    DC_ASSUME(self);
+static void* NS(stdalloc, realloc)(stdalloc_ref ref, void* ptr, size_t size) {
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
     if (ptr) {
         void* new_ptr = realloc(ptr, size);
         DC_ASSERT(new_ptr != NULL, "Standard allocator failed to realloc");
         return new_ptr;
     }
-    return NS(stdalloc, malloc)(self, size);
+    return NS(stdalloc, malloc)(ref, size);
 }
 
-static void* NS(stdalloc, calloc)(stdalloc* self, size_t count, size_t size) {
-    DC_ASSUME(self);
+static void* NS(stdalloc, calloc)(stdalloc_ref /* ref */, size_t count, size_t size) {
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
     void* alloc = calloc(count, size);
     DC_ASSERT(alloc != NULL, "Standard allocator failed to calloc");
     return alloc;
 }
 
-static void NS(stdalloc, free)(stdalloc* self, void* ptr) {
-    DC_ASSUME(self);
+static void NS(stdalloc, free)(stdalloc_ref /* ref */, void* ptr) {
     DC_ASSUME(ptr);
 
     // JUSTIFY: Ignoring malloc clang static analyser warnings in this branch

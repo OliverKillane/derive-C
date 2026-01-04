@@ -12,10 +12,10 @@
 #include <derive-c/container/map/decomposed/template.h>
 
 TEST(DecomposedTest, Debug) {
-    DC_SCOPED(test_map) map = test_map_new(stdalloc_get());
+    DC_SCOPED(test_map) map = test_map_new(stdalloc_get_ref());
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_map_debug(&map, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(
@@ -40,7 +40,7 @@ TEST(DecomposedTest, Debug) {
     test_map_insert(&map, 6, "zing");
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_map_debug(&map, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(

@@ -55,7 +55,7 @@ typedef struct {
 } SELF;
 
 static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
-    return (SELF){.alloc_ref = alloc_ref, .entries = NS(ENTRIES_VECTOR, new)(stdalloc_get())};
+    return (SELF){.alloc_ref = alloc_ref, .entries = NS(ENTRIES_VECTOR, new)(stdalloc_get_ref())};
 }
 
 static ENTRIES_VECTOR const* NS(SELF, get_entries)(SELF const* self) {
@@ -71,7 +71,7 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 
     while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
         if (!entry->freed) {
-            NS(ALLOC, free)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), entry->ptr);
+            NS(ALLOC, free)(self->alloc_ref, entry->ptr);
         }
     }
 
@@ -80,7 +80,7 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, calloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), count, size);
+    void* ptr = NS(ALLOC, calloc)(self->alloc_ref, count, size);
     NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
                                                  .ptr = ptr,
                                                  .freed = false,
@@ -90,7 +90,7 @@ static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
 
 static void* NS(SELF, malloc)(SELF* self, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, malloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), size);
+    void* ptr = NS(ALLOC, malloc)(self->alloc_ref, size);
     NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
                                                  .ptr = ptr,
                                                  .freed = false,
@@ -101,7 +101,7 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
-    return NS(ALLOC, realloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), ptr, size);
+    return NS(ALLOC, realloc)(self->alloc_ref, ptr, size);
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
@@ -119,14 +119,14 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
         }
     }
 
-    NS(ALLOC, free)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), ptr);
+    NS(ALLOC, free)(self->alloc_ref, ptr);
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) " @%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "base: " EXPAND_STRING(ALLOC) "@%p,\n",
-                       NS(NS(ALLOC, ref), read)(&self->alloc_ref));
+                       NS(NS(ALLOC, ref), deref)(self->alloc_ref));
 
     dc_debug_fmt_print(fmt, stream, "entries: ");
     NS(ENTRIES_VECTOR, debug)(&self->entries, fmt, stream);

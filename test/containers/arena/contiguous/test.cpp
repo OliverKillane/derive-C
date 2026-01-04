@@ -13,7 +13,7 @@
 #include <derive-c/container/arena/contiguous/template.h>
 
 TEST(ArenaTests, Full) {
-    int_arena sut = int_arena_new_with_capacity_for(1, stdalloc_get());
+    int_arena sut = int_arena_new_with_capacity_for(1, stdalloc_get_ref());
     ASSERT_FALSE(int_arena_full(&sut));
     ASSERT_EQ(int_arena_max_entries, 254);
 
@@ -26,21 +26,21 @@ TEST(ArenaTests, Full) {
 }
 
 TEST(ArenaTests, Empty) {
-    int_arena sut = int_arena_new_with_capacity_for(1, stdalloc_get());
+    int_arena sut = int_arena_new_with_capacity_for(1, stdalloc_get_ref());
     int_arena_delete(&sut);
 }
 
 TEST(ArenaTests, Single) {
-    int_arena sut = int_arena_new_with_capacity_for(1, stdalloc_get());
+    int_arena sut = int_arena_new_with_capacity_for(1, stdalloc_get_ref());
     int_arena_insert(&sut, 1);
     int_arena_delete(&sut);
 }
 
 TEST(ArenaTests, Debug) {
-    DC_SCOPED(int_arena) arena = int_arena_new_with_capacity_for(10, stdalloc_get());
+    DC_SCOPED(int_arena) arena = int_arena_new_with_capacity_for(10, stdalloc_get_ref());
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
@@ -61,7 +61,7 @@ TEST(ArenaTests, Debug) {
     int_arena_index_t index3 = int_arena_insert(&arena, 3);
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
@@ -94,7 +94,7 @@ TEST(ArenaTests, Debug) {
     int_arena_remove(&arena, index3);
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off

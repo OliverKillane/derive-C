@@ -87,10 +87,10 @@ TEST(ArenaGeometricUtils, IndexToOffset) {
 #include <derive-c/container/arena/geometric/template.h>
 
 TEST(GeometricArena, Debug) {
-    DC_SCOPED(int_arena) arena = int_arena_new(stdalloc_get());
+    DC_SCOPED(int_arena) arena = int_arena_new(stdalloc_get_ref());
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
@@ -119,7 +119,7 @@ TEST(GeometricArena, Debug) {
     int_arena_index_t index3 = int_arena_insert(&arena, 3);
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
@@ -160,7 +160,7 @@ TEST(GeometricArena, Debug) {
     int_arena_remove(&arena, index3);
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         int_arena_debug(&arena, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off

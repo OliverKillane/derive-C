@@ -31,7 +31,7 @@ namespace {
 namespace {
 template <typename SutNS> void Test() {
     SutModel<SutNS> model;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity(4, stdalloc_get()));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity(4, stdalloc_get_ref()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Push<SutNS>, Push<SutNS>, Push<SutNS>, Write<SutNS>,

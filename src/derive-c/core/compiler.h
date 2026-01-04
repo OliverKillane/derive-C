@@ -7,7 +7,7 @@
     #if defined(__clang__)
         #define DC_STATIC_ASSERT_SUPPORTED
         #define DC_GENERIC_KEYWORD_SUPPORTED
-    #endif 
+    #endif
 #else
     #define DC_STATIC_ASSERT_SUPPORTED
     #define DC_GENERIC_KEYWORD_SUPPORTED

@@ -121,7 +121,6 @@ static void NS(SLOT, delete)(SLOT* slot) {
 
 #define BUCKET NS(SELF, bucket)
 
-// TODO(oliverkillane): remove
 #if defined SMALL_BUCKETS
     #define INDEX_KIND dc_ankerl_index_small
     #define BUCKET_SIZE 4
@@ -177,7 +176,7 @@ typedef struct {
     BUCKET* buckets;
     SLOT_VECTOR slots;
 
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
     dc_gdb_marker derive_c_hashmap;
     // JUSTIFY: No iteration invalidator
     // - Iteration is dependent on the vector, which already tracks this.
@@ -186,44 +185,44 @@ typedef struct {
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
     DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->buckets_capacity));                                    \
-    DC_ASSUME((self)->buckets);                                                                    \
-    DC_ASSUME((self)->alloc);
+    DC_ASSUME((self)->buckets);
 
-static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* alloc) {
+static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, ref) alloc_ref) {
     DC_ASSUME(capacity > 0);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
 
-    BUCKET* buckets = (BUCKET*)NS(ALLOC, calloc)(alloc, capacity, sizeof(BUCKET));
+    BUCKET* buckets = (BUCKET*)NS(ALLOC, calloc)(alloc_ref, capacity, sizeof(BUCKET));
 
     return (SELF){
         .buckets_capacity = capacity,
         .buckets = buckets,
-        .slots = NS(SLOT_VECTOR, new_with_capacity)(capacity, alloc),
-        .alloc = alloc,
+        .slots = NS(SLOT_VECTOR, new_with_capacity)(capacity, alloc_ref),
+        .alloc_ref = alloc_ref,
     };
 }
 
-static SELF NS(SELF, new_with_capacity_for)(size_t for_items, ALLOC* alloc) {
+static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(for_items > 0);
-    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_buckets_capacity(for_items), alloc);
+    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_buckets_capacity(for_items),
+                                                   alloc_ref);
 }
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
-    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_initial_items, alloc);
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_initial_items, alloc_ref);
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     BUCKET* new_buckets =
-        (BUCKET*)NS(ALLOC, malloc)(self->alloc, self->buckets_capacity * sizeof(BUCKET));
+        (BUCKET*)NS(ALLOC, malloc)(self->alloc_ref, self->buckets_capacity * sizeof(BUCKET));
     memcpy(new_buckets, self->buckets, self->buckets_capacity * sizeof(BUCKET));
 
     return (SELF){
         .buckets_capacity = self->buckets_capacity,
         .buckets = new_buckets,
         .slots = NS(SLOT_VECTOR, clone)(&self->slots),
-        .alloc = self->alloc,
+        .alloc_ref = self->alloc_ref,
         .derive_c_hashmap = dc_gdb_marker_new(),
     };
 }
@@ -301,7 +300,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(new_capacity));
 
-    BUCKET* new_buckets = (BUCKET*)NS(ALLOC, calloc)(self->alloc, new_capacity, sizeof(BUCKET));
+    BUCKET* new_buckets = (BUCKET*)NS(ALLOC, calloc)(self->alloc_ref, new_capacity, sizeof(BUCKET));
 
     const size_t new_mask = new_capacity - 1;
     const size_t n = NS(SLOT_VECTOR, size)(&self->slots);
@@ -338,7 +337,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
         }
     }
 
-    NS(ALLOC, free)(self->alloc, self->buckets);
+    NS(ALLOC, free)(self->alloc_ref, self->buckets);
     self->buckets = new_buckets;
     self->buckets_capacity = new_capacity;
 }
@@ -551,7 +550,7 @@ static size_t NS(SELF, size)(SELF const* self) {
 static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
 
-    NS(ALLOC, free)(self->alloc, self->buckets);
+    NS(ALLOC, free)(self->alloc_ref, self->buckets);
     NS(SLOT_VECTOR, delete)(&self->slots);
 }
 
@@ -599,7 +598,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "bucket capacity: %lu,\n", self->buckets_capacity);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
     dc_debug_fmt_print(fmt, stream, "slots: ");

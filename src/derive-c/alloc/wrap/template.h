@@ -23,26 +23,24 @@ typedef struct {
 static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) { return (SELF){.alloc_ref = alloc_ref}; }
 
 MOCKABLE(void*, NS(SELF, malloc), (SELF * self, size_t size)) {
-    return NS(ALLOC, malloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), size);
+    return NS(ALLOC, malloc)(self->alloc_ref, size);
 }
 
 MOCKABLE(void*, NS(SELF, calloc), (SELF * self, size_t count, size_t size)) {
-    return NS(ALLOC, calloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), count, size);
+    return NS(ALLOC, calloc)(self->alloc_ref, count, size);
 }
 
 MOCKABLE(void*, NS(SELF, realloc), (SELF * self, void* ptr, size_t size)) {
-    return NS(ALLOC, realloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), ptr, size);
+    return NS(ALLOC, realloc)(self->alloc_ref, ptr, size);
 }
 
-MOCKABLE(void, NS(SELF, free), (SELF * self, void* ptr)) {
-    NS(ALLOC, free)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), ptr);
-}
+MOCKABLE(void, NS(SELF, free), (SELF * self, void* ptr)) { NS(ALLOC, free)(self->alloc_ref, ptr); }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(NS(NS(ALLOC, ref), read)(&self->alloc_ref), fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
     dc_debug_fmt_print(fmt, stream, "mocking: {\n");

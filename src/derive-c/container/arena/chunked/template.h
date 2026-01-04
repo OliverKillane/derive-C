@@ -80,7 +80,7 @@ typedef struct {
     INDEX_TYPE block_current;
     INDEX_TYPE block_current_exclusive_end;
 
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
     dc_gdb_marker derive_c_arena_basic;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
@@ -96,11 +96,11 @@ typedef struct {
                            (self)->block_current_exclusive_end)),                                  \
               "All slots are full if the free list is empty");
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     PRIV(NS(SELF, block))* first_block =
-        (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))));
+        (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(alloc_ref, sizeof(PRIV(NS(SELF, block))));
     PRIV(NS(SELF, block))** blocks =
-        (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(alloc, sizeof(PRIV(NS(SELF, block))*));
+        (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(alloc_ref, sizeof(PRIV(NS(SELF, block))*));
 
     blocks[0] = first_block;
 
@@ -115,7 +115,7 @@ static SELF NS(SELF, new)(ALLOC* alloc) {
         .blocks = blocks,
         .block_current = 0,
         .block_current_exclusive_end = 0,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
         .derive_c_arena_basic = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -147,11 +147,11 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         self->block_current_exclusive_end = 0;
 
         self->blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, realloc)(
-            self->alloc, (void*)self->blocks,
+            self->alloc_ref, (void*)self->blocks,
             (self->block_current + 1) * sizeof(PRIV(NS(SELF, block))*));
 
-        PRIV(NS(SELF, block))* new_block =
-            (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(self->alloc, sizeof(PRIV(NS(SELF, block))));
+        PRIV(NS(SELF, block))* new_block = (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(
+            self->alloc_ref, sizeof(PRIV(NS(SELF, block))));
 
         self->blocks[self->block_current] = new_block;
 
@@ -210,11 +210,11 @@ static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     PRIV(NS(SELF, block))** blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(
-        self->alloc, sizeof(PRIV(NS(SELF, block))*) * (self->block_current + 1));
+        self->alloc_ref, sizeof(PRIV(NS(SELF, block))*) * (self->block_current + 1));
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
-        blocks[b] =
-            (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(self->alloc, sizeof(PRIV(NS(SELF, block))));
+        blocks[b] = (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(self->alloc_ref,
+                                                              sizeof(PRIV(NS(SELF, block))));
     }
 
     for (INDEX_TYPE b = 0; b < self->block_current; b++) {
@@ -237,7 +237,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .blocks = blocks,
         .block_current = self->block_current,
         .block_current_exclusive_end = self->block_current_exclusive_end,
-        .alloc = self->alloc,
+        .alloc_ref = self->alloc_ref,
         .derive_c_arena_basic = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -380,9 +380,9 @@ static void NS(SELF, delete)(SELF* self) {
     }
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
-        NS(ALLOC, free)(self->alloc, self->blocks[b]);
+        NS(ALLOC, free)(self->alloc_ref, self->blocks[b]);
     }
-    NS(ALLOC, free)(self->alloc, (void*)self->blocks);
+    NS(ALLOC, free)(self->alloc_ref, (void*)self->blocks);
 }
 
 #undef ITER_INVARIANT_CHECK
@@ -456,7 +456,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
     dc_debug_fmt_print(fmt, stream, "current_block: %lu\n", (size_t)self->block_current);

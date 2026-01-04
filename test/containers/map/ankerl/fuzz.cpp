@@ -47,7 +47,7 @@ template <ObjectType Key, ObjectType Value> struct SmallBuckets {
 namespace {
 template <typename SutNS> void Test() {
     SutModel<SutNS> model;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get_ref()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Insert<SutNS>, Insert<SutNS>, Insert<SutNS>,

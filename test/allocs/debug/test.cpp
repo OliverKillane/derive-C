@@ -47,8 +47,8 @@ struct DebugAllocMocked : Test {
 
 TEST_F(DebugAllocMocked, DebugAllocator) {
     DC_SCOPED(mock_alloc) mocked_alloc = mock_alloc_new(stdalloc_get_ref());
-    DC_SCOPED(dc_debug_string_builder) sb_log = dc_debug_string_builder_new(stdalloc_get());
-    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+    DC_SCOPED(dc_debug_string_builder) sb_log = dc_debug_string_builder_new(stdalloc_get_ref());
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
     DC_SCOPED(debug_alloc)
     alloc = debug_alloc_new("test", dc_debug_string_builder_stream(&sb_log), &mocked_alloc);
 
@@ -74,7 +74,7 @@ TEST_F(DebugAllocMocked, DebugAllocator) {
 
 TEST_F(DebugAllocMocked, DebugLogging) {
     DC_SCOPED(mock_alloc) mocked_alloc = mock_alloc_new(stdalloc_get_ref());
-    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
     DC_SCOPED(debug_alloc)
     alloc = debug_alloc_new("test", dc_debug_string_builder_stream(&sb), &mocked_alloc);
 

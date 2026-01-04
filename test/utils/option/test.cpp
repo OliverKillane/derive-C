@@ -118,7 +118,7 @@ TEST_F(OptionTests, GetOr) {
 TEST_F(OptionTests, Debug) {
     {
         DC_SCOPED(optional_int) opt_some = optional_int_from(10);
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         optional_int_debug(&opt_some, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { 10 }",
@@ -128,7 +128,7 @@ TEST_F(OptionTests, Debug) {
 
     {
         DC_SCOPED(optional_int) opt_none = optional_int_empty();
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         optional_int_debug(&opt_none, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { NONE }",

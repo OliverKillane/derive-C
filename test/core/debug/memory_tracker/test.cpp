@@ -57,7 +57,7 @@ TEST(MemoryTrackerTest, AsanDebugOutput) {
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, &buf[2], 3);
 
-    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
     dc_memory_tracker_debug(dc_debug_string_builder_stream(&sb), buf, 7);
 
 #if defined ASAN_ON

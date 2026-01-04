@@ -34,7 +34,7 @@ void print_map(id_to_name const* map) {
 
 void id_to_name_example() {
     printf("Id to Name Map Example:\n");
-    id_to_name map = id_to_name_new(stdalloc_get());
+    id_to_name map = id_to_name_new(stdalloc_get_ref());
 
     id_to_name_insert(&map, 23, "hello");
     id_to_name_insert(&map, 10, "bob");
@@ -101,7 +101,7 @@ void report_delete(struct report* self) { free(self->description); }
 
 void report_map_example() {
     printf("Report Map Example:\n");
-    report_map map = report_map_new(stdalloc_get());
+    report_map map = report_map_new(stdalloc_get_ref());
 
     struct report_id id1 = {.name = strdup("Report A"), .section = 1};
     struct report_id id2 = {.name = strdup("Report B"), .section = 2};
@@ -159,7 +159,7 @@ size_t fixed_string_hash(struct fixed_string const* str) {
 
 void fixed_string_example() {
     printf("Fixed Strings Example:\n");
-    fixed_string_map map = fixed_string_map_new(stdalloc_get());
+    fixed_string_map map = fixed_string_map_new(stdalloc_get_ref());
 
     struct fixed_string key1 = {.value = "abc"};
     struct fixed_string key2 = {.value = "def"};

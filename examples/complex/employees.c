@@ -97,8 +97,8 @@ typedef struct {
 
 hr_system hr_system_new() {
     return (hr_system){
-        .data = employees_new_with_capacity_for(1000, stdalloc_get()),
-        .by_age = employees_by_age_new(stdalloc_get()),
+        .data = employees_new_with_capacity_for(1000, stdalloc_get_ref()),
+        .by_age = employees_by_age_new(stdalloc_get_ref()),
     };
 }
 
@@ -107,8 +107,8 @@ void hr_system_new_employee(hr_system* self, employee emp) {
     employees_index_t idx = employees_insert(&self->data, emp);
     same_age_employees* idxes = employees_by_age_try_write(&self->by_age, emp.age);
     if (!idxes) {
-        idxes =
-            employees_by_age_insert(&self->by_age, emp.age, same_age_employees_new(stdalloc_get()));
+        idxes = employees_by_age_insert(&self->by_age, emp.age,
+                                        same_age_employees_new(stdalloc_get_ref()));
     }
     same_age_employees_push(idxes, idx);
 }

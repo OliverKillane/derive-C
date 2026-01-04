@@ -20,7 +20,7 @@
 #include <derive-c/utils/string_builder/template.h>
 
 TEST(StringBuilder, Basic) {
-    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get());
+    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
     std::string hello_world = "hello world";
     fprintf(string_builder_stream(&sb), "%s", hello_world.c_str());
     EXPECT_EQ(hello_world, string_builder_string(&sb));
@@ -35,10 +35,12 @@ TEST(StringBuilder, BasicStatic) {
     EXPECT_EQ(hello_world, string_builder_static_string(&sb));
 }
 
-TEST(StringBuilder, NoOps) { DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get()); }
+TEST(StringBuilder, NoOps) {
+    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
+}
 
 TEST(StringBuilder, Release) {
-    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get());
+    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
     std::string hello_world = "hello world";
     fprintf(string_builder_stream(&sb), "%s", hello_world.c_str());
 
@@ -54,7 +56,7 @@ TEST(StringBuilder, Release) {
 
 TEST(StringBuilder, VeryLargeString) {
     const auto* const repeat = "foooo!!!";
-    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get());
+    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
     std::string expected;
     for (auto i = 0; i < 1024; i++) {
         fprintf(string_builder_stream(&sb), "%s", repeat);
@@ -65,7 +67,7 @@ TEST(StringBuilder, VeryLargeString) {
 }
 
 TEST(StringBuilder, Reset) {
-    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get());
+    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
     std::string hello_world = "hello world";
 
     fprintf(string_builder_stream(&sb), "%s", hello_world.c_str());
@@ -79,7 +81,7 @@ TEST(StringBuilder, Reset) {
 }
 
 TEST(StringBuilder, UnsupportedRead) {
-    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get());
+    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
 
     char buf[8];
     errno = 0;
@@ -93,7 +95,7 @@ TEST(StringBuilder, UnsupportedRead) {
 }
 
 TEST(StringBuilder, UnsupportedSeek) {
-    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get());
+    DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
 
     errno = 0;
     int ret = fseek(string_builder_stream(&sb), 0, SEEK_SET);

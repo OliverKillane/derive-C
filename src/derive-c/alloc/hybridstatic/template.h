@@ -108,7 +108,7 @@ static void* PRIV(NS(SELF, static_calloc))(SELF* self, size_t size) {
 static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
     void* allocation_ptr = PRIV(NS(SELF, static_calloc))(self, count * size);
     if (allocation_ptr == NULL) {
-        return NS(ALLOC, calloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), count, size);
+        return NS(ALLOC, calloc)(self->alloc_ref, count, size);
     }
     return allocation_ptr;
 }
@@ -131,7 +131,7 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
     void* statically_allocated = PRIV(NS(SELF, static_malloc))(self, size);
 
     if (statically_allocated == NULL) {
-        return NS(ALLOC, malloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), size);
+        return NS(ALLOC, malloc)(self->alloc_ref, size);
     }
 
     return statically_allocated;
@@ -166,7 +166,7 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
     if (PRIV(NS(SELF, contains_ptr))(self, ptr)) {
         PRIV(NS(SELF, static_free))(self, ptr);
     } else {
-        NS(ALLOC, free)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), ptr);
+        NS(ALLOC, free)(self->alloc_ref, ptr);
     }
 }
 
@@ -241,7 +241,7 @@ static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
     }
 
     if (!PRIV(NS(SELF, contains_ptr))(self, ptr)) {
-        return NS(ALLOC, realloc)(NS(NS(ALLOC, ref), write)(&self->alloc_ref), ptr, new_size);
+        return NS(ALLOC, realloc)(self->alloc_ref, ptr, new_size);
     }
 
     return PRIV(NS(SELF, static_realloc))(self, ptr, new_size);
@@ -255,7 +255,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "used: %lu,\n", self->head_offset);
     dc_debug_fmt_print(fmt, stream, "buffer: %p,\n", self->buffer);
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(NS(NS(ALLOC, ref), read)(&self->alloc_ref), fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, "\n");
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");

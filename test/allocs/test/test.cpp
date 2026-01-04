@@ -29,7 +29,7 @@ TEST(TestAlloc, DebugAllocations) {
     DC_SCOPED(testalloc) alloc = testalloc_new(stdalloc_get_ref());
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         testalloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string_expected = derivecpp::fmt::c_style(
@@ -45,7 +45,7 @@ TEST(TestAlloc, DebugAllocations) {
             "  }\n"
             "}",
             // clang-format on
-            &alloc, stdalloc_get(), &alloc.entries, stdalloc_get());
+            &alloc, stdalloc_get_ref(), &alloc.entries, stdalloc_get_ref());
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(debug_string, debug_string_expected);
     }
@@ -55,7 +55,7 @@ TEST(TestAlloc, DebugAllocations) {
     void* ptr3 = testalloc_malloc(&alloc, 1);
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         testalloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string_expected = derivecpp::fmt::c_style(
@@ -74,8 +74,8 @@ TEST(TestAlloc, DebugAllocations) {
             "  }\n"
             "}",
             // clang-format on
-            &alloc, stdalloc_get(), &alloc.entries, stdalloc_get(), alloc.entries.data, ptr1, ptr2,
-            ptr3);
+            &alloc, stdalloc_get_ref(), &alloc.entries, stdalloc_get_ref(), alloc.entries.data,
+            ptr1, ptr2, ptr3);
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(debug_string, debug_string_expected);
     }
@@ -85,7 +85,7 @@ TEST(TestAlloc, DebugAllocations) {
     testalloc_free(&alloc, ptr3);
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         testalloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string_expected = derivecpp::fmt::c_style(
@@ -104,8 +104,8 @@ TEST(TestAlloc, DebugAllocations) {
             "  }\n"
             "}",
             // clang-format on
-            &alloc, stdalloc_get(), &alloc.entries, stdalloc_get(), alloc.entries.data, ptr1, ptr2,
-            ptr3);
+            &alloc, stdalloc_get_ref(), &alloc.entries, stdalloc_get_ref(), alloc.entries.data,
+            ptr1, ptr2, ptr3);
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(debug_string, debug_string_expected);
     }

@@ -75,7 +75,7 @@ TEST(BitsetStatic, Debug) {
     DC_SCOPED(sut) bitset = sut_new();
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         sut_debug(&bitset, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off
@@ -93,7 +93,7 @@ TEST(BitsetStatic, Debug) {
     sut_set(&bitset, 4, true);
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         sut_debug(&bitset, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
         EXPECT_EQ(
             // clang-format off

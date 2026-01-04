@@ -10,13 +10,13 @@
 #include <derive-c/container/queue/deque/template.h>
 
 TEST(DequeTests, CreateWithCapacity) {
-    Sut sut = Sut_new_with_capacity(64, stdalloc_get());
+    Sut sut = Sut_new_with_capacity(64, stdalloc_get_ref());
     ASSERT_EQ(Sut_size(&sut), 0);
     Sut_delete(&sut);
 }
 
 TEST(DequeTests, CreateWithZeroSize) {
-    Sut sut = Sut_new(stdalloc_get());
+    Sut sut = Sut_new(stdalloc_get_ref());
     ASSERT_EQ(Sut_size(&sut), 0);
     Sut_delete(&sut);
 }
@@ -26,10 +26,10 @@ TEST(DequeTests, CreateWithZeroSize) {
 #include <derive-c/container/queue/deque/template.h>
 
 TEST(DequeTests, Debug) {
-    DC_SCOPED(str_queue) q = str_queue_new(stdalloc_get());
+    DC_SCOPED(str_queue) q = str_queue_new(stdalloc_get_ref());
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         str_queue_debug(&q, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(
@@ -69,7 +69,7 @@ TEST(DequeTests, Debug) {
     str_queue_push_back(&q, "l");
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         str_queue_debug(&q, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(

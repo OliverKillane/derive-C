@@ -71,7 +71,7 @@ INDEX_ITEMS_EQ_HASH(Sut_32_Complex);
 
 namespace {
 template <typename SutNS> void Test() {
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity_for(1, stdalloc_get()));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity_for(1, stdalloc_get_ref()));
     SutModel<SutNS> model;
     rc::state::check(model, sutWrapper,
                      rc::state::gen::execOneOfWithArgs<Insert<SutNS>, Insert<SutNS>, Insert<SutNS>,

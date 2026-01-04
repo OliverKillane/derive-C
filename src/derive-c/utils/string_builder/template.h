@@ -18,14 +18,13 @@ typedef struct {
     char* buf;
     size_t size_without_null;
     size_t capacity;
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
 } SELF;
 
 static size_t const NS(SELF, additional_alloc_size) = 32;
 
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
-    DC_ASSUME((self)->alloc);                                                                      \
     DC_ASSUME(DC_WHEN((self)->buf, (self)->stream && (self)->capacity > 0));                       \
     DC_ASSUME(DC_WHEN((self)->capacity == 0, !(self)->buf));                                       \
     DC_ASSUME(DC_WHEN((self)->buf, (self)->size_without_null + 1 <= (self)->capacity));
@@ -53,11 +52,11 @@ static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t siz
             size_t const growth_factor = 2;
             new_capacity =
                 (self->capacity * growth_factor) + size + NS(SELF, additional_alloc_size);
-            new_buf = (char*)NS(ALLOC, realloc)(self->alloc, self->buf, new_capacity);
+            new_buf = (char*)NS(ALLOC, realloc)(self->alloc_ref, self->buf, new_capacity);
         } else {
             DC_ASSUME(self->capacity == 0);
             new_capacity = size + 1 + NS(SELF, additional_alloc_size);
-            new_buf = (char*)NS(ALLOC, malloc)(self->alloc, new_capacity);
+            new_buf = (char*)NS(ALLOC, malloc)(self->alloc_ref, new_capacity);
         }
 
         self->capacity = new_capacity;
@@ -88,13 +87,13 @@ static int PRIV(NS(SELF, close))(void* capture) {
     return 0;
 }
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .stream = NULL,
         .buf = NULL,
         .size_without_null = 0,
         .capacity = 0,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
     };
 }
 
@@ -162,7 +161,7 @@ static void NS(SELF, delete)(SELF* self) {
         fclose(self->stream);
     }
     if (self->buf) {
-        NS(ALLOC, free)(self->alloc, self->buf);
+        NS(ALLOC, free)(self->alloc_ref, self->buf);
     }
 }
 

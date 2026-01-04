@@ -14,7 +14,7 @@ TEST(VectorTests, Debug) {
     DC_SCOPED(test_vec) v = test_vec_new();
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_vec_debug(&v, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(
@@ -35,7 +35,7 @@ TEST(VectorTests, Debug) {
     test_vec_push(&v, "bing");
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_vec_debug(&v, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(

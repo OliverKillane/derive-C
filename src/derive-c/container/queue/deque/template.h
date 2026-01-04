@@ -66,19 +66,19 @@ typedef struct {
 
 #define INVARIANT_CHECK(self) DC_ASSUME(self);
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
-        .front = NS(ITEM_VECTORS, new)(alloc),
-        .back = NS(ITEM_VECTORS, new)(alloc),
+        .front = NS(ITEM_VECTORS, new)(alloc_ref),
+        .back = NS(ITEM_VECTORS, new)(alloc_ref),
         .derive_c_deque = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
-static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, ALLOC* alloc) {
+static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, NS(ALLOC, ref) alloc_ref) {
     return (SELF){
-        .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
-        .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
+        .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc_ref),
+        .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc_ref),
         .derive_c_deque = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };

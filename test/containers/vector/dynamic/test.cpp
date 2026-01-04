@@ -10,7 +10,7 @@
 #include <derive-c/container/vector/dynamic/template.h>
 
 TEST(VectorTests, CreateWithDefaults) {
-    sut sut = sut_new_with_defaults(128, 3, stdalloc_get());
+    sut sut = sut_new_with_defaults(128, 3, stdalloc_get_ref());
     ASSERT_EQ(sut_size(&sut), 128);
 
     for (size_t i = 0; i < sut_size(&sut); ++i) {
@@ -21,23 +21,23 @@ TEST(VectorTests, CreateWithDefaults) {
 }
 
 TEST(VectorTests, CreateWithZeroSize) {
-    sut sut_1 = sut_new(stdalloc_get());
+    sut sut_1 = sut_new(stdalloc_get_ref());
     ASSERT_EQ(sut_size(&sut_1), 0);
     sut_delete(&sut_1);
 
-    sut sut_2 = sut_new(stdalloc_get());
+    sut sut_2 = sut_new(stdalloc_get_ref());
     ASSERT_EQ(sut_size(&sut_2), 0);
     sut_delete(&sut_2);
 }
 
 TEST(VectorTests, CreateWithCapacity) {
-    sut sut = sut_new_with_capacity(64, stdalloc_get());
+    sut sut = sut_new_with_capacity(64, stdalloc_get_ref());
     ASSERT_EQ(sut_size(&sut), 0);
     sut_delete(&sut);
 }
 
 TEST(VectorTests, CreateWithCapacity2) {
-    sut sut = sut_new_with_capacity(64, stdalloc_get());
+    sut sut = sut_new_with_capacity(64, stdalloc_get_ref());
     sut_push(&sut, 1);
     const auto* a = sut_read(&sut, 0);
     dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_READ_WRITE, a,
@@ -50,10 +50,10 @@ TEST(VectorTests, CreateWithCapacity2) {
 #include <derive-c/container/vector/dynamic/template.h>
 
 TEST(VectorTests, Debug) {
-    DC_SCOPED(test_vec) v = test_vec_new(stdalloc_get());
+    DC_SCOPED(test_vec) v = test_vec_new(stdalloc_get_ref());
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_vec_debug(&v, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(
@@ -75,7 +75,7 @@ TEST(VectorTests, Debug) {
     test_vec_push(&v, "bing");
 
     {
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get());
+        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_vec_debug(&v, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         EXPECT_EQ(
