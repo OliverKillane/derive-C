@@ -48,7 +48,7 @@ TEST(MemoryTrackerTest, BasicChecks) {
     }
 }
 
-TEST(MemoryTrackerTest, AsanDebugOutput) {
+TEST(MemoryTrackerTest, DebugOutput) {
     uint8_t buf[32] = {};
 
     for (size_t i = 0; i < sizeof(buf); i++) {
@@ -75,6 +75,20 @@ TEST(MemoryTrackerTest, AsanDebugOutput) {
 #endif
 
 #if defined MSAN_ON
-    EXPECT_EQ(std::string(""), std::string(dc_debug_string_builder_string(&sb)));
+    EXPECT_EQ(
+        derivecpp::fmt::c_style(
+            // clang-format off
+            "memory tracker debug (7 bytes) at %p [MSAN]:\n"
+            "%p: I [00]\n"
+            "%p: I [01]\n"
+            "%p: U [02]\n"
+            "%p: U [03]\n"
+            "%p: U [04]\n"
+            "%p: I [05]\n"
+            "%p: I [06]\n"
+            // clang-format on
+            , &buf[0], &buf[0], &buf[1], &buf[2], &buf[3], &buf[4], &buf[5], &buf[6], &buf[7]
+        )
+        , std::string(dc_debug_string_builder_string(&sb)));
 #endif
 }

@@ -23,29 +23,38 @@
             uint64_t: uint64_t_hash_id,                                                            \
             const char*: dc_fnv1a_str)(obj)
 #else
-    #define DC_DEFAULT_HASH(obj)                                                                   \
-        ([&]() -> std::uint64_t {                                                                  \
-            using T = std::remove_cv_t<std::remove_reference_t<decltype(*(obj))>>;                 \
-            if constexpr (std::is_same_v<T, std::int8_t>)                                          \
-                return int8_t_hash_id(*(obj));                                                     \
-            else if constexpr (std::is_same_v<T, std::uint8_t>)                                    \
-                return uint8_t_hash_id(*(obj));                                                    \
-            else if constexpr (std::is_same_v<T, std::int16_t>)                                    \
-                return int16_t_hash_id(*(obj));                                                    \
-            else if constexpr (std::is_same_v<T, std::uint16_t>)                                   \
-                return uint16_t_hash_id(*(obj));                                                   \
-            else if constexpr (std::is_same_v<T, std::int32_t>)                                    \
-                return int32_t_hash_id(*(obj));                                                    \
-            else if constexpr (std::is_same_v<T, std::uint32_t>)                                   \
-                return uint32_t_hash_id(*(obj));                                                   \
-            else if constexpr (std::is_same_v<T, std::int64_t>)                                    \
-                return int64_t_hash_id(*(obj));                                                    \
-            else if constexpr (std::is_same_v<T, std::uint64_t>)                                   \
-                return uint64_t_hash_id(*(obj));                                                   \
-            else if constexpr (std::is_same_v<T, char const*>)                                     \
-                return dc_fnv1a_str(*(obj));                                                       \
-            else {                                                                                 \
-                static_assert(!std::is_same_v<T, T>, "DC_DEFAULT_HASH: unsupported type");         \
-            }                                                                                      \
-        }())
+namespace dc::hash {
+
+    #include <type_traits>
+    #include <cstdint>
+
+template <class T> constexpr uint64_t default_hash_impl(T const* obj) {
+    using U = std::remove_cv_t<T>;
+
+    if constexpr (std::is_same_v<U, int8_t>)
+        return int8_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, uint8_t>)
+        return uint8_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, int16_t>)
+        return int16_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, uint16_t>)
+        return uint16_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, int32_t>)
+        return int32_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, uint32_t>)
+        return uint32_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, int64_t>)
+        return int64_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, uint64_t>)
+        return uint64_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, char const*>)
+        return dc_fnv1a_str(*obj); // obj: char const* const*
+    else {
+        // always-false, but dependent, without a helper variable
+        static_assert([]<class>() { return false; }.template operator()<U>(),
+                      "DC_DEFAULT_HASH: unsupported type");
+    }
+}
+} // namespace dc::hash
+    #define DC_DEFAULT_HASH(obj) dc::hash::default_hash_impl(obj)
 #endif

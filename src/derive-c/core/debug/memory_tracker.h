@@ -191,18 +191,21 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
 
 static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size) {
     fprintf(stream, "memory tracker debug (%zu bytes) at %p ", size, addr);
-#if defined(MSAN_ON)
-    fprintf(stream, "[MSAN]: ");
+#if defined MSAN_ON
+    fprintf(stream, "[MSAN]:");
     // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
     for (size_t i = 0; i < size; i++) {
-        fprintf(stream, "\n%p: ", (char*)addr + i);
-        if (__msan_test_shadow((char*)addr + i, 1) == -1) {
-            fprintf(stream, "U [%02x]", *((unsigned char*)addr + i));
+        char const* ptr = (char const*)addr + i;
+        fprintf(stream, "\n%p: ", ptr);
+        if (__msan_test_shadow(ptr, 1) != -1) {
+            __msan_unpoison(ptr, 1);
+            fprintf(stream, "U [%02x]", *((unsigned char*)ptr));
+            __msan_poison(ptr, 1);
         } else {
-            fprintf(stream, "I [%02x]", *((unsigned char*)addr + i));
+            fprintf(stream, "I [%02x]", *((unsigned char*)ptr));
         }
     }
-#elif defined(ASAN_ON)
+#elif defined ASAN_ON
     // Each shadow memory entry covers 8 bytes of memory, aligned to 8 bytes, so we print this.
     char* addr_start = (char*)addr;
     char* addr_end = addr_start + size;
