@@ -75,9 +75,8 @@ TEST(MemoryTrackerTest, DebugOutput) {
 #endif
 
 #if defined MSAN_ON
-    EXPECT_EQ(
-        derivecpp::fmt::c_style(
-            // clang-format off
+    EXPECT_EQ(derivecpp::fmt::c_style(
+                  // clang-format off
             "memory tracker debug (7 bytes) at %p [MSAN]:\n"
             "%p: I [00]\n"
             "%p: I [01]\n"
@@ -86,9 +85,9 @@ TEST(MemoryTrackerTest, DebugOutput) {
             "%p: U [04]\n"
             "%p: I [05]\n"
             "%p: I [06]\n"
-            // clang-format on
-            , &buf[0], &buf[0], &buf[1], &buf[2], &buf[3], &buf[4], &buf[5], &buf[6], &buf[7]
-        )
-        , std::string(dc_debug_string_builder_string(&sb)));
+                  // clang-format on
+                  ,
+                  &buf[0], &buf[0], &buf[1], &buf[2], &buf[3], &buf[4], &buf[5], &buf[6], &buf[7]),
+              std::string(dc_debug_string_builder_string(&sb)));
 #endif
 }

@@ -298,5 +298,7 @@ template <typename SutNS> struct ReallocSmaller : Command<SutNS> {
             RC_ASSERT(char_ptr[i] == alloc.mFill);
         }
     }
-    void show(std::ostream& os) const override { os << "ReallocSmaller(index=" << mIndex.value() << ", size=" << mNewSize << ")"; }
+    void show(std::ostream& os) const override {
+        os << "ReallocSmaller(index=" << mIndex.value() << ", size=" << mNewSize << ")";
+    }
 };
