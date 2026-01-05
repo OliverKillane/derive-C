@@ -62,7 +62,7 @@ typedef enum { // NOLINT(performance-enum-size)
 } dc_memory_tracker_level;
 
 #if defined CUSTOM_MEMORY_TRACKING
-static const dc_memory_tracker_level memory_tracker_global_level =
+static const dc_memory_tracker_level dc_memory_tracker_global_level =
     (dc_memory_tracker_level)CUSTOM_MEMORY_TRACKING;
 #else
 // JUSTIFY: Default as container
@@ -73,7 +73,7 @@ static const dc_memory_tracker_level memory_tracker_global_level = DC_MEMORY_TRA
 
 static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
                                   const volatile void* addr, size_t size) {
-    if (level <= memory_tracker_global_level) {
+    if (level <= dc_memory_tracker_global_level) {
 #if defined(MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
         switch (cap) {
@@ -112,7 +112,7 @@ static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_track
 static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
                                     const void* addr, size_t size) {
     DC_ASSERT(size > 0, "Cannot check zero sized region");
-    if (level <= memory_tracker_global_level) {
+    if (level <= dc_memory_tracker_global_level) {
 #if defined(MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
         intptr_t poisoned_from = __msan_test_shadow((void*)addr, size);

@@ -8,6 +8,7 @@
 /// As this is entirely C, we do not get the niceties of a C++ RAII allocator guard shebang.
 /// However, this is usable inside unit tests written in C.
 
+#include "derive-c/core/panic.h"
 #ifdef NDEBUG
     #include <derive-c/alloc/wrap/template.h>
 #else
@@ -101,25 +102,29 @@ static void* NS(SELF, malloc)(SELF* self, size_t size) {
 static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
-    return NS(ALLOC, realloc)(self->alloc_ref, ptr, size);
+    FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
+        if (entry->ptr == ptr) {
+            void* new_ptr = NS(ALLOC, realloc)(self->alloc_ref, ptr, size);
+            entry->ptr = new_ptr;
+            return new_ptr;
+        }
+    }
+    DC_UNREACHABLE("ptr was not present in the entries list");
 }
 
 static void NS(SELF, free)(SELF* self, void* ptr) {
     DC_ASSUME(ptr);
     DC_ASSUME(self);
 
-    NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
-    TRACKED_ENTRY* entry;
-
-    while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
+    FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
         if (entry->ptr == ptr) {
             DC_ASSUME(!entry->freed);
             entry->freed = true;
+            NS(ALLOC, free)(self->alloc_ref, ptr);
             break;
         }
     }
-
-    NS(ALLOC, free)(self->alloc_ref, ptr);
+    DC_UNREACHABLE("ptr was not present in the entries list");
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {

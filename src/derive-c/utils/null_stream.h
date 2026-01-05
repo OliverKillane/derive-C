@@ -1,6 +1,5 @@
 #pragma once
 
-#include <bits/posix1_lim.h>
 #include <derive-c/core/prelude.h>
 
 #include <stdio.h>
@@ -16,7 +15,7 @@ static ssize_t PRIV(dc_null_write)(void* cookie, const char* buf, size_t size) {
     return (ssize_t)size; // report "all bytes written"
 }
 
-FILE* dc_null_stream(void) {
+FILE* dc_null_stream_2(void) {
     cookie_io_functions_t io = {
         .read = NULL,
         .write = PRIV(dc_null_write),
@@ -25,9 +24,12 @@ FILE* dc_null_stream(void) {
     };
 
     FILE* f = fopencookie(NULL, "w", io);
+    DC_ASSERT(f, "received nullptr from fopencookie");
 
     // Set io as unbuffered
     setvbuf(f, NULL, _IONBF, 0);
 
     return f;
 }
+
+FILE* dc_null_stream(void) { return fopen("/dev/null", "w"); }
