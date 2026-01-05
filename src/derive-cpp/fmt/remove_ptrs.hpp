@@ -13,9 +13,7 @@ namespace {
 
 bool is_hex_digit(unsigned char c) noexcept { return std::isxdigit(c) != 0; }
 
-// Replaces `%p`-style pointers (glibc-style) like 0x728cc5bdfd10 with DC_PTR_REPLACE.
-// Matches: 0x + 1..(sizeof(void*)*2) hex digits.
-std::string pointer_replace(std::string_view input) {
+std::string pointer_replace(const std::string& input) {
     constexpr size_t kMaxHexDigits = sizeof(void*) * 2;
 
     std::string out;

@@ -1,5 +1,6 @@
 
 #include "derive-c/core/debug/fmt.h"
+#include "derive-c/core/debug/memory_tracker.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -115,23 +116,37 @@ TEST_F(OptionTests, GetOr) {
     optional_int_delete(&opt_some);
 }
 
-TEST_F(OptionTests, Debug) {
-    {
-        DC_SCOPED(optional_int) opt_some = optional_int_from(10);
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
-        optional_int_debug(&opt_some, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+TEST_F(OptionTests, DebugSome) {
+    DC_SCOPED(optional_int) opt_some = optional_int_from(10);
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
+    optional_int_debug(&opt_some, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
-        EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { 10 }",
-                  derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
-        EXPECT_CALL(*this, free_int_mock(_));
-    }
-
-    {
-        DC_SCOPED(optional_int) opt_none = optional_int_empty();
-        DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
-        optional_int_debug(&opt_none, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
-
-        EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { NONE }",
-                  derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
-    }
+    EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { 10 }",
+              derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
+    EXPECT_CALL(*this, free_int_mock(_));
 }
+
+TEST_F(OptionTests, DebugNone) {
+    DC_SCOPED(optional_int) opt_none = optional_int_empty();
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
+    optional_int_debug(&opt_none, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+    EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { NONE }",
+              derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
+}
+
+// TODO(oliverkilane): determine why this fails!!!
+// TEST(OptionTest, Foo) {
+//     dc_debug_string_builder sb_1 = dc_debug_string_builder_new(stdalloc_get_ref());
+//     std::cout << "str: " << dc_debug_string_builder_string(&sb_1) << "\n";
+//     EXPECT_EQ("o", dc_debug_string_builder_string(&sb_1));
+
+//     dc_debug_string_builder sb_2 = dc_debug_string_builder_new(stdalloc_get_ref());
+//     fprintf(dc_debug_string_builder_stream(&sb_2), "optional_int@0x7ffc151585d0 { NONE }");
+
+//     const char* x = dc_debug_string_builder_string(&sb_2);
+//     dc_memory_tracker_debug(stdout, x, 10);
+//     std::cout << "ptr" << &x[0] << "\n";
+
+//     dc_debug_string_builder_delete(&sb_2);
+//     dc_debug_string_builder_delete(&sb_1);
+// }

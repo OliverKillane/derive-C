@@ -68,7 +68,8 @@ static const dc_memory_tracker_level dc_memory_tracker_global_level =
 // JUSTIFY: Default as container
 //  - Library users assume correct library implementation, so expect tracking from the container
 //  level
-static const dc_memory_tracker_level memory_tracker_global_level = DC_MEMORY_TRACKER_LVL_CONTAINER;
+static const dc_memory_tracker_level dc_memory_tracker_global_level =
+    DC_MEMORY_TRACKER_LVL_CONTAINER;
 #endif
 
 static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
