@@ -121,7 +121,7 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
             DC_ASSUME(!entry->freed);
             entry->freed = true;
             NS(ALLOC, free)(self->alloc_ref, ptr);
-            break;
+            return;
         }
     }
     DC_UNREACHABLE("ptr was not present in the entries list");
