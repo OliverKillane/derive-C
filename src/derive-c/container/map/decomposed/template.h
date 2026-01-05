@@ -99,8 +99,8 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, NS(ALLOC, ref) allo
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
-    KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(alloc_ref, sizeof(KEY_ENTRY), real_capacity);
-    VALUE* values = (VALUE*)NS(ALLOC, malloc)(alloc_ref, sizeof(VALUE) * real_capacity);
+    KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, allocate_zeroed)(alloc_ref, sizeof(KEY_ENTRY) * real_capacity);
+    VALUE* values = (VALUE*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(VALUE) * real_capacity);
 
     // JUSTIFY: no access for values & but keys are fine
     // - Keys are calloced/zeroed as we use this for item lookup, therefore it is valid to read
@@ -135,8 +135,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
     //           - Many entries are zeroed, no need to copy uninit data
 
     KEY_ENTRY* keys =
-        (KEY_ENTRY*)NS(ALLOC, calloc)(self->alloc_ref, sizeof(KEY_ENTRY), self->capacity);
-    VALUE* values = (VALUE*)NS(ALLOC, malloc)(self->alloc_ref, sizeof(VALUE) * self->capacity);
+        (KEY_ENTRY*)NS(ALLOC, allocate_zeroed)(self->alloc_ref, sizeof(KEY_ENTRY) * self->capacity);
+    VALUE* values = (VALUE*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(VALUE) * self->capacity);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -234,8 +234,8 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
                                                               self->values[index]);
             }
         }
-        NS(ALLOC, free)(self->alloc_ref, (void*)self->keys);
-        NS(ALLOC, free)(self->alloc_ref, (void*)self->values);
+        NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->keys, self->capacity * sizeof(KEY_ENTRY));
+        NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->values, self->capacity * sizeof(VALUE));
 
         INVARIANT_CHECK(&new_map);
         *self = new_map;
@@ -453,8 +453,8 @@ static void NS(SELF, delete)(SELF* self) {
         }
     }
 
-    NS(ALLOC, free)(self->alloc_ref, (void*)self->keys);
-    NS(ALLOC, free)(self->alloc_ref, (void*)self->values);
+    NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->keys, self->capacity * sizeof(KEY_ENTRY));
+    NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->values, self->capacity * sizeof(VALUE));
 }
 
 #undef ITER

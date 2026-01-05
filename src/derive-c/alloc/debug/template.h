@@ -27,36 +27,35 @@ static SELF NS(SELF, new)(char const* name, FILE* stream, NS(ALLOC, ref) alloc_r
     };
 }
 
-static void* NS(SELF, malloc)(SELF* self, size_t size) {
+static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, malloc)(self->alloc_ref, size);
+    void* ptr = NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
     fprintf(self->stream, "[%s] %s(size=%zu) -> %p\n", self->name, __func__, size, ptr);
     return ptr;
 }
 
-static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
+static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, calloc)(self->alloc_ref, count, size);
-    fprintf(self->stream, "[%s] %s(count=%zu, size=%zu) -> %p\n", self->name, __func__, count, size,
-            ptr);
+    void* ptr = NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
+    fprintf(self->stream, "[%s] %s(size=%zu) -> %p\n", self->name, __func__, size, ptr);
     return ptr;
 }
 
-static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
+static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
     DC_ASSUME(self);
-    void* new_ptr = NS(ALLOC, realloc)(self->alloc_ref, ptr, size);
+    void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
     // JUSTIFY: Ignoring ptr used after free for clang static analyser
     //  - We only use the pointer's value in log, do not dereference it.
     // NOLINTBEGIN(clang-analyzer-unix.Malloc)
-    fprintf(self->stream, "[%s] %s(%p, %zu) -> %p\n", self->name, __func__, ptr, size, new_ptr);
+    fprintf(self->stream, "[%s] %s(ptr=%p, old_size=%zu, new_size=%zu) -> %p\n", self->name, __func__, ptr, old_size, new_size, new_ptr);
     // NOLINTEND(clang-analyzer-unix.Malloc)
     return new_ptr;
 }
 
-static void NS(SELF, free)(SELF* self, void* ptr) {
+static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
-    fprintf(self->stream, "[%s] %s(%p)\n", self->name, __func__, ptr);
-    NS(ALLOC, free)(self->alloc_ref, ptr);
+    fprintf(self->stream, "[%s] %s(ptr=%p, size=%zu)\n", self->name, __func__, ptr, size);
+    NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {

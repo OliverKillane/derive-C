@@ -22,19 +22,19 @@ typedef struct {
 
 static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) { return (SELF){.alloc_ref = alloc_ref}; }
 
-MOCKABLE(void*, NS(SELF, malloc), (SELF * self, size_t size)) {
-    return NS(ALLOC, malloc)(self->alloc_ref, size);
+MOCKABLE(void*, NS(SELF, allocate_uninit), (SELF * self, size_t size)) {
+    return NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
 }
 
-MOCKABLE(void*, NS(SELF, calloc), (SELF * self, size_t count, size_t size)) {
-    return NS(ALLOC, calloc)(self->alloc_ref, count, size);
+MOCKABLE(void*, NS(SELF, allocate_zeroed), (SELF * self, size_t size)) {
+    return NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
 }
 
-MOCKABLE(void*, NS(SELF, realloc), (SELF * self, void* ptr, size_t size)) {
-    return NS(ALLOC, realloc)(self->alloc_ref, ptr, size);
+MOCKABLE(void*, NS(SELF, reallocate), (SELF * self, void* ptr, size_t old_size, size_t new_size)) {
+    return NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
 }
 
-MOCKABLE(void, NS(SELF, free), (SELF * self, void* ptr)) { NS(ALLOC, free)(self->alloc_ref, ptr); }
+MOCKABLE(void, NS(SELF, deallocate), (SELF * self, void* ptr, size_t size)) { NS(ALLOC, deallocate)(self->alloc_ref, ptr, size); }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
@@ -50,10 +50,10 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, EXPAND_STRING(NS(SELF, name)) ": %s,\n",                       \
                        MOCKABLE_ENABLED(NS(SELF, name)) ? "enabled" : "disabled")
 
-    DEBUG_MOCK_TOGGLE(malloc);
-    DEBUG_MOCK_TOGGLE(calloc);
-    DEBUG_MOCK_TOGGLE(realloc);
-    DEBUG_MOCK_TOGGLE(free);
+    DEBUG_MOCK_TOGGLE(allocate_uninit);
+    DEBUG_MOCK_TOGGLE(allocate_zeroed);
+    DEBUG_MOCK_TOGGLE(reallocate);
+    DEBUG_MOCK_TOGGLE(deallocate);
 
 #undef DEBUG_MOCK_TOGGLE
 

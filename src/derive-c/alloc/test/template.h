@@ -27,12 +27,13 @@
 
 typedef struct {
     void* ptr;
+    size_t size;
     bool freed;
 } TRACKED_ENTRY;
 
 static void NS(TRACKED_ENTRY, debug)(TRACKED_ENTRY const* self, dc_debug_fmt /* fmt */,
                                      FILE* stream) {
-    fprintf(stream, "{ ptr: %p, state: %s }", self->ptr, self->freed ? "freed" : "alive");
+    fprintf(stream, "{ ptr: %p, size: %zu, state: %s }", self->ptr, self->size, self->freed ? "freed" : "alive");
 }
 
     #pragma push_macro("ALLOC")
@@ -72,47 +73,50 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 
     while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
         if (!entry->freed) {
-            NS(ALLOC, free)(self->alloc_ref, entry->ptr);
+            NS(ALLOC, deallocate)(self->alloc_ref, entry->ptr, entry->size);
         }
     }
 
     NS(SELF, delete)(self);
 }
 
-static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
+static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, calloc)(self->alloc_ref, count, size);
+    void* ptr = NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
     NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
                                                  .ptr = ptr,
+                                                 .size = size,
                                                  .freed = false,
                                              });
     return ptr;
 }
 
-static void* NS(SELF, malloc)(SELF* self, size_t size) {
+static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, malloc)(self->alloc_ref, size);
+    void* ptr = NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
     NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
                                                  .ptr = ptr,
+                                                 .size = size,
                                                  .freed = false,
                                              });
     return ptr;
 }
 
-static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
+static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
     FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
         if (entry->ptr == ptr) {
-            void* new_ptr = NS(ALLOC, realloc)(self->alloc_ref, ptr, size);
+            void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
             entry->ptr = new_ptr;
+            entry->size = new_size;
             return new_ptr;
         }
     }
     DC_UNREACHABLE("ptr was not present in the entries list");
 }
 
-static void NS(SELF, free)(SELF* self, void* ptr) {
+static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(ptr);
     DC_ASSUME(self);
 
@@ -120,7 +124,8 @@ static void NS(SELF, free)(SELF* self, void* ptr) {
         if (entry->ptr == ptr) {
             DC_ASSUME(!entry->freed);
             entry->freed = true;
-            NS(ALLOC, free)(self->alloc_ref, ptr);
+            DC_ASSERT(entry->size == size, "Allocation sizes must be equal");
+            NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
             return;
         }
     }

@@ -1,7 +1,6 @@
 /// @brief A vector storing the first N elements in-place, and optionally spilling additional
 /// elements to a heap vector.
 
-#include "derive-c/core/attributes.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"

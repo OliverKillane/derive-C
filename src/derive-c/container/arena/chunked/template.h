@@ -98,9 +98,9 @@ typedef struct {
 
 static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     PRIV(NS(SELF, block))* first_block =
-        (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(alloc_ref, sizeof(PRIV(NS(SELF, block))));
+        (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(PRIV(NS(SELF, block))));
     PRIV(NS(SELF, block))** blocks =
-        (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(alloc_ref, sizeof(PRIV(NS(SELF, block))*));
+        (PRIV(NS(SELF, block))**)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(PRIV(NS(SELF, block))*));
 
     blocks[0] = first_block;
 
@@ -146,11 +146,14 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         self->block_current++;
         self->block_current_exclusive_end = 0;
 
-        self->blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, realloc)(
-            self->alloc_ref, (void*)self->blocks,
-            (self->block_current + 1) * sizeof(PRIV(NS(SELF, block))*));
+        size_t blocks_current_size = self->block_current * sizeof(PRIV(NS(SELF, block))*);
+        size_t blocks_new_size = blocks_current_size + sizeof(PRIV(NS(SELF, block))*);
 
-        PRIV(NS(SELF, block))* new_block = (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(
+        self->blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, reallocate)(
+            self->alloc_ref, (void*)self->blocks,
+            blocks_current_size, blocks_new_size);
+
+        PRIV(NS(SELF, block))* new_block = (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(
             self->alloc_ref, sizeof(PRIV(NS(SELF, block))));
 
         self->blocks[self->block_current] = new_block;
@@ -209,11 +212,11 @@ static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
-    PRIV(NS(SELF, block))** blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, malloc)(
+    PRIV(NS(SELF, block))** blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, allocate_uninit)(
         self->alloc_ref, sizeof(PRIV(NS(SELF, block))*) * (self->block_current + 1));
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
-        blocks[b] = (PRIV(NS(SELF, block))*)NS(ALLOC, malloc)(self->alloc_ref,
+        blocks[b] = (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(self->alloc_ref,
                                                               sizeof(PRIV(NS(SELF, block))));
     }
 
@@ -380,9 +383,9 @@ static void NS(SELF, delete)(SELF* self) {
     }
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
-        NS(ALLOC, free)(self->alloc_ref, self->blocks[b]);
+        NS(ALLOC, deallocate)(self->alloc_ref, self->blocks[b], sizeof(PRIV(NS(SELF, block))));
     }
-    NS(ALLOC, free)(self->alloc_ref, (void*)self->blocks);
+    NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->blocks, self->block_current * sizeof(PRIV(NS(SELF, block))*));
 }
 
 #undef ITER_INVARIANT_CHECK

@@ -53,8 +53,8 @@ template <typename SutNS> void Test() {
 
     rc::state::check(
         model, sutWrapper,
-        rc::state::gen::execOneOfWithArgs<Malloc<SutNS>, Calloc<SutNS>, ReallocLarger<SutNS>,
-                                          ReallocSmaller<SutNS>, Free<SutNS>>());
+        rc::state::gen::execOneOfWithArgs<AllocateUninit<SutNS>, AllocateZeroed<SutNS>, ReallocateLarger<SutNS>,
+                                          ReallocateSmaller<SutNS>, Deallocate<SutNS>>());
 }
 
 // clang-format off

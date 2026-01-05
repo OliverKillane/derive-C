@@ -21,13 +21,14 @@
 using namespace testing;
 
 struct HybridStaticEmptyTests : Test {
-    FIXTURE_MOCK(HybridStaticEmptyTests, void*, mock_alloc_malloc, (mock_alloc * self, size_t size),
-                 ());
-    FIXTURE_MOCK(HybridStaticEmptyTests, void*, mock_alloc_calloc,
-                 (mock_alloc * self, size_t count, size_t size), ());
-    FIXTURE_MOCK(HybridStaticEmptyTests, void*, mock_alloc_realloc,
+    FIXTURE_MOCK(HybridStaticEmptyTests, void*, mock_alloc_allocate_uninit,
+                 (mock_alloc * self, size_t size), ());
+    FIXTURE_MOCK(HybridStaticEmptyTests, void*, mock_alloc_allocate_zeroed,
+                 (mock_alloc * self, size_t size), ());
+    FIXTURE_MOCK(HybridStaticEmptyTests, void*, mock_alloc_reallocate,
+                 (mock_alloc * self, void* ptr, size_t old_size, size_t new_size), ());
+    FIXTURE_MOCK(HybridStaticEmptyTests, void, mock_alloc_deallocate,
                  (mock_alloc * self, void* ptr, size_t size), ());
-    FIXTURE_MOCK(HybridStaticEmptyTests, void, mock_alloc_free, (mock_alloc * self, void* ptr), ());
 };
 
 TEST_F(HybridStaticEmptyTests, EmptyAllocator) {
@@ -37,8 +38,8 @@ TEST_F(HybridStaticEmptyTests, EmptyAllocator) {
 
     char mocked_allocation_storage[100] = {};
     void* mocked_allocation = mocked_allocation_storage;
-    EXPECT_CALL(*this, mock_alloc_malloc_mock(_, 100)).WillOnce(Return(mocked_allocation));
-    void* ptr1 = hybridstaticempty_malloc(&alloc, 100);
+    EXPECT_CALL(*this, mock_alloc_allocate_uninit_mock(_, 100)).WillOnce(Return(mocked_allocation));
+    void* ptr1 = hybridstaticempty_allocate_uninit(&alloc, 100);
     EXPECT_EQ(ptr1, mocked_allocation);
 }
 
@@ -51,9 +52,9 @@ TEST(HybridStaticTests, Debug) {
     hybridstatic_buffer buf;
     DC_SCOPED(hybridstatic) alloc = hybridstatic_new(&buf, stdalloc_get_ref());
 
-    void* ptr1 = hybridstatic_malloc(&alloc, 10);
-    void* ptr2 = hybridstatic_calloc(&alloc, 1, 5);
-    void* ptr3 = hybridstatic_malloc(&alloc, 15);
+    void* ptr1 = hybridstatic_allocate_uninit(&alloc, 10);
+    void* ptr2 = hybridstatic_allocate_zeroed(&alloc, 5);
+    void* ptr3 = hybridstatic_allocate_uninit(&alloc, 15);
 
     DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
     hybridstatic_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
@@ -69,7 +70,7 @@ TEST(HybridStaticTests, Debug) {
         // clang-format on
         derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
 
-    hybridstatic_free(&alloc, ptr1);
-    hybridstatic_free(&alloc, ptr2);
-    hybridstatic_free(&alloc, ptr3);
+    hybridstatic_deallocate(&alloc, ptr1, 10);
+    hybridstatic_deallocate(&alloc, ptr2, 5);
+    hybridstatic_deallocate(&alloc, ptr3, 15);
 }

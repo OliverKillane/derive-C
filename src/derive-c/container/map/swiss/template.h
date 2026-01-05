@@ -104,8 +104,8 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, r
     size_t ctrl_capacity = capacity + DC_SWISS_SIMD_PROBE_SIZE;
 
     dc_swiss_ctrl* ctrl =
-        (dc_swiss_ctrl*)NS(ALLOC, calloc)(alloc_ref, sizeof(dc_swiss_ctrl), ctrl_capacity);
-    SLOT* slots = (SLOT*)NS(ALLOC, malloc)(alloc_ref, sizeof(SLOT) * capacity);
+        (dc_swiss_ctrl*)NS(ALLOC, allocate_zeroed)(alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    SLOT* slots = (SLOT*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(SLOT) * capacity);
 
     for (size_t i = 0; i < capacity; i++) {
         ctrl[i] = DC_SWISS_VAL_EMPTY;
@@ -143,8 +143,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
     size_t ctrl_capacity = self->capacity + DC_SWISS_SIMD_PROBE_SIZE;
 
     dc_swiss_ctrl* ctrl =
-        (dc_swiss_ctrl*)NS(ALLOC, malloc)(self->alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
-    SLOT* slots = (SLOT*)NS(ALLOC, malloc)(self->alloc_ref, sizeof(SLOT) * self->capacity);
+        (dc_swiss_ctrl*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    SLOT* slots = (SLOT*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(SLOT) * self->capacity);
 
     memcpy(ctrl, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
 
@@ -250,8 +250,9 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
 
     new_map.iterator_invalidation_tracker = self->iterator_invalidation_tracker;
 
-    NS(ALLOC, free)(self->alloc_ref, self->ctrl);
-    NS(ALLOC, free)(self->alloc_ref, self->slots);
+    size_t ctrl_capacity = self->capacity + DC_SWISS_SIMD_PROBE_SIZE;
+    NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->slots, sizeof(SLOT) * self->capacity);
 
     *self = new_map;
 }
@@ -423,15 +424,16 @@ static void PRIV(NS(SELF, next_populated_index))(SELF const* self, dc_swiss_opti
 }
 
 static void NS(SELF, delete)(SELF* self) {
-
     for (size_t i = 0; i < self->capacity; i++) {
         if (dc_swiss_is_present(self->ctrl[i])) {
             KEY_DELETE(&self->slots[i].key);
             VALUE_DELETE(&self->slots[i].value);
         }
     }
-    NS(ALLOC, free)(self->alloc_ref, self->ctrl);
-    NS(ALLOC, free)(self->alloc_ref, self->slots);
+
+    size_t ctrl_capacity = self->capacity + DC_SWISS_SIMD_PROBE_SIZE;
+    NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->slots, sizeof(SLOT) * self->capacity);
 }
 
 #define ITER_CONST NS(SELF, iter_const)

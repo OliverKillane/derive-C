@@ -97,7 +97,7 @@ static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, NS(ALLOC, ref) all
     DC_ASSERT(items > 0);
     size_t capacity = dc_math_next_power_of_2(items);
     DC_ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
-    SLOT* slots = (SLOT*)NS(ALLOC, calloc)(alloc_ref, capacity, sizeof(SLOT));
+    SLOT* slots = (SLOT*)NS(ALLOC, allocate_zeroed)(alloc_ref, capacity * sizeof(SLOT));
 
     for (INDEX_TYPE index = 0; index < capacity; index++) {
         NS(SLOT, memory_tracker_empty)(&slots[index]);
@@ -134,9 +134,10 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
 
     if (self->exclusive_end == self->capacity) {
         DC_ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR));
+        size_t old_size = self->capacity * sizeof(SLOT);
         self->capacity *= RESIZE_FACTOR;
         SLOT* new_alloc =
-            (SLOT*)NS(ALLOC, realloc)(self->alloc_ref, self->slots, self->capacity * sizeof(SLOT));
+            (SLOT*)NS(ALLOC, reallocate)(self->alloc_ref, self->slots, old_size, self->capacity * sizeof(SLOT));
         self->slots = new_alloc;
 
         for (size_t index = self->exclusive_end; index < self->capacity; index++) {
@@ -191,7 +192,7 @@ static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
 
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
-    SLOT* slots = (SLOT*)NS(ALLOC, calloc)(self->alloc_ref, self->capacity, sizeof(SLOT));
+    SLOT* slots = (SLOT*)NS(ALLOC, allocate_zeroed)(self->alloc_ref, self->capacity * sizeof(SLOT));
 
     for (INDEX_TYPE index = 0; index < self->exclusive_end; index++) {
         NS(SLOT, clone_from)(&self->slots[index], &slots[index]);
@@ -336,7 +337,7 @@ static void NS(SELF, delete)(SELF* self) {
         VALUE_DELETE(entry.value);
     }
 
-    NS(ALLOC, free)(self->alloc_ref, self->slots);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->slots, self->capacity * sizeof(SLOT));
 }
 
 #undef ITER

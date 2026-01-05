@@ -2,6 +2,10 @@
 /// - Useful for reducing allocation overhead when the expected number of allocations is known.
 /// - Once the static allocation is exhausted, it uses the fallback allocator.
 
+// TODO(oliverkillane): This allocator stores the size of the allocation.
+//  - This is unecessary, assuming correct old_sizes are provided.
+//  - It is possible to remove this, and we should for a more optimal allocator
+
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -79,7 +83,7 @@ static SELF NS(SELF, new)(NS(SELF, buffer) * buffer, NS(ALLOC, ref) alloc_ref) {
     return self;
 }
 
-static void* PRIV(NS(SELF, static_calloc))(SELF* self, size_t size) {
+static void* PRIV(NS(SELF, static_allocate_zeroed))(SELF* self, size_t size) {
     DC_ASSUME(self);
     DC_ASSERT(size > 0);
 
@@ -105,16 +109,16 @@ static void* PRIV(NS(SELF, static_calloc))(SELF* self, size_t size) {
     return allocation_ptr;
 }
 
-static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
-    void* allocation_ptr = PRIV(NS(SELF, static_calloc))(self, count * size);
+static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
+    void* allocation_ptr = PRIV(NS(SELF, static_allocate_zeroed))(self, size);
     if (allocation_ptr == NULL) {
-        return NS(ALLOC, calloc)(self->alloc_ref, count, size);
+        return NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
     }
     return allocation_ptr;
 }
 
-static void* PRIV(NS(SELF, static_malloc))(SELF* self, size_t size) {
-    void* allocation_ptr = PRIV(NS(SELF, static_calloc))(self, size);
+static void* PRIV(NS(SELF, static_allocate_uninit))(SELF* self, size_t size) {
+    void* allocation_ptr = PRIV(NS(SELF, static_allocate_zeroed))(self, size);
 
     if (allocation_ptr) {
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
@@ -124,20 +128,20 @@ static void* PRIV(NS(SELF, static_malloc))(SELF* self, size_t size) {
     return allocation_ptr;
 }
 
-static void* NS(SELF, malloc)(SELF* self, size_t size) {
+static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
 
-    void* statically_allocated = PRIV(NS(SELF, static_malloc))(self, size);
+    void* statically_allocated = PRIV(NS(SELF, static_allocate_uninit))(self, size);
 
     if (statically_allocated == NULL) {
-        return NS(ALLOC, malloc)(self->alloc_ref, size);
+        return NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
     }
 
     return statically_allocated;
 }
 
-static void PRIV(NS(SELF, static_free))(SELF* self, void* ptr) {
+static void PRIV(NS(SELF, static_deallocate))(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
 
@@ -145,6 +149,7 @@ static void PRIV(NS(SELF, static_free))(SELF* self, void* ptr) {
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, used_ptr,
                           sizeof(USED));
     USED old_size_value = PRIV(NS(SELF, read_used))(used_ptr);
+    DC_ASSERT(size == old_size_value, "size must match that originally allocated");
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr,
                           old_size_value);
     USED zero = 0;
@@ -153,23 +158,24 @@ static void PRIV(NS(SELF, static_free))(SELF* self, void* ptr) {
                           sizeof(USED));
 }
 
-static void NS(SELF, free)(SELF* self, void* ptr) {
+static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
 
     if (PRIV(NS(SELF, contains_ptr))(self, ptr)) {
-        PRIV(NS(SELF, static_free))(self, ptr);
+        PRIV(NS(SELF, static_deallocate))(self, ptr, size);
     } else {
-        NS(ALLOC, free)(self->alloc_ref, ptr);
+        NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
     }
 }
 
-static void* PRIV(NS(SELF, static_realloc))(SELF* self, void* ptr, size_t new_size) {
+static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, size_t old_size, size_t new_size) {
     char* byte_ptr = (char*)ptr;
     USED* old_size_ptr = (USED*)(byte_ptr - sizeof(USED));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
                           old_size_ptr, sizeof(USED));
     USED old_size_value = PRIV(NS(SELF, read_used))(old_size_ptr);
+    DC_ASSUME(old_size_value == old_size, "Realloc old size does not match original size");
 
     if (new_size == old_size_value) {
         return ptr;
@@ -219,26 +225,26 @@ static void* PRIV(NS(SELF, static_realloc))(SELF* self, void* ptr, size_t new_si
     // JUSTIFY: Not using `static_` methods for the new buffer.
     //  - We may be out of room in the static buffer, so we also need to optionally use the backup
     //  allocator.
-    void* new_buff = NS(SELF, malloc)(self, new_size);
+    void* new_buff = NS(SELF, allocate_uninit)(self, new_size);
     memcpy(new_buff, ptr, old_size_value);
 
-    PRIV(NS(SELF, static_free))(self, ptr);
+    PRIV(NS(SELF, static_deallocate))(self, ptr, old_size_value);
     return new_buff;
 }
 
-static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t new_size) {
+static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
     DC_ASSUME(self);
     DC_ASSERT(new_size > 0, "Cannot allocate zero sized");
 
     if (!ptr) {
-        return NS(SELF, malloc)(self, new_size);
+        return NS(SELF, allocate_uninit)(self, new_size);
     }
 
     if (!PRIV(NS(SELF, contains_ptr))(self, ptr)) {
-        return NS(ALLOC, realloc)(self->alloc_ref, ptr, new_size);
+        return NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
     }
 
-    return PRIV(NS(SELF, static_realloc))(self, ptr, new_size);
+    return PRIV(NS(SELF, static_reallocate))(self, ptr, old_size, new_size);
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {

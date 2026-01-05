@@ -191,7 +191,7 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, r
     DC_ASSUME(capacity > 0);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
 
-    BUCKET* buckets = (BUCKET*)NS(ALLOC, calloc)(alloc_ref, capacity, sizeof(BUCKET));
+    BUCKET* buckets = (BUCKET*)NS(ALLOC, allocate_zeroed)(alloc_ref, capacity * sizeof(BUCKET));
 
     return (SELF){
         .buckets_capacity = capacity,
@@ -214,8 +214,8 @@ static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
-    BUCKET* new_buckets =
-        (BUCKET*)NS(ALLOC, malloc)(self->alloc_ref, self->buckets_capacity * sizeof(BUCKET));
+    BUCKET* new_buckets = (BUCKET*)NS(ALLOC, allocate_uninit)(
+        self->alloc_ref, self->buckets_capacity * sizeof(BUCKET));
     memcpy(new_buckets, self->buckets, self->buckets_capacity * sizeof(BUCKET));
 
     return (SELF){
@@ -300,7 +300,8 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(new_capacity));
 
-    BUCKET* new_buckets = (BUCKET*)NS(ALLOC, calloc)(self->alloc_ref, new_capacity, sizeof(BUCKET));
+    BUCKET* new_buckets =
+        (BUCKET*)NS(ALLOC, allocate_zeroed)(self->alloc_ref, new_capacity * sizeof(BUCKET));
 
     const size_t new_mask = new_capacity - 1;
     const size_t n = NS(SLOT_VECTOR, size)(&self->slots);
@@ -337,7 +338,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
         }
     }
 
-    NS(ALLOC, free)(self->alloc_ref, self->buckets);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->buckets, self->buckets_capacity * sizeof(BUCKET));
     self->buckets = new_buckets;
     self->buckets_capacity = new_capacity;
 }
@@ -550,7 +551,7 @@ static size_t NS(SELF, size)(SELF const* self) {
 static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
 
-    NS(ALLOC, free)(self->alloc_ref, self->buckets);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->buckets, self->buckets_capacity * sizeof(BUCKET));
     NS(SLOT_VECTOR, delete)(&self->slots);
 }
 

@@ -76,7 +76,7 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, NS(ALLOC, ref) 
     }
     size_t const capacity = dc_math_next_power_of_2(capacity_for);
     DC_ASSERT(DC_MATH_IS_POWER_OF_2(capacity));
-    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc_ref, capacity * sizeof(ITEM));
+    ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(alloc_ref, capacity * sizeof(ITEM));
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, data,
                           capacity * sizeof(ITEM));
@@ -141,8 +141,15 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
         // state for memory that is inaccessible
         PRIV(NS(SELF, set_inaccessible_memory_caps))(self, DC_MEMORY_TRACKER_CAP_WRITE);
 
-        ITEM* new_data =
-            (ITEM*)NS(ALLOC, realloc)(self->alloc_ref, self->data, new_capacity * sizeof(ITEM));
+        ITEM* new_data;
+        if (self->data == NULL) {
+            new_data =
+                (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, new_capacity * sizeof(ITEM));
+        } else {
+            new_data = (ITEM*)NS(ALLOC, reallocate)(self->alloc_ref, self->data,
+                                                    self->capacity * sizeof(ITEM),
+                                                    new_capacity * sizeof(ITEM));
+        }
 
         if (self->head > self->tail) {
             // The queue wraps at the old end, so we need to either:
@@ -326,9 +333,10 @@ static void NS(SELF, delete)(SELF* self) {
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, item,
                                   sizeof(ITEM));
         }
+        size_t const size = self->capacity * sizeof(ITEM);
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
-                              self->data, self->capacity * sizeof(ITEM));
-        NS(ALLOC, free)(self->alloc_ref, self->data);
+                              self->data, size);
+        NS(ALLOC, deallocate)(self->alloc_ref, self->data, size);
     }
 }
 
@@ -380,7 +388,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     if (old_size > 0) {
         new_capacity = dc_math_next_power_of_2(old_size);
-        new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc_ref, new_capacity * sizeof(ITEM));
+        new_data = (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, new_capacity * sizeof(ITEM));
 
         ITER_CONST iter = NS(SELF, get_iter_const)(self);
         ITEM const* item;

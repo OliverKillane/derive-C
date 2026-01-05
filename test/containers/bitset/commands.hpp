@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rapidcheck/gen/Arbitrary.h"
 #include <limits>
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>

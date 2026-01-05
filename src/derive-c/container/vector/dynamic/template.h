@@ -1,7 +1,5 @@
 /// @brief A simple vector
 
-#include "derive-c/core/attributes.h"
-#include "derive-c/core/panic.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -74,7 +72,7 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, NS(ALLOC, ref) alloc_re
         return NS(SELF, new)(alloc_ref);
     }
 
-    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc_ref, capacity * sizeof(ITEM));
+    ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(alloc_ref, capacity * sizeof(ITEM));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, data,
                           capacity * sizeof(ITEM));
     return (SELF){
@@ -88,7 +86,7 @@ static SELF NS(SELF, new_with_capacity)(size_t capacity, NS(ALLOC, ref) alloc_re
 }
 
 static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, NS(ALLOC, ref) alloc_ref) {
-    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc_ref, size * sizeof(ITEM));
+    ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(alloc_ref, size * sizeof(ITEM));
     if (size > 0) {
         // JUSTIFY: We only need to copy size-1 entries - can move the first as default.
         data[0] = default_item;
@@ -112,7 +110,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
         if (self->data == NULL) {
             DC_ASSUME(self->capacity == 0);
 
-            ITEM* new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc_ref, new_capacity * sizeof(ITEM));
+            ITEM* new_data = (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, new_capacity * sizeof(ITEM));
             self->data = new_data;
             self->capacity = new_capacity;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
@@ -123,9 +121,11 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
                                   &self->data[self->size], uninit_elements * sizeof(ITEM));
-
+            
+            size_t old_size = self->capacity * sizeof(ITEM);
+            size_t new_size = new_capacity * sizeof(ITEM);
             ITEM* new_data =
-                (ITEM*)NS(ALLOC, realloc)(self->alloc_ref, self->data, new_capacity * sizeof(ITEM));
+                (ITEM*)NS(ALLOC, reallocate)(self->alloc_ref, self->data, old_size, new_size);
 
             self->data = new_data;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
@@ -138,7 +138,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
-    ITEM* data = (ITEM*)NS(ALLOC, malloc)(self->alloc_ref, self->capacity * sizeof(ITEM));
+    ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, self->capacity * sizeof(ITEM));
 
     for (size_t index = 0; index < self->size; index++) {
         data[index] = ITEM_CLONE(&self->data[index]);
@@ -313,9 +313,10 @@ static void NS(SELF, delete)(SELF* self) {
 
         // JUSTIFY: Return to write level before passing to allocator
         //  - Is uninitialised, but still valid memory
+        size_t const size = self->capacity * sizeof(ITEM);
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
-                              self->data, self->capacity * sizeof(ITEM));
-        NS(ALLOC, free)(self->alloc_ref, self->data);
+                              self->data, size);
+        NS(ALLOC, deallocate)(self->alloc_ref, self->data, size);
     }
 }
 

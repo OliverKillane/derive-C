@@ -127,7 +127,7 @@ static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     size_t initial_block_items =
         DC_ARENA_GEO_BLOCK_TO_SIZE(initial_block, INITIAL_BLOCK_INDEX_BITS);
     SLOT* initial_block_slots =
-        (SLOT*)NS(ALLOC, malloc)(alloc_ref, initial_block_items * sizeof(SLOT));
+        (SLOT*)NS(ALLOC, allocate_uninit)(alloc_ref, initial_block_items * sizeof(SLOT));
 
     SELF self = {
         .free_list = INDEX_NONE,
@@ -176,7 +176,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         self->block_current++;
         size_t block_items =
             DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS);
-        SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc_ref, block_items * sizeof(SLOT));
+        SLOT* block_slots = (SLOT*)NS(ALLOC, allocate_uninit)(self->alloc_ref, block_items * sizeof(SLOT));
 
         self->blocks[self->block_current] = block_slots;
         self->block_current_exclusive_end = 0;
@@ -250,7 +250,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     for (size_t block_index = 0; block_index <= self->block_current; block_index++) {
         size_t block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
-        SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc_ref, block_items * sizeof(SLOT));
+        SLOT* block_slots = (SLOT*)NS(ALLOC, allocate_uninit)(self->alloc_ref, block_items * sizeof(SLOT));
         new_self.blocks[block_index] = block_slots;
 
         size_t const to_offset =
@@ -317,10 +317,11 @@ static void NS(SELF, delete)(SELF* self) {
             }
         }
 
+        size_t block_size = DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS) * sizeof(SLOT);
         dc_memory_tracker_set(
             DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE, self->blocks[block],
-            DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS) * sizeof(SLOT));
-        NS(ALLOC, free)(self->alloc_ref, self->blocks[block]);
+            block_size);
+        NS(ALLOC, deallocate)(self->alloc_ref, self->blocks[block], block_size);
     }
 }
 

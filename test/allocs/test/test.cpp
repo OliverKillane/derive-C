@@ -13,7 +13,7 @@
 
 namespace {
 void allocate_and_throw(testalloc* alloc) {
-    void* a = testalloc_malloc(alloc, 10000000);
+    void* a = testalloc_allocate_uninit(alloc, 10000000);
     ((int*)a)[12] = 42;
     DC_PANIC("problem!");
 }
@@ -50,9 +50,9 @@ TEST(TestAlloc, DebugAllocations) {
         EXPECT_EQ(debug_string, debug_string_expected);
     }
 
-    void* ptr1 = testalloc_malloc(&alloc, 10);
-    void* ptr2 = testalloc_calloc(&alloc, 10, 30);
-    void* ptr3 = testalloc_malloc(&alloc, 1);
+    void* ptr1 = testalloc_allocate_uninit(&alloc, 10);
+    void* ptr2 = testalloc_allocate_zeroed(&alloc, 300);
+    void* ptr3 = testalloc_allocate_uninit(&alloc, 1);
 
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
@@ -67,9 +67,9 @@ TEST(TestAlloc, DebugAllocations) {
             "    capacity: 8,\n"
             "    alloc: stdalloc@%p { },\n"
             "    items: @%p [\n"
-            "      { ptr: %p, state: alive },\n"
-            "      { ptr: %p, state: alive },\n"
-            "      { ptr: %p, state: alive },\n"
+            "      { ptr: %p, size: 10, state: alive },\n"
+            "      { ptr: %p, size: 300, state: alive },\n"
+            "      { ptr: %p, size: 1, state: alive },\n"
             "    ],\n"
             "  }\n"
             "}",
@@ -80,9 +80,9 @@ TEST(TestAlloc, DebugAllocations) {
         EXPECT_EQ(debug_string, debug_string_expected);
     }
 
-    testalloc_free(&alloc, ptr1);
-    testalloc_free(&alloc, ptr2);
-    testalloc_free(&alloc, ptr3);
+    testalloc_deallocate(&alloc, ptr1, 10);
+    testalloc_deallocate(&alloc, ptr2, 300);
+    testalloc_deallocate(&alloc, ptr3, 1);
 
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
@@ -97,9 +97,9 @@ TEST(TestAlloc, DebugAllocations) {
             "    capacity: 8,\n"
             "    alloc: stdalloc@%p { },\n"
             "    items: @%p [\n"
-            "      { ptr: %p, state: freed },\n"
-            "      { ptr: %p, state: freed },\n"
-            "      { ptr: %p, state: freed },\n"
+            "      { ptr: %p, size: 10, state: freed },\n"
+            "      { ptr: %p, size: 300, state: freed },\n"
+            "      { ptr: %p, size: 1, state: freed },\n"
             "    ],\n"
             "  }\n"
             "}",
