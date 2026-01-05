@@ -110,7 +110,8 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
         if (self->data == NULL) {
             DC_ASSUME(self->capacity == 0);
 
-            ITEM* new_data = (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, new_capacity * sizeof(ITEM));
+            ITEM* new_data =
+                (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, new_capacity * sizeof(ITEM));
             self->data = new_data;
             self->capacity = new_capacity;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
@@ -121,7 +122,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
                                   &self->data[self->size], uninit_elements * sizeof(ITEM));
-            
+
             size_t old_size = self->capacity * sizeof(ITEM);
             size_t new_size = new_capacity * sizeof(ITEM);
             ITEM* new_data =

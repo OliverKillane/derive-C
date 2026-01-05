@@ -8,6 +8,7 @@
 
 #include <derive-c/alloc/trait.h>
 #include <derive-c/core/prelude.h>
+#include <derive-c/core/debug/memory_tracker.h>
 
 DC_ZERO_SIZED(stdalloc);
 static stdalloc stdalloc_instance = {};
@@ -32,6 +33,16 @@ static void* NS(stdalloc, reallocate)(stdalloc_ref /* ref */, void* ptr, size_t 
     DC_ASSERT(new_size > 0, "Cannot allocate zero sized");
     DC_ASSERT(ptr, "Cannot reallocate a null pointer");
     DC_ASSUME(old_size > 0, "Could never have allocated zero sized");
+
+    if (new_size < old_size) {
+        // JUSTIFY: We poison the memory we will no longer use.
+        //  - When reallocating by reducing allocation size, msan does not automatically poison the
+        //    bytes that are no longer part of the allocation
+        //  - We need this in order to pass alloc fuzz tests: we want the strong property that
+        //  deallocate memory is poisoned.
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
+                              (char const*)ptr + new_size, old_size - new_size);
+    }
 
     void* new_ptr = realloc(ptr, new_size);
     DC_ASSERT(new_ptr != NULL, "Standard allocator failed to realloc");

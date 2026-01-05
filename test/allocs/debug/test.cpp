@@ -115,7 +115,8 @@ TEST_F(DebugAllocMocked, DebugLogging) {
             "[test] debug_alloc_deallocate(ptr=%p, size=5)\n"
             "[test] debug_alloc_deallocate(ptr=%p, size=15)\n"
         // clang-format on
-        ,&mocked_alloc, ptr1, ptr2, ptr1, ptr3, ptr2, ptr3);
+        ,
+        &mocked_alloc, ptr1, ptr2, ptr1, ptr3, ptr2, ptr3);
     std::string debug_log = dc_debug_string_builder_string(&sb);
 
     EXPECT_EQ(debug_log, debug_log_expected);

@@ -169,7 +169,8 @@ static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     }
 }
 
-static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, size_t old_size, size_t new_size) {
+static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, size_t old_size,
+                                               size_t new_size) {
     char* byte_ptr = (char*)ptr;
     USED* old_size_ptr = (USED*)(byte_ptr - sizeof(USED));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,

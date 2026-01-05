@@ -25,8 +25,9 @@ RC_GTEST_PROP(AllocTest, Fuzz, ()) {
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new("test", stream, stdalloc_get_ref()));
     rc::state::check(
         model, sutWrapper,
-        rc::state::gen::execOneOfWithArgs<AllocateUninit<SutNS>, AllocateZeroed<SutNS>, ReallocateLarger<SutNS>,
-                                          ReallocateSmaller<SutNS>, Deallocate<SutNS>>());
+        rc::state::gen::execOneOfWithArgs<AllocateUninit<SutNS>, AllocateZeroed<SutNS>,
+                                          ReallocateLarger<SutNS>, ReallocateSmaller<SutNS>,
+                                          Deallocate<SutNS>>());
     fclose(stream);
 }
 } // namespace

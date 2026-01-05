@@ -97,10 +97,10 @@ typedef struct {
               "All slots are full if the free list is empty");
 
 static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
-    PRIV(NS(SELF, block))* first_block =
-        (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(PRIV(NS(SELF, block))));
-    PRIV(NS(SELF, block))** blocks =
-        (PRIV(NS(SELF, block))**)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(PRIV(NS(SELF, block))*));
+    PRIV(NS(SELF, block))* first_block = (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(
+        alloc_ref, sizeof(PRIV(NS(SELF, block))));
+    PRIV(NS(SELF, block))** blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, allocate_uninit)(
+        alloc_ref, sizeof(PRIV(NS(SELF, block))*));
 
     blocks[0] = first_block;
 
@@ -150,8 +150,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         size_t blocks_new_size = blocks_current_size + sizeof(PRIV(NS(SELF, block))*);
 
         self->blocks = (PRIV(NS(SELF, block))**)NS(ALLOC, reallocate)(
-            self->alloc_ref, (void*)self->blocks,
-            blocks_current_size, blocks_new_size);
+            self->alloc_ref, (void*)self->blocks, blocks_current_size, blocks_new_size);
 
         PRIV(NS(SELF, block))* new_block = (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(
             self->alloc_ref, sizeof(PRIV(NS(SELF, block))));
@@ -216,8 +215,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
         self->alloc_ref, sizeof(PRIV(NS(SELF, block))*) * (self->block_current + 1));
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
-        blocks[b] = (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(self->alloc_ref,
-                                                              sizeof(PRIV(NS(SELF, block))));
+        blocks[b] = (PRIV(NS(SELF, block))*)NS(ALLOC, allocate_uninit)(
+            self->alloc_ref, sizeof(PRIV(NS(SELF, block))));
     }
 
     for (INDEX_TYPE b = 0; b < self->block_current; b++) {
@@ -385,7 +384,8 @@ static void NS(SELF, delete)(SELF* self) {
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
         NS(ALLOC, deallocate)(self->alloc_ref, self->blocks[b], sizeof(PRIV(NS(SELF, block))));
     }
-    NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->blocks, self->block_current * sizeof(PRIV(NS(SELF, block))*));
+    NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->blocks,
+                          self->block_current * sizeof(PRIV(NS(SELF, block))*));
 }
 
 #undef ITER_INVARIANT_CHECK

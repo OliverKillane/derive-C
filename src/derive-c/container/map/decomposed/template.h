@@ -99,7 +99,8 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, NS(ALLOC, ref) allo
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
-    KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, allocate_zeroed)(alloc_ref, sizeof(KEY_ENTRY) * real_capacity);
+    KEY_ENTRY* keys =
+        (KEY_ENTRY*)NS(ALLOC, allocate_zeroed)(alloc_ref, sizeof(KEY_ENTRY) * real_capacity);
     VALUE* values = (VALUE*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(VALUE) * real_capacity);
 
     // JUSTIFY: no access for values & but keys are fine
@@ -136,7 +137,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     KEY_ENTRY* keys =
         (KEY_ENTRY*)NS(ALLOC, allocate_zeroed)(self->alloc_ref, sizeof(KEY_ENTRY) * self->capacity);
-    VALUE* values = (VALUE*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(VALUE) * self->capacity);
+    VALUE* values =
+        (VALUE*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(VALUE) * self->capacity);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -234,7 +236,8 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
                                                               self->values[index]);
             }
         }
-        NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->keys, self->capacity * sizeof(KEY_ENTRY));
+        NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->keys,
+                              self->capacity * sizeof(KEY_ENTRY));
         NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->values, self->capacity * sizeof(VALUE));
 
         INVARIANT_CHECK(&new_map);

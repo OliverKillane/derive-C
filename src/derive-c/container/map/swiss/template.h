@@ -103,8 +103,8 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, r
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
     size_t ctrl_capacity = capacity + DC_SWISS_SIMD_PROBE_SIZE;
 
-    dc_swiss_ctrl* ctrl =
-        (dc_swiss_ctrl*)NS(ALLOC, allocate_zeroed)(alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    dc_swiss_ctrl* ctrl = (dc_swiss_ctrl*)NS(ALLOC, allocate_zeroed)(
+        alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(SLOT) * capacity);
 
     for (size_t i = 0; i < capacity; i++) {
@@ -142,8 +142,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     size_t ctrl_capacity = self->capacity + DC_SWISS_SIMD_PROBE_SIZE;
 
-    dc_swiss_ctrl* ctrl =
-        (dc_swiss_ctrl*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    dc_swiss_ctrl* ctrl = (dc_swiss_ctrl*)NS(ALLOC, allocate_uninit)(
+        self->alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(SLOT) * self->capacity);
 
     memcpy(ctrl, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);

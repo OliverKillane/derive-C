@@ -33,7 +33,8 @@ typedef struct {
 
 static void NS(TRACKED_ENTRY, debug)(TRACKED_ENTRY const* self, dc_debug_fmt /* fmt */,
                                      FILE* stream) {
-    fprintf(stream, "{ ptr: %p, size: %zu, state: %s }", self->ptr, self->size, self->freed ? "freed" : "alive");
+    fprintf(stream, "{ ptr: %p, size: %zu, state: %s }", self->ptr, self->size,
+            self->freed ? "freed" : "alive");
 }
 
     #pragma push_macro("ALLOC")

@@ -52,7 +52,8 @@ static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t siz
             size_t const growth_factor = 2;
             new_capacity =
                 (self->capacity * growth_factor) + size + NS(SELF, additional_alloc_size);
-            new_buf = (char*)NS(ALLOC, reallocate)(self->alloc_ref, self->buf, self->capacity, new_capacity);
+            new_buf = (char*)NS(ALLOC, reallocate)(self->alloc_ref, self->buf, self->capacity,
+                                                   new_capacity);
         } else {
             DC_ASSUME(self->capacity == 0);
             new_capacity = size + 1 + NS(SELF, additional_alloc_size);

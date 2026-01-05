@@ -136,8 +136,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         DC_ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR));
         size_t old_size = self->capacity * sizeof(SLOT);
         self->capacity *= RESIZE_FACTOR;
-        SLOT* new_alloc =
-            (SLOT*)NS(ALLOC, reallocate)(self->alloc_ref, self->slots, old_size, self->capacity * sizeof(SLOT));
+        SLOT* new_alloc = (SLOT*)NS(ALLOC, reallocate)(self->alloc_ref, self->slots, old_size,
+                                                       self->capacity * sizeof(SLOT));
         self->slots = new_alloc;
 
         for (size_t index = self->exclusive_end; index < self->capacity; index++) {

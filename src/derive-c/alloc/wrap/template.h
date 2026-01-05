@@ -34,7 +34,9 @@ MOCKABLE(void*, NS(SELF, reallocate), (SELF * self, void* ptr, size_t old_size, 
     return NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
 }
 
-MOCKABLE(void, NS(SELF, deallocate), (SELF * self, void* ptr, size_t size)) { NS(ALLOC, deallocate)(self->alloc_ref, ptr, size); }
+MOCKABLE(void, NS(SELF, deallocate), (SELF * self, void* ptr, size_t size)) {
+    NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
+}
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
