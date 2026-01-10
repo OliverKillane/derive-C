@@ -37,7 +37,7 @@ def generate_settings(config: Config) -> None:
 
     # Add test explorer settings
     settings["cmake.ctest.testSuiteDelimiter"] = "/"
-    settings["cmake.ctest.allowParallelJobs"] = "true"
+    settings["cmake.ctest.allowParallelJobs"] = True
     settings["cmake.generator"] = "Ninja"
     settings["cmake.buildDirectory"] = r"${workspaceFolder}/build"
 

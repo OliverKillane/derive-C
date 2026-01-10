@@ -12,4 +12,4 @@
 #include <derive-c/utils/for.h>                   // IWYU pragma: export
 
 // [DERIVE-C] used template includes
-#include <derive-c/container/vector/dynamic/includes.h> // IWYU pragma: export
+#include <derive-c/container/map/swiss/includes.h> // IWYU pragma: export

@@ -8,7 +8,6 @@
 /// As this is entirely C, we do not get the niceties of a C++ RAII allocator guard shebang.
 /// However, this is usable inside unit tests written in C.
 
-#include "derive-c/core/panic.h"
 #ifdef NDEBUG
     #include <derive-c/alloc/wrap/template.h>
 #else
@@ -22,127 +21,85 @@
     #include <derive-c/core/self/def.h>
 
     #include <derive-c/alloc/std.h>
-    #define ENTRIES_VECTOR NS(NAME, entries)
-    #define TRACKED_ENTRY NS(DC_EXPAND(ENTRIES), entry)
 
-typedef struct {
-    void* ptr;
-    size_t size;
-    bool freed;
-} TRACKED_ENTRY;
-
-static void NS(TRACKED_ENTRY, debug)(TRACKED_ENTRY const* self, dc_debug_fmt /* fmt */,
-                                     FILE* stream) {
-    fprintf(stream, "{ ptr: %p, size: %zu, state: %s }", self->ptr, self->size,
-            self->freed ? "freed" : "alive");
-}
+    #define ALLOCATIONS_MAP NS(NAME, allocations)
 
     #pragma push_macro("ALLOC")
 
-    // JUSTIFY: Using a vector rather than a faster lookup map.
-    //           - Give this will be used for test & debug, performance matters less
-    //           - Much easier to explore a vector, than a hashmap in gdb.
     // JUSTIFY: Always use the std allocator for test book keeping
     //          - keeps the observed behaviour (e.g. allocator usage) the same as in release
-    #define ITEM TRACKED_ENTRY                  // [DERIVE-C] for template
-    #define ITEM_DEBUG NS(TRACKED_ENTRY, debug) // [DERIVE-C] for template
-    #define ALLOC stdalloc                      // [DERIVE-C] for template
-    #define INTERNAL_NAME ENTRIES_VECTOR        // [DERIVE-C] for template
-    #include <derive-c/container/vector/dynamic/template.h>
+    #define ALLOC stdalloc                   // [DERIVE-C] for template
+    #define KEY void*                        // [DERIVE-C] for template
+    #define KEY_HASH(ptr) ((size_t)(*(ptr))) // [DERIVE-C] for template
+    #define KEY_DEBUG dc_void_ptr_debug      // [DERIVE-C] for template
+    #define VALUE size_t                     // [DERIVE-C] for template
+    #define INTERNAL_NAME ALLOCATIONS_MAP    // [DERIVE-C] for template
+    #include <derive-c/container/map/swiss/template.h>
 
     #pragma pop_macro("ALLOC")
 
 typedef struct {
     NS(ALLOC, ref) alloc_ref;
-    ENTRIES_VECTOR entries;
+    ALLOCATIONS_MAP allocations;
 } SELF;
 
 static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
-    return (SELF){.alloc_ref = alloc_ref, .entries = NS(ENTRIES_VECTOR, new)(stdalloc_get_ref())};
+    return (SELF){
+        .alloc_ref = alloc_ref,
+        .allocations = NS(ALLOCATIONS_MAP, new)(stdalloc_get_ref()),
+    };
 }
 
-static ENTRIES_VECTOR const* NS(SELF, get_entries)(SELF const* self) {
+static ALLOCATIONS_MAP const* NS(SELF, get_allocations)(SELF const* self) {
     DC_ASSUME(self);
-    return &self->entries;
+    return &self->allocations;
 }
 
-static void NS(SELF, delete)(SELF* self) { NS(ENTRIES_VECTOR, delete)(&self->entries); }
+static void NS(SELF, delete)(SELF* self) { NS(ALLOCATIONS_MAP, delete)(&self->allocations); }
 
-static void NS(SELF, unleak_and_delete)(SELF* self) {
-    NS(ENTRIES_VECTOR, iter) iter = NS(ENTRIES_VECTOR, get_iter)(&self->entries);
-    TRACKED_ENTRY* entry;
-
-    while ((entry = NS(ENTRIES_VECTOR, iter_next)(&iter))) {
-        if (!entry->freed) {
-            NS(ALLOC, deallocate)(self->alloc_ref, entry->ptr, entry->size);
-        }
+static void NS(SELF, unleak)(SELF* self) {
+    DC_FOR(ALLOCATIONS_MAP, &self->allocations, iter, entry) {
+        NS(ALLOC, deallocate)(self->alloc_ref, *entry.key, *entry.value);
     }
-
-    NS(SELF, delete)(self);
-}
-
-static TRACKED_ENTRY* PRIV(NS(SELF, find_allocation))(SELF* self, void* ptr) {
-    DC_FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
-        if (entry->ptr == ptr) {
-            return entry;
-        }
-    }
-    return NULL;
 }
 
 static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
-
-    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
-    if (entry != NULL) {
-        DC_ASSERT(entry->freed,
-                  "Allocating a previously allocated pointer, the old entry must have been freed");
-        entry->freed = false;
-        entry->size = size;
-    } else {
-        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
-                                                     .ptr = ptr,
-                                                     .size = size,
-                                                     .freed = false,
-                                                 });
-    }
-
+    size_t* alloc = NS(ALLOCATIONS_MAP, try_insert)(&self->allocations, ptr, size);
+    DC_ASSERT(alloc != NULL,
+              "Got zeroed allocation, that is already allocated at %p (attempted size: %zu)", ptr,
+              size);
     return ptr;
 }
 
 static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
-
-    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
-    if (entry != NULL) {
-        DC_ASSERT(entry->freed,
-                  "Allocating a previously allocated pointer, the old entry must have been freed");
-        entry->freed = false;
-        entry->size = size;
-    } else {
-        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
-                                                     .ptr = ptr,
-                                                     .size = size,
-                                                     .freed = false,
-                                                 });
-    }
-
+    size_t* alloc = NS(ALLOCATIONS_MAP, try_insert)(&self->allocations, ptr, size);
+    DC_ASSERT(alloc != NULL,
+              "Got uninit allocation, that is already allocated at %p (attempted size: %zu)");
     return ptr;
 }
 
-static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
+static void* NS(SELF, reallocate)(SELF* self, void* old_ptr, size_t old_size, size_t new_size) {
     DC_ASSUME(self);
-    DC_ASSUME(ptr);
+    DC_ASSUME(old_ptr);
 
-    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
-    DC_ASSERT(entry != NULL);
+    size_t const* tracked_size = NS(ALLOCATIONS_MAP, try_read)(&self->allocations, old_ptr);
+    DC_ASSERT(tracked_size != NULL, "Reallocating pointer that is not allocated");
+    DC_ASSERT(*tracked_size == old_size,
+              "Incorrect size provided for reallocation of %p (was %zu, but expected %zu)", old_ptr,
+              old_size, *tracked_size);
+    NS(ALLOCATIONS_MAP, delete_entry)(&self->allocations, old_ptr);
 
-    DC_ASSERT(!entry->freed, "Reallocate on freed ptr %p", ptr);
-    void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
-    entry->ptr = new_ptr;
-    entry->size = new_size;
+    void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, old_ptr, old_size, new_size);
+
+    size_t* alloc = NS(ALLOCATIONS_MAP, try_insert)(&self->allocations, new_ptr, new_size);
+    DC_ASSERT(alloc != NULL,
+              "Got new reallocation, that is already allocated at %p (attempted size: %zu)",
+              new_ptr, new_size);
+
     return new_ptr;
 }
 
@@ -150,12 +107,15 @@ static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(ptr);
     DC_ASSUME(self);
 
-    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
-    DC_ASSERT(entry != NULL);
+    size_t const* tracked_size = NS(ALLOCATIONS_MAP, try_read)(&self->allocations, ptr);
+    DC_ASSERT(tracked_size != NULL,
+              "Attempted to deallocate %p (size: %zu), but was not already allocated", ptr, size);
+    DC_ASSERT(*tracked_size == size,
+              "Incorrect size passed on %p deallocation (was: %zu, expected: %zu)", ptr,
+              *tracked_size, size);
 
-    DC_ASSUME(!entry->freed, "Double free on %p", ptr);
-    entry->freed = true;
-    DC_ASSERT(entry->size == size, "Allocation sizes must be equal");
+    NS(ALLOCATIONS_MAP, delete_entry)(&self->allocations, ptr);
+
     NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
 }
 
@@ -165,8 +125,8 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "base: " DC_EXPAND_STRING(ALLOC) "@%p,\n",
                        NS(NS(ALLOC, ref), deref)(self->alloc_ref));
 
-    dc_debug_fmt_print(fmt, stream, "entries: ");
-    NS(ENTRIES_VECTOR, debug)(&self->entries, fmt, stream);
+    dc_debug_fmt_print(fmt, stream, "allocations: ");
+    NS(ALLOCATIONS_MAP, debug)(&self->allocations, fmt, stream);
     fprintf(stream, "\n");
 
     fmt = dc_debug_fmt_scope_end(fmt);

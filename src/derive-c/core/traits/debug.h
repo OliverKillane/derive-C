@@ -52,6 +52,11 @@ static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* s
     fprintf(stream, "char*@%p \"%s\"", *string, *string);
 }
 
+static void dc_void_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "void*@%p", *ptr);
+}
+
 #if defined DC_GENERIC_KEYWORD_SUPPORTED
     #define _DC_DEFAULT_DEBUG_CASE(TYPE, _, x)                                                     \
     TYPE:                                                                                          \
@@ -60,6 +65,9 @@ static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* s
     #define _DC_DEFAULT_DEBUG(SELF, FMT, STREAM)                                                   \
         _Generic(*(SELF),                                                                          \
             DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, f) char const*: dc_string_debug,                \
+            char*: dc_string_debug,                                                                \
+            void const*: dc_void_ptr_debug,                                                        \
+            void*: dc_void_ptr_debug,                                                              \
             default: PRIV(no_debug))(SELF, FMT, STREAM);
 #else
     #include <type_traits>
@@ -73,6 +81,13 @@ static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* s
     #define _DC_DEFAULT_DEBUG(SELF, FMT, STREAM)                                                   \
         [&]<typename T>(T item) {                                                                  \
             DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, FMT, STREAM)                                    \
+            if constexpr (std::is_same_v<void*, std::remove_cv_t<                                  \
+                                                    std::remove_reference_t<decltype(*item)>>> ||  \
+                          std::is_same_v<                                                          \
+                              void const*,                                                         \
+                              std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {       \
+                dc_void_ptr_debug(item, FMT, STREAM);                                              \
+            }                                                                                      \
             if constexpr (std::is_same_v<char*, std::remove_cv_t<                                  \
                                                     std::remove_reference_t<decltype(*item)>>> ||  \
                           std::is_same_v<                                                          \

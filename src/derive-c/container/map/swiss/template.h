@@ -1,8 +1,6 @@
 /// @brief A simple swiss table implementation.
 /// See the abseil docs for swss table [here](https://abseil.io/about/design/swisstables)
 
-#include "derive-c/container/map/swiss/utils.h"
-#include "derive-c/core/math.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
