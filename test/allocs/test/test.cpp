@@ -29,19 +29,39 @@ TEST(TestAlloc, BasicAllocation) {
     testalloc_unleak(&alloc);
 }
 
-TEST(TestAlloc, DebugAllocations) {
-    DC_SCOPED(testalloc) alloc = testalloc_new(stdalloc_get_ref());
+    #define ALLOC stdalloc
+    #define NAME mock_alloc
+    #include <derive-c/alloc/wrap/template.h>
+
+    #define ALLOC mock_alloc
+    #define NAME test_with_mock_alloc
+    #include <derive-c/alloc/test/template.h>
+
+struct TestAllocWithMock : Test {
+    FIXTURE_MOCK(TestAllocWithMock, void*, mock_alloc_allocate_uninit,
+                 (mock_alloc * self, size_t size), ());
+    FIXTURE_MOCK(TestAllocWithMock, void*, mock_alloc_allocate_zeroed,
+                 (mock_alloc * self, size_t size), ());
+    FIXTURE_MOCK(TestAllocWithMock, void*, mock_alloc_reallocate,
+                 (mock_alloc * self, void* ptr, size_t old_size, size_t new_size), ());
+    FIXTURE_MOCK(TestAllocWithMock, void, mock_alloc_deallocate,
+                 (mock_alloc * self, void* ptr, size_t size), ());
+};
+
+TEST_F(TestAllocWithMock, DebugAllocations) {
+    DC_SCOPED(mock_alloc) mocked_alloc = mock_alloc_new(stdalloc_get_ref());
+    DC_SCOPED(test_with_mock_alloc) alloc = test_with_mock_alloc_new(&mocked_alloc);
 
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
-        testalloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+        test_with_mock_alloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(
             // clang-format off
-            "testalloc @" DC_PTR_REPLACE " {\n"
-            "  base: stdalloc@" DC_PTR_REPLACE ",\n"
-            "  allocations: testalloc_allocations@" DC_PTR_REPLACE " {\n"
+            "test_with_mock_alloc @" DC_PTR_REPLACE " {\n"
+            "  base: mock_alloc@" DC_PTR_REPLACE ",\n"
+            "  allocations: test_with_mock_alloc_allocations@" DC_PTR_REPLACE " {\n"
             "    capacity: 256,\n"
             "    tombstones: 0,\n"
             "    count: 0,\n"
@@ -57,20 +77,30 @@ TEST(TestAlloc, DebugAllocations) {
             derivecpp::fmt::pointer_replace(debug_string));
     }
 
-    void* ptr1 = testalloc_allocate_uninit(&alloc, 10);
-    void* ptr2 = testalloc_allocate_zeroed(&alloc, 300);
-    void* ptr3 = testalloc_allocate_uninit(&alloc, 1);
+    char ptr_storage[10 + 300 + 1] = {};
+
+    void* expected_ptr1 = &ptr_storage[0];
+    void* expected_ptr2 = &ptr_storage[10];
+    void* expected_ptr3 = &ptr_storage[300 + 10];
+
+    EXPECT_CALL(*this, mock_alloc_allocate_uninit_mock(_, 10)).WillOnce(Return(expected_ptr1));
+    void* ptr1 = test_with_mock_alloc_allocate_uninit(&alloc, 10);
+    EXPECT_CALL(*this, mock_alloc_allocate_zeroed_mock(_, 300)).WillOnce(Return(expected_ptr2));
+    void* ptr2 = test_with_mock_alloc_allocate_zeroed(&alloc, 300);
+    EXPECT_CALL(*this, mock_alloc_allocate_uninit_mock(_, 1)).WillOnce(Return(expected_ptr3));
+    void* ptr3 = test_with_mock_alloc_allocate_uninit(&alloc, 1);
 
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
-        testalloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+        test_with_mock_alloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string = dc_debug_string_builder_string(&sb);
+        std::cout << debug_string << "\n";
         EXPECT_EQ(
             // clang-format off
-            "testalloc @" DC_PTR_REPLACE " {\n"
-            "  base: stdalloc@" DC_PTR_REPLACE ",\n"
-            "  allocations: testalloc_allocations@" DC_PTR_REPLACE " {\n"
+            "test_with_mock_alloc @" DC_PTR_REPLACE " {\n"
+            "  base: mock_alloc@" DC_PTR_REPLACE ",\n"
+            "  allocations: test_with_mock_alloc_allocations@" DC_PTR_REPLACE " {\n"
             "    capacity: 256,\n"
             "    tombstones: 0,\n"
             "    count: 3,\n"
@@ -98,20 +128,23 @@ TEST(TestAlloc, DebugAllocations) {
             derivecpp::fmt::pointer_replace(debug_string));
     }
 
-    testalloc_deallocate(&alloc, ptr1, 10);
-    testalloc_deallocate(&alloc, ptr2, 300);
-    testalloc_deallocate(&alloc, ptr3, 1);
+    EXPECT_CALL(*this, mock_alloc_deallocate_mock(_, _, 10));
+    test_with_mock_alloc_deallocate(&alloc, ptr1, 10);
+    EXPECT_CALL(*this, mock_alloc_deallocate_mock(_, _, 300));
+    test_with_mock_alloc_deallocate(&alloc, ptr2, 300);
+    EXPECT_CALL(*this, mock_alloc_deallocate_mock(_, _, 1));
+    test_with_mock_alloc_deallocate(&alloc, ptr3, 1);
 
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
-        testalloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+        test_with_mock_alloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string = dc_debug_string_builder_string(&sb);
         EXPECT_EQ(
             // clang-format off
-            "testalloc @" DC_PTR_REPLACE " {\n"
-            "  base: stdalloc@" DC_PTR_REPLACE ",\n"
-            "  allocations: testalloc_allocations@" DC_PTR_REPLACE " {\n"
+            "test_with_mock_alloc @" DC_PTR_REPLACE " {\n"
+            "  base: mock_alloc@" DC_PTR_REPLACE ",\n"
+            "  allocations: test_with_mock_alloc_allocations@" DC_PTR_REPLACE " {\n"
             "    capacity: 256,\n"
             "    tombstones: 3,\n"
             "    count: 0,\n"
@@ -127,25 +160,6 @@ TEST(TestAlloc, DebugAllocations) {
             derivecpp::fmt::pointer_replace(debug_string));
     }
 }
-
-    #define ALLOC stdalloc
-    #define NAME mock_alloc
-    #include <derive-c/alloc/wrap/template.h>
-
-    #define ALLOC mock_alloc
-    #define NAME test_with_mock_alloc
-    #include <derive-c/alloc/test/template.h>
-
-struct TestAllocWithMock : Test {
-    FIXTURE_MOCK(TestAllocWithMock, void*, mock_alloc_allocate_uninit,
-                 (mock_alloc * self, size_t size), ());
-    FIXTURE_MOCK(TestAllocWithMock, void*, mock_alloc_allocate_zeroed,
-                 (mock_alloc * self, size_t size), ());
-    FIXTURE_MOCK(TestAllocWithMock, void*, mock_alloc_reallocate,
-                 (mock_alloc * self, void* ptr, size_t old_size, size_t new_size), ());
-    FIXTURE_MOCK(TestAllocWithMock, void, mock_alloc_deallocate,
-                 (mock_alloc * self, void* ptr, size_t size), ());
-};
 
 TEST_F(TestAllocWithMock, ReallocateSamePointer) {
     DC_SCOPED(mock_alloc) mocked_alloc = mock_alloc_new(stdalloc_get_ref());

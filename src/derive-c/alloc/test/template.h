@@ -133,8 +133,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-    #undef TRACKED_ENTRY
-    #undef ENTRIES_VECTOR
+    #undef ALLOCATIONS_MAP
 
 DC_TRAIT_REFERENCABLE_BY_PTR(SELF);
 

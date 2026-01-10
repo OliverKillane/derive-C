@@ -37,7 +37,7 @@ template <typename SutNS> struct SutWrapper {
     SutWrapper(const SutWrapper& other) = delete;
     ~SutWrapper() {
         for (auto& [_, alloc] : mAllocations) {
-            // SutNS::Sut_deallocate(&mSut, alloc.mPtr, alloc.mSize);
+            SutNS::Sut_deallocate(&mSut, alloc.mPtr, alloc.mSize);
         }
         SutNS::Sut_delete(&mSut);
     }

@@ -87,12 +87,11 @@ static void dc_void_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* st
                               void const*,                                                         \
                               std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {       \
                 dc_void_ptr_debug(item, FMT, STREAM);                                              \
-            }                                                                                      \
-            if constexpr (std::is_same_v<char*, std::remove_cv_t<                                  \
-                                                    std::remove_reference_t<decltype(*item)>>> ||  \
-                          std::is_same_v<                                                          \
-                              char const*,                                                         \
-                              std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {       \
+            } else if constexpr (                                                                  \
+                std::is_same_v<char*,                                                              \
+                               std::remove_cv_t<std::remove_reference_t<decltype(*item)>>> ||      \
+                std::is_same_v<char const*,                                                        \
+                               std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {      \
                 dc_string_debug(item, FMT, STREAM);                                                \
             } else {                                                                               \
                 DC_NO_DEBUG(item, FMT, STREAM);                                                    \
