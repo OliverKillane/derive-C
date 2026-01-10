@@ -81,56 +81,82 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
     NS(SELF, delete)(self);
 }
 
+static TRACKED_ENTRY* PRIV(NS(SELF, find_allocation))(SELF* self, void* ptr) {
+    FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
+        if (entry->ptr == ptr) {
+            return entry;
+        }
+    }
+    return NULL;
+}
+
 static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
-    NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
-                                                 .ptr = ptr,
-                                                 .size = size,
-                                                 .freed = false,
-                                             });
+
+    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
+    if (entry != NULL) {
+        DC_ASSERT(entry->freed,
+                  "Allocating a previously allocated pointer, the old entry must have been freed");
+        entry->freed = false;
+        entry->size = size;
+    } else {
+        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
+                                                     .ptr = ptr,
+                                                     .size = size,
+                                                     .freed = false,
+                                                 });
+    }
+
     return ptr;
 }
 
 static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
-    NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
-                                                 .ptr = ptr,
-                                                 .size = size,
-                                                 .freed = false,
-                                             });
+
+    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
+    if (entry != NULL) {
+        DC_ASSERT(entry->freed,
+                  "Allocating a previously allocated pointer, the old entry must have been freed");
+        entry->freed = false;
+        entry->size = size;
+    } else {
+        NS(ENTRIES_VECTOR, push)(&self->entries, (TRACKED_ENTRY){
+                                                     .ptr = ptr,
+                                                     .size = size,
+                                                     .freed = false,
+                                                 });
+    }
+
     return ptr;
 }
 
 static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
-    FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
-        if (entry->ptr == ptr) {
-            void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
-            entry->ptr = new_ptr;
-            entry->size = new_size;
-            return new_ptr;
-        }
-    }
-    DC_UNREACHABLE("ptr was not present in the entries list");
+
+    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
+    DC_ASSERT(entry != NULL);
+
+    DC_ASSERT(!entry->freed, "Reallocate on freed ptr %p", ptr);
+    void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
+    entry->ptr = new_ptr;
+    entry->size = new_size;
+    return new_ptr;
 }
 
 static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(ptr);
     DC_ASSUME(self);
 
-    FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
-        if (entry->ptr == ptr) {
-            DC_ASSUME(!entry->freed);
-            entry->freed = true;
-            DC_ASSERT(entry->size == size, "Allocation sizes must be equal");
-            NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
-            return;
-        }
-    }
-    DC_UNREACHABLE("ptr was not present in the entries list");
+    TRACKED_ENTRY* entry = PRIV(NS(SELF, find_allocation))(self, ptr);
+    DC_ASSERT(entry != NULL);
+
+    DC_ASSUME(!entry->freed, "Double free on %p", ptr);
+    entry->freed = true;
+    DC_ASSERT(entry->size == size, "Allocation sizes must be equal");
+    NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
