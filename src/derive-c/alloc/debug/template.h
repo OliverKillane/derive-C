@@ -18,7 +18,7 @@ typedef struct {
 } SELF;
 
 static SELF NS(SELF, new)(char const* name, FILE* stream, NS(ALLOC, ref) alloc_ref) {
-    fprintf(stream, "[%s] %s(alloc=" EXPAND_STRING(ALLOC) "@%p)\n", name, __func__,
+    fprintf(stream, "[%s] %s(alloc=" DC_EXPAND_STRING(ALLOC) "@%p)\n", name, __func__,
             NS(NS(ALLOC, ref), deref)(alloc_ref));
     return (SELF){
         .name = name,
@@ -60,7 +60,7 @@ static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "name: %s,\n", self->name);
     dc_debug_fmt_print(fmt, stream, "alloc: ");

@@ -16,7 +16,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined ITEM
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No ITEM")
     #endif
 typedef struct {
@@ -44,7 +44,7 @@ static void ITEM_DEBUG(ITEM const* self, dc_debug_fmt fmt, FILE* stream);
 #endif
 
 #if !defined INPLACE_CAPACITY
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The INPLACE_CAPACITY must be defined")
     #endif
     #define INPLACE_CAPACITY 8
@@ -295,7 +295,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", (size_t)INPLACE_CAPACITY);
     dc_debug_fmt_print(fmt, stream, "size: %lu,\n", (size_t)self->size);

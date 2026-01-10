@@ -8,7 +8,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined EXCLUSIVE_END_INDEX
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("no EXCLUSIVE_END_INDEX")
     #endif
     #define EXCLUSIVE_END_INDEX 32
@@ -16,7 +16,7 @@ TEMPLATE_ERROR("no EXCLUSIVE_END_INDEX")
 
 DC_STATIC_ASSERT(
     EXCLUSIVE_END_INDEX > 0,
-    EXPAND_STRING(SELF) " EXCLUSIVE_END_INDEX must be larger than 0 for nonempty bitset");
+    DC_EXPAND_STRING(SELF) " EXCLUSIVE_END_INDEX must be larger than 0 for nonempty bitset");
 
 #define INDICES_CAPACITY EXCLUSIVE_END_INDEX
 
@@ -89,7 +89,7 @@ static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "blocks: [\n");

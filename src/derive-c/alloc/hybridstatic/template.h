@@ -15,7 +15,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined CAPACITY
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No CAPACITY")
     #endif
     #define CAPACITY 1024
@@ -250,7 +250,7 @@ static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     DC_ASSUME(self);
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", CAPACITY);
     dc_debug_fmt_print(fmt, stream, "used: %lu,\n", self->head_offset);

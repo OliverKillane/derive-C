@@ -21,7 +21,7 @@ TEST(StaticLinearMap, InsertAndRead) {
         ASSERT_EQ(*placed, i * 10);
     }
 
-    FOR(int_map, &map, iter, item) {
+    DC_FOR(int_map, &map, iter, item) {
         size_t key = *item.key;
         size_t value = *item.value;
         ASSERT_EQ(value, key * 10);

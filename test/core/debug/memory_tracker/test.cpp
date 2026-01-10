@@ -63,7 +63,7 @@ TEST(MemoryTrackerTest, DebugOutput) {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         dc_memory_tracker_debug(dc_debug_string_builder_stream(&sb), buf, 7);
 
-#if defined ASAN_ON
+#if defined DC_ASAN_ON
         EXPECT_EQ(std::string(std::format(
                       "memory tracker debug (7 bytes) at {:p} [ASAN]:"
                       "\ndisplaying each 8 byte grandule (asan tracks poisoning as 0-8 bytes from "
@@ -77,7 +77,7 @@ TEST(MemoryTrackerTest, DebugOutput) {
                   std::string(dc_debug_string_builder_string(&sb)));
 #endif
 
-#if defined MSAN_ON
+#if defined DC_MSAN_ON
         EXPECT_EQ(derivecpp::fmt::c_style(
                       // clang-format off
                 "memory tracker debug (7 bytes) at %p [MSAN]:\n"

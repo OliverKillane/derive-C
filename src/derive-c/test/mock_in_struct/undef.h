@@ -1,11 +1,11 @@
 #if defined EXPAND_IN_STRUCT
-    #if defined MOCKABLE
-        #undef MOCKABLE_ENABLED
-        #undef MOCKABLE_DEFINE
-        #undef MOCKABLE_DECLARE
+    #if defined DC_MOCKABLE
+        #undef DC_MOCKABLE_ENABLED
+        #undef DC_MOCKABLE_DEFINE
+        #undef DC_MOCKABLE_DECLARE
 
-        #pragma push_macro("MOCKABLE_ENABLED")
-        #pragma push_macro("MOCKABLE_DEFINE")
-        #pragma push_macro("MOCKABLE_DECLARE")
+        #pragma push_macro("DC_MOCKABLE_ENABLED")
+        #pragma push_macro("DC_MOCKABLE_DEFINE")
+        #pragma push_macro("DC_MOCKABLE_DECLARE")
     #endif
 #endif

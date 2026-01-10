@@ -8,16 +8,16 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined CAPACITY
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No CAPACITY")
     #endif
     #define CAPACITY 32
 #endif
 
-DC_STATIC_ASSERT(CAPACITY > 0, EXPAND_STRING(SELF) " CAPACITY cannot be empty");
+DC_STATIC_ASSERT(CAPACITY > 0, DC_EXPAND_STRING(SELF) " CAPACITY cannot be empty");
 
 #if !defined KEY
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No KEY")
     #endif
     #define KEY map_key_t
@@ -41,7 +41,7 @@ typedef int KEY;
 #endif
 
 #if !defined VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No VALUE")
     #endif
 typedef struct {
@@ -209,7 +209,7 @@ static void NS(SELF, delete)(SELF* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %zu,\n", (size_t)CAPACITY);
     dc_debug_fmt_print(fmt, stream, "entries: [\n");

@@ -10,11 +10,11 @@ using namespace testing;
 
 namespace {
 size_t none_count = 0;
-MOCKABLE(void, none, (void)) { none_count++; }
+DC_MOCKABLE(void, none, (void)) { none_count++; }
 
-MOCKABLE(int, foo, (int)) { return 2; }
-MOCKABLE(void, array, (int a[6])) {}
-MOCKABLE(void, fn_ptr, (void (*fn)(int))) {}
+DC_MOCKABLE(int, foo, (int)) { return 2; }
+DC_MOCKABLE(void, array, (int a[6])) {}
+DC_MOCKABLE(void, fn_ptr, (void (*fn)(int))) {}
 } // namespace
 
 struct MockTests : Test {

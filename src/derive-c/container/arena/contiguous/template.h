@@ -9,14 +9,14 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined INDEX_BITS
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The number of bits (8,16,32,64) to use for the arena's key")
     #endif
     #define INDEX_BITS 32
 #endif
 
 #if !defined VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The value type to place in the arena must be defined")
     #endif
 typedef struct {
@@ -412,7 +412,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
     dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);

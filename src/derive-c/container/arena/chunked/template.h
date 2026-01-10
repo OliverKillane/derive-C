@@ -7,14 +7,14 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined INDEX_BITS
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The number of bits (8,16,32,64) to use for the arena's key")
     #endif
     #define INDEX_BITS 32
 #endif
 
 #if !defined BLOCK_INDEX_BITS
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The number of bits used to get the offset within a block must be specified")
     #endif
     #define BLOCK_INDEX_BITS 8
@@ -25,7 +25,7 @@ DC_STATIC_ASSERT(INDEX_BITS > BLOCK_INDEX_BITS,
                  "less than the number of bits used for an index");
 
 #if !defined VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The value type to place in the arena must be defined")
     #endif
     #define VALUE value_t
@@ -453,7 +453,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
     dc_debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);

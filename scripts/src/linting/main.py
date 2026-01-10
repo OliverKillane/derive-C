@@ -4,6 +4,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from src.linting.linter import LinterCheck, LintContext, LintResults
+from src.linting.lints.exported_macros import MacroExports
 from src.linting.lints.template_defines import TemplateDefines
 from src.linting.lints.def_undef_match import DefUndefIncludes
 from src.linting.lints.includes_export import IncludesExport
@@ -13,6 +14,7 @@ LINTS: list[LinterCheck] = [
     TemplateDefines(),
     DefUndefIncludes(),
     IncludesExport(),
+    MacroExports(),
 ]
 
 

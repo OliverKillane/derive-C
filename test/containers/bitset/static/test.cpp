@@ -68,7 +68,7 @@ TEST(BitsetStatic, SutUsage) {
         EXPECT_TRUE(sut_get(&bitset, i));
     }
 
-    FOR(sut, &bitset, iter, item) { sut_get(&bitset, item); }
+    DC_FOR(sut, &bitset, iter, item) { sut_get(&bitset, item); }
 }
 
 TEST(BitsetStatic, Debug) {

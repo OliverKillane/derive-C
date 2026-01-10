@@ -9,7 +9,7 @@
 // - Hence when analysing a header, clangd assumes this is the header as included for these tests
 // - which results in errors for missing macros (e.g. RC_FAIL)
 // Hence for clangd, we just assume the default implementations
-#if !defined PLACEHOLDERS
+#if !defined DC_PLACEHOLDERS
     #if defined DC_PANIC_HEADER
         #include DC_PANIC_HEADER
     #endif

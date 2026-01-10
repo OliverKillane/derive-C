@@ -145,7 +145,7 @@ void hr_system_debug(hr_system const* self, dc_debug_fmt fmt, FILE* stream) {
 void hr_system_delete(hr_system* self) {
     employees_delete(&self->data);
 
-    FOR(employees_by_age, &self->by_age, iter, entry) { same_age_employees_delete(entry.value); }
+    DC_FOR(employees_by_age, &self->by_age, iter, entry) { same_age_employees_delete(entry.value); }
 
     employees_by_age_delete(&self->by_age);
 }

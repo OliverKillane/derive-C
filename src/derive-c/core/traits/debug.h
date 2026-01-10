@@ -18,7 +18,7 @@
 #define DC_TRAIT_DEBUGABLE(SELF)                                                                   \
     DC_REQUIRE_METHOD(void, SELF, debug, (SELF const*, dc_debug_fmt fmt, FILE*));
 
-#define NO_DEBUG PRIV(no_debug)
+#define DC_NO_DEBUG PRIV(no_debug)
 
 static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)self;
@@ -27,25 +27,25 @@ static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
 }
 
 #define _DC_DERIVE_DEBUG_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                          \
-    dc_debug_fmt_print(fmt, stream, STRINGIFY(MEMBER_NAME) ": ");                                  \
+    dc_debug_fmt_print(fmt, stream, DC_STRINGIFY(MEMBER_NAME) ": ");                               \
     NS(MEMBER_TYPE, debug)(&self->MEMBER_NAME, fmt, stream);                                       \
     fprintf(fmt, stream, ",\n");
 
 #define DC_DERIVE_DEBUG(TYPE)                                                                      \
     static TYPE NS(TYPE, DEBUG)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {                \
-        fprintf(stream, STRINGIFY(TYPE) "@%p {\n", self);                                          \
+        fprintf(stream, DC_STRINGIFY(TYPE) "@%p {\n", self);                                       \
         fmt = dc_debug_fmt_scope_begin(fmt);                                                       \
         NS(TYPE, REFLECT)(_DC_DERIVE_DEBUG_MEMBER);                                                \
         fmt = dc_debug_fmt_scope_end(fmt);                                                         \
     }
 
-#define _DERIVE_STD_DEBUG(TYPE, FMT, ...)                                                          \
+#define _DC_DERIVE_STD_DEBUG(TYPE, FMT, ...)                                                       \
     static void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {                \
         (void)fmt;                                                                                 \
         fprintf(stream, FMT, *self);                                                               \
     }
 
-DC_STD_REFLECT(_DERIVE_STD_DEBUG)
+DC_STD_REFLECT(_DC_DERIVE_STD_DEBUG)
 
 static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
@@ -80,7 +80,7 @@ static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* s
                               std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {       \
                 dc_string_debug(item, FMT, STREAM);                                                \
             } else {                                                                               \
-                NO_DEBUG(item, FMT, STREAM);                                                       \
+                DC_NO_DEBUG(item, FMT, STREAM);                                                    \
             }                                                                                      \
         }(SELF)
 #endif

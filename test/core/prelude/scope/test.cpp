@@ -17,14 +17,14 @@ foo foo_new(int inner) {
         .inner = inner,
     };
 }
-MOCKABLE(void, foo_on_delete, (foo*)) {}
+DC_MOCKABLE(void, foo_on_delete, (foo*)) {}
 
 // The cleanup attribute requires a function.
-//  - MOCKABLE-s are global variables (function pointers) when compiling with mocking
+//  - DC_MOCKABLE-s are global variables (function pointers) when compiling with mocking
 //  - This does not work with the cleanup attribute
 void foo_delete(foo* f) { foo_on_delete(f); }
 
-MOCKABLE(void, on_some_fcn, ()) {}
+DC_MOCKABLE(void, on_some_fcn, ()) {}
 
 void some_fcn(sentinel*) { on_some_fcn(); }
 

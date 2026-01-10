@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Self
 from concurrent.futures import ThreadPoolExecutor
 
-DERIVE_C_TAG: str = "[DERIVE-C]"
-
 
 @dataclass(frozen=True)
 class Location:

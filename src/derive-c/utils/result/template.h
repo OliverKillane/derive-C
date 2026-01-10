@@ -9,7 +9,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined OK
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No OK")
     #endif
     #define OK ok_t
@@ -35,7 +35,7 @@ typedef struct {
 #endif
 
 #if !defined ERROR
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No ERROR")
     #endif
     #define ERROR error_t
@@ -45,7 +45,7 @@ typedef struct {
 #endif
 
 #if !defined ERROR_THROW
-    #define ERROR_THROW(_) DC_PANIC("Unexpected error in " EXPAND_STRING(SELF))
+    #define ERROR_THROW(_) DC_PANIC("Unexpected error in " DC_EXPAND_STRING(SELF))
 #endif
 
 #if !defined ERROR_DELETE
@@ -116,7 +116,7 @@ static ERROR const* NS(SELF, get_error)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     if (self->success) {
         dc_debug_fmt_print(fmt, stream, "ok: ");

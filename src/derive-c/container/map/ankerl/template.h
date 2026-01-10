@@ -10,7 +10,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined KEY
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No KEY")
     #endif
     #define KEY map_key_t
@@ -18,7 +18,7 @@ typedef int KEY;
 #endif
 
 #if !defined KEY_HASH
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No KEY_HASH")
     #endif
 
@@ -43,7 +43,7 @@ static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No VALUE")
     #endif
 typedef struct {
@@ -85,7 +85,7 @@ static SLOT NS(SLOT, clone)(SLOT const* slot) {
 }
 
 static void NS(SLOT, debug)(SLOT const* slot, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SLOT) "@%p {\n", slot);
+    fprintf(stream, DC_EXPAND_STRING(SLOT) "@%p {\n", slot);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "key: ");
@@ -123,7 +123,6 @@ static void NS(SLOT, delete)(SLOT* slot) {
 
 #if defined SMALL_BUCKETS
     #define INDEX_KIND dc_ankerl_index_small
-    #define BUCKET_SIZE 4
 
 typedef struct {
     dc_ankerl_mdata mdata;
@@ -593,7 +592,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "bucket capacity: %lu,\n", self->buckets_capacity);
@@ -654,8 +653,8 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #undef INVARIANT_CHECK
-#undef BUCKET
 #undef INDEX_KIND
+#undef BUCKET
 #undef SLOT_VECTOR
 #undef SLOT
 

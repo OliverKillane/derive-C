@@ -6,7 +6,6 @@ from typing import Self
 from dataclasses import dataclass, field
 
 from src.linting.linter import (
-    DERIVE_C_TAG,
     LinterCheck,
     ResultSingle,
     LintContext,
@@ -15,11 +14,13 @@ from src.linting.linter import (
     Error,
 )
 
-EXPORT_COMMENT: str = r"// IWYU pragma: export"
-STDLIB_INCLUDES: str = rf"// {DERIVE_C_TAG} stdlib includes"
-DERIVE_C_INCLUDES: str = rf"// {DERIVE_C_TAG} lib includes"
-USED_TEMPLATE_INCLUDES: str = rf"// {DERIVE_C_TAG} used template includes"
-CONTAINER_SPECIFIC_INCLUDES: str = rf"// {DERIVE_C_TAG} container includes"
+from src.linting.tags import (
+    EXPORT_COMMENT,
+    STDLIB_INCLUDES,
+    DERIVE_C_INCLUDES,
+    USED_TEMPLATE_INCLUDES,
+    CONTAINER_SPECIFIC_INCLUDES,
+)
 
 # Match lines like:
 #   // [DERIVE-C] stdlib includes

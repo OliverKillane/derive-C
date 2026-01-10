@@ -12,8 +12,8 @@
 
 #include <derive-c/test/mock.h>
 namespace {
-MOCKABLE(void, free_int, (int const* ptr)) { (void)ptr; }
-MOCKABLE(int, clone_int, (int const* self)) { return *self; }
+DC_MOCKABLE(void, free_int, (int const* ptr)) { (void)ptr; }
+DC_MOCKABLE(int, clone_int, (int const* self)) { return *self; }
 } // namespace
 
 #define NAME optional_int

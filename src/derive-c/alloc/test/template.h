@@ -23,7 +23,7 @@
 
     #include <derive-c/alloc/std.h>
     #define ENTRIES_VECTOR NS(NAME, entries)
-    #define TRACKED_ENTRY NS(EXPAND(ENTRIES), entry)
+    #define TRACKED_ENTRY NS(DC_EXPAND(ENTRIES), entry)
 
 typedef struct {
     void* ptr;
@@ -44,10 +44,10 @@ static void NS(TRACKED_ENTRY, debug)(TRACKED_ENTRY const* self, dc_debug_fmt /* 
     //           - Much easier to explore a vector, than a hashmap in gdb.
     // JUSTIFY: Always use the std allocator for test book keeping
     //          - keeps the observed behaviour (e.g. allocator usage) the same as in release
-    #define ITEM TRACKED_ENTRY // [DERIVE-C] for template
-    #define ITEM_DEBUG NS(TRACKED_ENTRY, debug)
-    #define ALLOC stdalloc               // [DERIVE-C] for template
-    #define INTERNAL_NAME ENTRIES_VECTOR // [DERIVE-C] for template
+    #define ITEM TRACKED_ENTRY                  // [DERIVE-C] for template
+    #define ITEM_DEBUG NS(TRACKED_ENTRY, debug) // [DERIVE-C] for template
+    #define ALLOC stdalloc                      // [DERIVE-C] for template
+    #define INTERNAL_NAME ENTRIES_VECTOR        // [DERIVE-C] for template
     #include <derive-c/container/vector/dynamic/template.h>
 
     #pragma pop_macro("ALLOC")
@@ -82,7 +82,7 @@ static void NS(SELF, unleak_and_delete)(SELF* self) {
 }
 
 static TRACKED_ENTRY* PRIV(NS(SELF, find_allocation))(SELF* self, void* ptr) {
-    FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
+    DC_FOR(ENTRIES_VECTOR, &self->entries, iter, entry) {
         if (entry->ptr == ptr) {
             return entry;
         }
@@ -160,9 +160,9 @@ static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) " @%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) " @%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
-    dc_debug_fmt_print(fmt, stream, "base: " EXPAND_STRING(ALLOC) "@%p,\n",
+    dc_debug_fmt_print(fmt, stream, "base: " DC_EXPAND_STRING(ALLOC) "@%p,\n",
                        NS(NS(ALLOC, ref), deref)(self->alloc_ref));
 
     dc_debug_fmt_print(fmt, stream, "entries: ");

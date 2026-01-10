@@ -26,7 +26,7 @@
 void print_map(id_to_name const* map) {
     printf("Map has items:\n");
     size_t pos = 0;
-    FOR_CONST(id_to_name, map, iter, entry) {
+    DC_FOR_CONST(id_to_name, map, iter, entry) {
         printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry.key, *entry.value);
         pos++;
     }
@@ -115,7 +115,7 @@ void report_map_example() {
 
     {
         size_t pos = 0;
-        FOR_CONST(report_map, &map, iter, entry) {
+        DC_FOR_CONST(report_map, &map, iter, entry) {
             printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry.key->name,
                    entry.key->section, entry.value->value);
             pos++;
@@ -174,7 +174,7 @@ void fixed_string_example() {
     DC_ASSERT(*fixed_string_map_read(&map, key3) == 789);
 
     size_t pos = 0;
-    FOR_CONST(fixed_string_map, &map, iter, entry) {
+    DC_FOR_CONST(fixed_string_map, &map, iter, entry) {
         printf("Position: %zu Key: %.3s Value: %u\n", pos, entry.key->value, *entry.value);
         pos++;
     }
