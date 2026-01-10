@@ -200,7 +200,7 @@ if(COVERAGE)
         -E env
           LLVM_PROFILE_FILE=${COVERAGE_DIR}/coverage_%p_%m.profraw
         ${CMAKE_CTEST_COMMAND}
-          -L correctness
+          -L "fuzz|unit"
           -j
           --output-on-failure
 
