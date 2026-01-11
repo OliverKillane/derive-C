@@ -45,6 +45,13 @@ static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t siz
     SELF* self = (SELF*)capture;
     INVARIANT_CHECK(self);
 
+    // JUSTIFY: Unpoisoning passed data to write
+    //  - glibc is not instrumented for msan, so sometimes the entire buffer can be deivered as
+    //    uninitialised.
+    //  - Hence we consider fopenccokie's write as a 'tainted source', and enforce correct memory
+    //    capabilities
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_NONE, DC_MEMORY_TRACKER_CAP_READ_WRITE, data, size);
+
     if (self->size_without_null + size + 1 > self->capacity) {
         size_t new_capacity;
         char* new_buf;

@@ -95,7 +95,6 @@ TEST_F(TestAllocWithMock, DebugAllocations) {
         test_with_mock_alloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string = dc_debug_string_builder_string(&sb);
-        std::cout << debug_string << "\n";
         EXPECT_EQ(
             // clang-format off
             "test_with_mock_alloc @" DC_PTR_REPLACE " {\n"
