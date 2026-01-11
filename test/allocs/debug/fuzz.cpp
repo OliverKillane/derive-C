@@ -28,6 +28,7 @@ RC_GTEST_PROP(AllocTest, Fuzz, ()) {
         rc::state::gen::execOneOfWithArgs<AllocateUninit<SutNS>, AllocateZeroed<SutNS>,
                                           ReallocateLarger<SutNS>, ReallocateSmaller<SutNS>,
                                           Deallocate<SutNS>>());
-    fclose(stream);
+    // JUSTIFY: Not closing null stream
+    // - Results in segfaults & corrupted alloc headers in release builds.
 }
 } // namespace
