@@ -17,6 +17,10 @@ DC_TRAIT_REFERENCABLE_SINGLETON(stdalloc, stdalloc_instance);
 static void* NS(stdalloc, allocate_uninit)(stdalloc_ref /* ref */, size_t size) {
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
     void* alloc = malloc(size);
+
+    // JUSTIFY: Setting memory capabilities
+    //  - Flakiness observed for tests running under msan with uninstrumented glibc
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_NONE, DC_MEMORY_TRACKER_CAP_WRITE, alloc, size);
     DC_ASSERT(alloc != NULL, "Standard allocator failed to malloc");
     return alloc;
 }
@@ -24,6 +28,12 @@ static void* NS(stdalloc, allocate_uninit)(stdalloc_ref /* ref */, size_t size) 
 static void* NS(stdalloc, allocate_zeroed)(stdalloc_ref /* ref */, size_t size) {
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
     void* alloc = calloc(size, 1);
+
+    // JUSTIFY: Setting memory capabilities
+    //  - Flakiness observed for tests running under msan with uninstrumented glibc
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_NONE, DC_MEMORY_TRACKER_CAP_READ_WRITE, alloc,
+                          size);
+
     DC_ASSERT(alloc != NULL, "Standard allocator failed to calloc");
     return alloc;
 }
