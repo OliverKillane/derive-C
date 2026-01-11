@@ -77,24 +77,24 @@ TEST_F(TestAllocWithMock, DebugAllocations) {
             derivecpp::fmt::pointer_replace(debug_string));
     }
 
-    char ptr_storage[10 + 300 + 1] = {};
-
-    void* expected_ptr1 = &ptr_storage[0];
-    void* expected_ptr2 = &ptr_storage[10];
-    void* expected_ptr3 = &ptr_storage[300 + 10];
+    // JUSTIFY: Only debug printing with 1 allocation
+    //  - We can get the expected ordering knowing the values of the pointers & their hashes
+    //  - However this would require taking the addresses, hashing, then dynamically constructing
+    //  the
+    //    expected debug string with that ordering. This is unecessary complexity - we already have
+    //    tests for the swisstable expected debug output.
+    char ptr1_storage[10] = {};
+    void* expected_ptr1 = &ptr1_storage[0];
 
     EXPECT_CALL(*this, mock_alloc_allocate_uninit_mock(_, 10)).WillOnce(Return(expected_ptr1));
     void* ptr1 = test_with_mock_alloc_allocate_uninit(&alloc, 10);
-    EXPECT_CALL(*this, mock_alloc_allocate_zeroed_mock(_, 300)).WillOnce(Return(expected_ptr2));
-    void* ptr2 = test_with_mock_alloc_allocate_zeroed(&alloc, 300);
-    EXPECT_CALL(*this, mock_alloc_allocate_uninit_mock(_, 1)).WillOnce(Return(expected_ptr3));
-    void* ptr3 = test_with_mock_alloc_allocate_uninit(&alloc, 1);
 
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_with_mock_alloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
 
         std::string const debug_string = dc_debug_string_builder_string(&sb);
+
         EXPECT_EQ(
             // clang-format off
             "test_with_mock_alloc @" DC_PTR_REPLACE " {\n"
@@ -102,7 +102,7 @@ TEST_F(TestAllocWithMock, DebugAllocations) {
             "  allocations: test_with_mock_alloc_allocations@" DC_PTR_REPLACE " {\n"
             "    capacity: 256,\n"
             "    tombstones: 0,\n"
-            "    count: 3,\n"
+            "    count: 1,\n"
             "    ctrl: @" DC_PTR_REPLACE "[256 + simd probe size additional 16],\n"
             "    slots: @" DC_PTR_REPLACE "[256],\n"
             "    alloc: stdalloc@" DC_PTR_REPLACE " { },\n"
@@ -110,14 +110,6 @@ TEST_F(TestAllocWithMock, DebugAllocations) {
             "      {\n"
             "        key: void*@" DC_PTR_REPLACE ",\n"
             "        value: 10,\n"
-            "      },\n"
-            "      {\n"
-            "        key: void*@" DC_PTR_REPLACE ",\n"
-            "        value: 300,\n"
-            "      },\n"
-            "      {\n"
-            "        key: void*@" DC_PTR_REPLACE ",\n"
-            "        value: 1,\n"
             "      },\n"
             "    ]\n"
             "  }\n"
@@ -129,11 +121,6 @@ TEST_F(TestAllocWithMock, DebugAllocations) {
 
     EXPECT_CALL(*this, mock_alloc_deallocate_mock(_, _, 10));
     test_with_mock_alloc_deallocate(&alloc, ptr1, 10);
-    EXPECT_CALL(*this, mock_alloc_deallocate_mock(_, _, 300));
-    test_with_mock_alloc_deallocate(&alloc, ptr2, 300);
-    EXPECT_CALL(*this, mock_alloc_deallocate_mock(_, _, 1));
-    test_with_mock_alloc_deallocate(&alloc, ptr3, 1);
-
     {
         DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
         test_with_mock_alloc_debug(&alloc, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
@@ -145,7 +132,7 @@ TEST_F(TestAllocWithMock, DebugAllocations) {
             "  base: mock_alloc@" DC_PTR_REPLACE ",\n"
             "  allocations: test_with_mock_alloc_allocations@" DC_PTR_REPLACE " {\n"
             "    capacity: 256,\n"
-            "    tombstones: 3,\n"
+            "    tombstones: 1,\n"
             "    count: 0,\n"
             "    ctrl: @" DC_PTR_REPLACE "[256 + simd probe size additional 16],\n"
             "    slots: @" DC_PTR_REPLACE "[256],\n"
