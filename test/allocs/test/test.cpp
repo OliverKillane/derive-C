@@ -29,6 +29,25 @@ TEST(TestAlloc, BasicAllocation) {
     testalloc_unleak(&alloc);
 }
 
+TEST(TestAlloc, AllocAndRealloc) {
+    DC_SCOPED(testalloc) alloc = testalloc_new(stdalloc_get_ref());
+
+    void* ptr = testalloc_allocate_uninit(&alloc, 14);
+    memset(ptr, 14, 'a');
+
+    void* ptr_smaller_realloc = testalloc_reallocate(&alloc, ptr, 14, 1);
+    dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
+                            ptr_smaller_realloc, 1);
+
+    void* ptr_larger_realloc = testalloc_reallocate(&alloc, ptr_smaller_realloc, 1, 4);
+    dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
+                            ptr_larger_realloc, 1);
+    dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
+                            ((char*)ptr_larger_realloc) + 1, 3);
+
+    testalloc_deallocate(&alloc, ptr_larger_realloc, 4);
+}
+
     #define ALLOC stdalloc
     #define NAME mock_alloc
     #include <derive-c/alloc/wrap/template.h>

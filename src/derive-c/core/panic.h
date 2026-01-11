@@ -26,9 +26,9 @@
 #if !defined DC_PANIC
     #include <stdio.h>  // NOLINT(misc-include-cleaner) (for default panic implementation)
     #include <stdlib.h> // NOLINT(misc-include-cleaner) (for default panic implementation)
-    #define DC_PANIC(...)                                                                          \
+    #define DC_PANIC(str, ...)                                                                     \
         do {                                                                                       \
-            fprintf(stderr, __VA_ARGS__);                                                          \
+            fprintf(stderr, "[%s:%d] " str, __FILE__, __LINE__ __VA_OPT__(, ) __VA_ARGS__);        \
             abort();                                                                               \
         } while (0);
 #endif

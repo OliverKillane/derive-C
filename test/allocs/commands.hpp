@@ -134,7 +134,8 @@ template <typename SutNS> struct AllocateUninit : Command<SutNS> {
         };
     }
     void show(std::ostream& os) const override {
-        os << "AllocateUninit(index=" << mIndex << ", size=" << mSize << ", fill=" << mFill << ")";
+        os << "AllocateUninit(index=" << mIndex << ", size=" << mSize
+           << ", fill=" << static_cast<int>(mFill) << ")";
     }
 };
 
@@ -187,7 +188,8 @@ template <typename SutNS> struct AllocateZeroed : Command<SutNS> {
         };
     }
     void show(std::ostream& os) const override {
-        os << "AllocateZeroed(index=" << mIndex << ", size=" << mSize << ", fill=" << mFill << ")";
+        os << "AllocateZeroed(index=" << mIndex << ", size=" << mSize
+           << ", fill=" << static_cast<int>(mFill) << ")";
     }
 };
 
@@ -244,12 +246,6 @@ template <typename SutNS> struct ReallocateLarger : Command<SutNS> {
             .mSize = alloc.mSize + mIncreaseBy,
         };
 
-        if (new_ptr != original_ptr) {
-            // Check the bytes for the old allocation are poisoned
-            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                                    original_ptr, alloc.mSize);
-        }
-
         // Check the original bytes are unchanged
         char const* original_start = static_cast<char const*>(new_ptr);
         dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
@@ -286,7 +282,12 @@ template <typename SutNS> struct ReallocateSmaller : Command<SutNS> {
                        ? *rc::gen::inRange<size_t>(1, m.mAllocations.at(mIndex.value()).mSize)
                        : 0) {}
 
-    void checkPreconditions(const Model& /*m*/) const override { RC_PRE(mIndex.has_value()); }
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(mIndex.has_value());
+        if (mIndex.has_value()) {
+            RC_PRE(m.mAllocations.at(mIndex.value()).mSize >= mNewSize);
+        }
+    }
     void apply(Model& m) const override { m.mAllocations.at(mIndex.value()).mSize = mNewSize; }
     void runCommand(const Model& m, Wrapper& w) const override {
         const auto& alloc = m.mAllocations.at(mIndex.value());
@@ -297,10 +298,10 @@ template <typename SutNS> struct ReallocateSmaller : Command<SutNS> {
             .mPtr = new_ptr,
             .mSize = mNewSize,
         };
+        RC_ASSERT(alloc.mSize >= mNewSize);
 
         if (new_ptr == original_ptr) {
             // Need to check that the memory removed was poisoned
-            RC_ASSERT(alloc.mSize >= mNewSize);
             size_t poisonedBytes = alloc.mSize - mNewSize;
             if (poisonedBytes > 0) {
                 char const* end = static_cast<char const*>(original_ptr) + mNewSize;
@@ -313,6 +314,10 @@ template <typename SutNS> struct ReallocateSmaller : Command<SutNS> {
             dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
                                     original_ptr, alloc.mSize);
         }
+
+        // All bytes should still be valid in the (smaller) new allocation.
+        dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
+                                new_ptr, mNewSize);
 
         // Check the data is preserved
         char* char_ptr = static_cast<char*>(new_ptr);

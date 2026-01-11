@@ -20,7 +20,7 @@ static void* NS(stdalloc, allocate_uninit)(stdalloc_ref /* ref */, size_t size) 
 
     // JUSTIFY: Setting memory capabilities
     //  - Flakiness observed for tests running under msan with uninstrumented glibc
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_NONE, DC_MEMORY_TRACKER_CAP_WRITE, alloc, size);
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, alloc, size);
     DC_ASSERT(alloc != NULL, "Standard allocator failed to malloc");
     return alloc;
 }
@@ -31,7 +31,7 @@ static void* NS(stdalloc, allocate_zeroed)(stdalloc_ref /* ref */, size_t size) 
 
     // JUSTIFY: Setting memory capabilities
     //  - Flakiness observed for tests running under msan with uninstrumented glibc
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_NONE, DC_MEMORY_TRACKER_CAP_READ_WRITE, alloc,
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, alloc,
                           size);
 
     DC_ASSERT(alloc != NULL, "Standard allocator failed to calloc");
@@ -56,11 +56,19 @@ static void* NS(stdalloc, reallocate)(stdalloc_ref /* ref */, void* ptr, size_t 
 
     void* new_ptr = realloc(ptr, new_size);
     DC_ASSERT(new_ptr != NULL, "Standard allocator failed to realloc");
+
+    if (new_size > old_size) {
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
+                              ((char*)new_ptr) + old_size, new_size - old_size);
+    }
+
     return new_ptr;
 }
 
-static void NS(stdalloc, deallocate)(stdalloc_ref /* ref */, void* ptr, size_t /* size */) {
+static void NS(stdalloc, deallocate)(stdalloc_ref /* ref */, void* ptr, size_t size) {
     DC_ASSUME(ptr);
+
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, ptr, size);
 
     // JUSTIFY: Ignoring malloc clang static analyser warnings in this branch
     // To make this safe we need to prove:
