@@ -33,7 +33,7 @@ TEST(TestAlloc, AllocAndRealloc) {
     DC_SCOPED(testalloc) alloc = testalloc_new(stdalloc_get_ref());
 
     void* ptr = testalloc_allocate_uninit(&alloc, 14);
-    memset(ptr, 14, 'a');
+    memset(ptr, 'a', 14);
 
     void* ptr_smaller_realloc = testalloc_reallocate(&alloc, ptr, 14, 1);
     dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
