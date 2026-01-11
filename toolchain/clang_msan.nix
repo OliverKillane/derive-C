@@ -119,5 +119,12 @@ pkgs.mkShell {
     echo "NIX_MSAN_CXXINC=$NIX_MSAN_CXXINC"
     echo "NIX_MSAN_LIBDIR=$NIX_MSAN_LIBDIR"
     echo "NIX_MSAN_RTINC=$NIX_MSAN_RTINC"
+
+    echo "============================================================="
+    echo "A shell for running tests with msan. Development conveniences"
+    echo "(e.g. coverage) are not included"
+    echo "clang version:"
+    clang --version
+    echo "============================================================="
   '';
 }

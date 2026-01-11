@@ -18,4 +18,13 @@ myStdenv.mkDerivation {
     pkg-config
     gcc  # optional, keeps gcc tools on PATH in the shell
   ];
+
+  shellHook = ''
+    echo "============================================================="
+    echo "A shell for testing with gcc compilation. Development"
+    echo "conveniences (e.g. coverage) are not supported."
+    echo "GCC version:"
+    gcc --version
+    echo "============================================================="
+  '';
 }

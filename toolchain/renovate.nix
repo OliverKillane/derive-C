@@ -15,7 +15,10 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
+    echo "============================================================="
+    echo "A shell for running renovate for updating cmake dependencies."
     echo "Renovate version:"
     renovate --version
+    echo "============================================================="
   '';
 }
