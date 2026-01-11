@@ -51,5 +51,11 @@ llvm20.stdenv.mkDerivation {
         --clang-path="${llvm20.clang}/bin/clang" \
         --resource-dir="$(${llvm20.clang}/bin/clang -print-resource-dir)"
     )
+
+    echo "============================================================="
+    echo "A shell for derive-c development, with all conveniences."
+    echo "clang version:"
+    clang --version
+    echo "============================================================="
   '';
 }
