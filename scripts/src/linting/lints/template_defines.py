@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Self
 
 from src.linting.linter import (
-    DERIVE_C_TAG,
     LinterCheck,
     ResultSingle,
     LintContext,
@@ -16,8 +15,7 @@ from src.linting.linter import (
 )
 from src.linting.utils import RED, RESET
 
-FOR_TEMPLATE: str = f"// {DERIVE_C_TAG} for template"
-FOR_INPUT_ARG: str = f"// {DERIVE_C_TAG} for input arg"
+from src.linting.tags import FOR_INPUT_ARG, FOR_TEMPLATE
 
 
 class Action(Enum):
@@ -76,14 +74,16 @@ class Event:
         if not s:
             return None
 
-        if s.endswith(FOR_TEMPLATE):
+        if FOR_TEMPLATE in s:
             attrib = Attrib.TEMPLATE
-        elif s.endswith(FOR_INPUT_ARG):
+        elif FOR_INPUT_ARG in s:
             attrib = Attrib.INPUT_ARG
         else:
             attrib = Attrib.NORMAL
         if attrib is Attrib.TEMPLATE:
-            s = s[: -len(FOR_TEMPLATE)].rstrip()
+            s = s.split(FOR_TEMPLATE, 1)[0].rstrip()
+        elif attrib is Attrib.INPUT_ARG:
+            s = s.split(FOR_INPUT_ARG, 1)[0].rstrip()
 
         b = s.lstrip()
         action = kind = None

@@ -1,12 +1,20 @@
 
+#include "derive-c/core/debug/fmt.h"
+#include "derive-c/core/debug/memory_tracker.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <derive-c/utils/debug.h>
+
 #include <derive-cpp/test/trampoline.hpp>
+#include <derive-cpp/test/gtest_mock.hpp>
+#include <derive-cpp/fmt/remove_ptrs.hpp>
 
 #include <derive-c/test/mock.h>
-MOCKABLE(void, free_int, (int* ptr)) { (void)ptr; }
-MOCKABLE(int, clone_int, (int const* self)) { return *self; }
+namespace {
+DC_MOCKABLE(void, free_int, (int const* ptr)) { (void)ptr; }
+DC_MOCKABLE(int, clone_int, (int const* self)) { return *self; }
+} // namespace
 
 #define NAME optional_int
 #define ITEM int
@@ -16,15 +24,12 @@ MOCKABLE(int, clone_int, (int const* self)) { return *self; }
 
 using namespace testing;
 
-struct Option : Test {
-    MOCK_METHOD(void, free_int_mock, (int* ptr), ());
-    derivecpp::Trampoline<&free_int, &Option::free_int_mock> free_int_tramp{this};
-
-    MOCK_METHOD(int, clone_int_mock, (int const* self), ());
-    derivecpp::Trampoline<&clone_int, &Option::clone_int_mock> clone_int_tramp{this};
+struct OptionTests : Test {
+    FIXTURE_MOCK(OptionTests, void, free_int, (int const* ptr), ());
+    FIXTURE_MOCK(OptionTests, int, clone_int, (int const* self), ());
 };
 
-TEST_F(Option, EmptyNotPresent) {
+TEST_F(OptionTests, EmptyNotPresent) {
     optional_int opt = optional_int_empty();
     ASSERT_FALSE(optional_int_is_present(&opt));
     ASSERT_EQ(optional_int_get(&opt), nullptr);
@@ -33,7 +38,7 @@ TEST_F(Option, EmptyNotPresent) {
     optional_int_delete(&opt);
 }
 
-TEST_F(Option, Present) {
+TEST_F(OptionTests, Present) {
     optional_int opt = optional_int_from(42);
     ASSERT_TRUE(optional_int_is_present(&opt));
     ASSERT_EQ(*optional_int_get(&opt), 42);
@@ -43,7 +48,7 @@ TEST_F(Option, Present) {
     optional_int_delete(&opt);
 }
 
-TEST_F(Option, From) {
+TEST_F(OptionTests, From) {
     optional_int opt = optional_int_from(100);
     ASSERT_TRUE(optional_int_is_present(&opt));
     ASSERT_EQ(*optional_int_get(&opt), 100);
@@ -53,7 +58,7 @@ TEST_F(Option, From) {
     optional_int_delete(&opt);
 }
 
-TEST_F(Option, Replace) {
+TEST_F(OptionTests, Replace) {
     optional_int opt = optional_int_from(10);
     ASSERT_TRUE(optional_int_is_present(&opt));
     ASSERT_EQ(*optional_int_get(&opt), 10);
@@ -68,7 +73,7 @@ TEST_F(Option, Replace) {
     optional_int_delete(&opt);
 }
 
-TEST_F(Option, ReplaceEmpty) {
+TEST_F(OptionTests, ReplaceEmpty) {
     optional_int opt = optional_int_empty();
     ASSERT_FALSE(optional_int_is_present(&opt));
 
@@ -80,7 +85,7 @@ TEST_F(Option, ReplaceEmpty) {
     optional_int_delete(&opt);
 }
 
-TEST_F(Option, Clone) {
+TEST_F(OptionTests, Clone) {
     optional_int opt_1 = optional_int_from(10);
 
     EXPECT_CALL(*this, clone_int_mock(_)).WillOnce(Return(10));
@@ -93,7 +98,7 @@ TEST_F(Option, Clone) {
     optional_int_delete(&opt_2);
 }
 
-TEST_F(Option, GetOr) {
+TEST_F(OptionTests, GetOr) {
     optional_int opt_some = optional_int_from(10);
     optional_int opt_none = optional_int_empty();
 
@@ -110,3 +115,38 @@ TEST_F(Option, GetOr) {
     EXPECT_CALL(*this, free_int_mock(_));
     optional_int_delete(&opt_some);
 }
+
+TEST_F(OptionTests, DebugSome) {
+    DC_SCOPED(optional_int) opt_some = optional_int_from(10);
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
+    optional_int_debug(&opt_some, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+
+    EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { 10 }",
+              derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
+    EXPECT_CALL(*this, free_int_mock(_));
+}
+
+TEST_F(OptionTests, DebugNone) {
+    DC_SCOPED(optional_int) opt_none = optional_int_empty();
+    DC_SCOPED(dc_debug_string_builder) sb = dc_debug_string_builder_new(stdalloc_get_ref());
+    optional_int_debug(&opt_none, dc_debug_fmt_new(), dc_debug_string_builder_stream(&sb));
+    EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { NONE }",
+              derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
+}
+
+// TODO(oliverkilane): determine why this fails!!!
+// TEST(OptionTest, Foo) {
+//     dc_debug_string_builder sb_1 = dc_debug_string_builder_new(stdalloc_get_ref());
+//     std::cout << "str: " << dc_debug_string_builder_string(&sb_1) << "\n";
+//     EXPECT_EQ("o", dc_debug_string_builder_string(&sb_1));
+
+//     dc_debug_string_builder sb_2 = dc_debug_string_builder_new(stdalloc_get_ref());
+//     fprintf(dc_debug_string_builder_stream(&sb_2), "optional_int@0x7ffc151585d0 { NONE }");
+
+//     const char* x = dc_debug_string_builder_string(&sb_2);
+//     dc_memory_tracker_debug(stdout, x, 10);
+//     std::cout << "ptr" << &x[0] << "\n";
+
+//     dc_debug_string_builder_delete(&sb_2);
+//     dc_debug_string_builder_delete(&sb_1);
+// }

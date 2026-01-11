@@ -9,7 +9,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined KEY
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No KEY")
     #endif
     #define KEY map_key_t
@@ -17,7 +17,7 @@ typedef int KEY;
 #endif
 
 #if !defined KEY_HASH
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No KEY_HASH")
     #endif
 
@@ -42,7 +42,7 @@ static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No VALUE")
     #endif
 typedef struct {
@@ -79,7 +79,7 @@ typedef struct {
     size_t items;
     KEY_ENTRY* keys;
     VALUE* values;
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
     dc_gdb_marker derive_c_hashmap;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
@@ -88,19 +88,20 @@ typedef struct {
     DC_ASSUME(self);                                                                               \
     DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->capacity));                                            \
     DC_ASSUME((self)->keys);                                                                       \
-    DC_ASSUME((self)->values);                                                                     \
-    DC_ASSUME((self)->alloc);
+    DC_ASSUME((self)->values);
 
-static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
+DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = SIZE_MAX;
+
+static SELF NS(SELF, new_with_capacity_for)(size_t capacity, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(capacity > 0);
     size_t const real_capacity = dc_apply_capacity_policy(capacity);
     DC_ASSERT(real_capacity > 0);
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
-    KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(alloc, sizeof(KEY_ENTRY), real_capacity);
-    VALUE* values = (VALUE*)NS(ALLOC, malloc)(alloc, sizeof(VALUE) * real_capacity);
-    DC_ASSERT(keys && values);
+    KEY_ENTRY* keys =
+        (KEY_ENTRY*)NS(ALLOC, allocate_zeroed)(alloc_ref, sizeof(KEY_ENTRY) * real_capacity);
+    VALUE* values = (VALUE*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(VALUE) * real_capacity);
 
     // JUSTIFY: no access for values & but keys are fine
     // - Keys are calloced/zeroed as we use this for item lookup, therefore it is valid to read
@@ -115,14 +116,14 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity, ALLOC* alloc) {
         .items = 0,
         .keys = keys,
         .values = values,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
         .derive_c_hashmap = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
-    return NS(SELF, new_with_capacity_for)(DC_INITIAL_CAPACITY, alloc);
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+    return NS(SELF, new_with_capacity_for)(DC_INITIAL_CAPACITY, alloc_ref);
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
@@ -134,9 +135,10 @@ static SELF NS(SELF, clone)(SELF const* self) {
     // JUSTIFY: Individually copy keys
     //           - Many entries are zeroed, no need to copy uninit data
 
-    KEY_ENTRY* keys = (KEY_ENTRY*)NS(ALLOC, calloc)(self->alloc, sizeof(KEY_ENTRY), self->capacity);
-    VALUE* values = (VALUE*)NS(ALLOC, malloc)(self->alloc, sizeof(VALUE) * self->capacity);
-    DC_ASSERT(keys && values);
+    KEY_ENTRY* keys =
+        (KEY_ENTRY*)NS(ALLOC, allocate_zeroed)(self->alloc_ref, sizeof(KEY_ENTRY) * self->capacity);
+    VALUE* values =
+        (VALUE*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(VALUE) * self->capacity);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (self->keys[i].present) {
@@ -158,7 +160,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .items = self->items,
         .keys = keys,
         .values = values,
-        .alloc = self->alloc,
+        .alloc_ref = self->alloc_ref,
         .derive_c_hashmap = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -226,7 +228,7 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const target_capacity = dc_apply_capacity_policy(expected_items);
     if (target_capacity > self->capacity) {
-        SELF new_map = NS(SELF, new_with_capacity_for)(expected_items, self->alloc);
+        SELF new_map = NS(SELF, new_with_capacity_for)(expected_items, self->alloc_ref);
         for (size_t index = 0; index < self->capacity; index++) {
             KEY_ENTRY* entry = &self->keys[index];
             if (entry->present) {
@@ -234,8 +236,9 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
                                                               self->values[index]);
             }
         }
-        NS(ALLOC, free)(self->alloc, (void*)self->keys);
-        NS(ALLOC, free)(self->alloc, (void*)self->values);
+        NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->keys,
+                              self->capacity * sizeof(KEY_ENTRY));
+        NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->values, self->capacity * sizeof(VALUE));
 
         INVARIANT_CHECK(&new_map);
         *self = new_map;
@@ -245,6 +248,11 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
+
+    if (self->items >= NS(SELF, max_capacity)) {
+        return NULL;
+    }
+
     if (dc_apply_capacity_policy(self->items) > self->capacity / 2) {
         NS(SELF, extend_capacity_for)(self, self->items * 2);
     }
@@ -448,8 +456,8 @@ static void NS(SELF, delete)(SELF* self) {
         }
     }
 
-    NS(ALLOC, free)(self->alloc, (void*)self->keys);
-    NS(ALLOC, free)(self->alloc, (void*)self->values);
+    NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->keys, self->capacity * sizeof(KEY_ENTRY));
+    NS(ALLOC, deallocate)(self->alloc_ref, (void*)self->values, self->capacity * sizeof(VALUE));
 }
 
 #undef ITER
@@ -512,7 +520,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
@@ -522,10 +530,10 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "values: @%p,\n", self->values);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
-    dc_debug_fmt_print(fmt, stream, "items: [");
+    dc_debug_fmt_print(fmt, stream, "items: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);

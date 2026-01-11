@@ -8,6 +8,8 @@
 #include "../commands.hpp"
 #include "../../objects.hpp"
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
@@ -72,20 +74,20 @@ INDEX_ITEMS_EQ_HASH(Sut_16_5_Complex);
 
 namespace {
 template <typename SutNS> void Test() {
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get()));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new(stdalloc_get_ref()));
     SutModel<SutNS> model;
     rc::state::check(model, sutWrapper,
                      rc::state::gen::execOneOfWithArgs<Insert<SutNS>, Insert<SutNS>, Insert<SutNS>,
                                                        Write<SutNS>, Remove<SutNS>>());
 }
 
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_8_2_PrimitiveSmall, ()) { Test<Sut_8_2_PrimitiveSmall>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_8_2_PrimitiveMedium, ()) { Test<Sut_8_2_PrimitiveMedium>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_16_8_PrimitiveSmall, ()) { Test<Sut_16_8_PrimitiveSmall>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_16_8_PrimitiveMedium, ()) {
-    Test<Sut_16_8_PrimitiveMedium>();
-}
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_16_5_Empty, ()) { Test<Sut_16_5_Empty>(); }
-RC_GTEST_PROP(ContiguousArenaFuzz, Sut_16_5_Complex, ()) { Test<Sut_16_5_Complex>(); }
+// clang-format off
+FUZZ(Sut_8_2_PrimitiveSmall,   Sut_8_2_PrimitiveSmall  )
+FUZZ(Sut_8_2_PrimitiveMedium,  Sut_8_2_PrimitiveMedium )
+FUZZ(Sut_16_8_PrimitiveSmall,  Sut_16_8_PrimitiveSmall )
+FUZZ(Sut_16_8_PrimitiveMedium, Sut_16_8_PrimitiveMedium)
+FUZZ(Sut_16_5_Empty,           Sut_16_5_Empty          )
+FUZZ(Sut_16_5_Complex,         Sut_16_5_Complex        )
+// clang-format on
 
 } // namespace

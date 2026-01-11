@@ -13,60 +13,69 @@
 
 typedef struct {
     char const* name;
-    ALLOC* base;
+    FILE* stream;
+    NS(ALLOC, ref) alloc_ref;
 } SELF;
 
-static SELF NS(SELF, new)(char const* name, ALLOC* alloc) {
-    return (SELF){.name = name, .base = alloc};
+static SELF NS(SELF, new)(char const* name, FILE* stream, NS(ALLOC, ref) alloc_ref) {
+    fprintf(stream, "[%s] %s(alloc=" DC_EXPAND_STRING(ALLOC) "@%p)\n", name, __func__,
+            NS(NS(ALLOC, ref), deref)(alloc_ref));
+    return (SELF){
+        .name = name,
+        .stream = stream,
+        .alloc_ref = alloc_ref,
+    };
 }
 
-static void* NS(SELF, malloc)(SELF* self, size_t size) {
+static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, malloc)(self->base, size);
-    if (ptr) {
-        printf("%s allocated %zu bytes at %p\n", self->name, size, ptr);
-    } else {
-        printf("%s failed to allocate %zu bytes\n", self->name, size);
-    }
+    void* ptr = NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
+    fprintf(self->stream, "[%s] %s(size=%zu) -> %p\n", self->name, __func__, size, ptr);
     return ptr;
 }
 
-static void* NS(SELF, calloc)(SELF* self, size_t count, size_t size) {
+static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     DC_ASSUME(self);
-    void* ptr = NS(ALLOC, calloc)(self->base, count, size);
-    if (ptr) {
-        printf("%s allocated %zu bytes at %p\n", self->name, count * size, ptr);
-    } else {
-        printf("%s failed to allocate %zu bytes\n", self->name, count * size);
-    }
+    void* ptr = NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
+    fprintf(self->stream, "[%s] %s(size=%zu) -> %p\n", self->name, __func__, size, ptr);
     return ptr;
 }
 
-static void* NS(SELF, realloc)(SELF* self, void* ptr, size_t size) {
+static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
     DC_ASSUME(self);
-    void* new_ptr = NS(ALLOC, realloc)(self->base, ptr, size);
-    if (new_ptr) {
-        printf("%s reallocated memory at %p to %zu bytes\n", self->name, new_ptr, size);
-    } else {
-        printf("%s failed to reallocate memory at %p to %zu bytes\n", self->name, ptr, size);
-    }
+    void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
+    // JUSTIFY: Ignoring ptr used after free for clang static analyser
+    //  - We only use the pointer's value in log, do not dereference it.
+    // NOLINTBEGIN(clang-analyzer-unix.Malloc)
+    fprintf(self->stream, "[%s] %s(ptr=%p, old_size=%zu, new_size=%zu) -> %p\n", self->name,
+            __func__, ptr, old_size, new_size, new_ptr);
+    // NOLINTEND(clang-analyzer-unix.Malloc)
     return new_ptr;
 }
 
-static void NS(SELF, free)(SELF* self, void* ptr) {
+static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
-    printf("%s freeing memory at %p\n", self->name, ptr);
-    NS(ALLOC, free)(self->base, ptr);
+    fprintf(self->stream, "[%s] %s(ptr=%p, size=%zu)\n", self->name, __func__, ptr, size);
+    NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, STRINGIFY(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "name: %s,\n", self->name);
-    dc_debug_fmt_print(fmt, stream, "base: " STRINGIFY(ALLOC) "@%p,\n", self->base);
+    dc_debug_fmt_print(fmt, stream, "alloc: ");
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
+    fprintf(stream, "\n");
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");
 }
+
+static void NS(SELF, delete)(SELF* self) {
+    DC_ASSUME(self);
+    fprintf(self->stream, "[%s]: %s\n", self->name, __func__);
+}
+
+DC_TRAIT_REFERENCABLE_BY_PTR(SELF);
 
 DC_TRAIT_ALLOC(SELF);
 

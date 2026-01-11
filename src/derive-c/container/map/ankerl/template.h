@@ -1,7 +1,6 @@
 /// @brief A simple swiss table implementation.
 /// See the abseil docs for swss table [here](https://abseil.io/about/design/swisstables)
 
-#include "derive-c/container/map/ankerl/utils.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -11,7 +10,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined KEY
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No KEY")
     #endif
     #define KEY map_key_t
@@ -19,7 +18,7 @@ typedef int KEY;
 #endif
 
 #if !defined KEY_HASH
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No KEY_HASH")
     #endif
 
@@ -44,7 +43,7 @@ static size_t KEY_HASH(KEY const* key);
 #endif
 
 #if !defined VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No VALUE")
     #endif
 typedef struct {
@@ -86,7 +85,7 @@ static SLOT NS(SLOT, clone)(SLOT const* slot) {
 }
 
 static void NS(SLOT, debug)(SLOT const* slot, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SLOT) " @%p {\n", slot);
+    fprintf(stream, DC_EXPAND_STRING(SLOT) "@%p {\n", slot);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "key: ");
@@ -120,29 +119,63 @@ static void NS(SLOT, delete)(SLOT* slot) {
 
 #pragma pop_macro("ALLOC")
 
+#define BUCKET NS(SELF, bucket)
+
 #if defined SMALL_BUCKETS
     #define INDEX_KIND dc_ankerl_index_small
-    #define BUCKET_SIZE 4
+
+typedef struct {
+    dc_ankerl_mdata mdata;
+    uint16_t index;
+} BUCKET;
+
+DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = (size_t)UINT16_MAX;
+
+static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
+    DC_ASSUME(index <= NS(SELF, max_capacity));
+    return (BUCKET){
+        .mdata = mdata,
+        .index = (uint16_t)(index),
+    };
+}
+
+static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) { return (size_t)bucket->index; }
+
+DC_STATIC_ASSERT(sizeof(BUCKET) == 4);
     #undef SMALL_BUCKETS // [DERIVE-C] for input arg
 #else
     #define INDEX_KIND dc_ankerl_index_large
-    #define BUCKET_SIZE 8
-#endif
 
-#define BUCKET NS(SELF, bucket)
 typedef struct {
     dc_ankerl_mdata mdata;
-    INDEX_KIND index;
-} __attribute__((packed)) BUCKET;
+    uint16_t index_hi;
+    uint32_t index_lo;
+} BUCKET;
 
-DC_STATIC_ASSERT(sizeof(BUCKET) == BUCKET_SIZE);
+DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = (size_t)UINT32_MAX + ((size_t)UINT16_MAX << 32);
+
+static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
+    DC_ASSUME(index <= NS(SELF, max_capacity));
+    return (BUCKET){
+        .mdata = mdata,
+        .index_hi = (uint16_t)(index >> 32),
+        .index_lo = (uint32_t)index,
+    };
+}
+
+static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) {
+    return (size_t)bucket->index_lo + ((size_t)bucket->index_hi << 32);
+}
+
+DC_STATIC_ASSERT(sizeof(BUCKET) == 8);
+#endif
 
 typedef struct {
     size_t buckets_capacity;
     BUCKET* buckets;
     SLOT_VECTOR slots;
 
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
     dc_gdb_marker derive_c_hashmap;
     // JUSTIFY: No iteration invalidator
     // - Iteration is dependent on the vector, which already tracks this.
@@ -151,46 +184,44 @@ typedef struct {
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
     DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->buckets_capacity));                                    \
-    DC_ASSUME((self)->buckets);                                                                    \
-    DC_ASSUME((self)->alloc);
+    DC_ASSUME((self)->buckets);
 
-static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, ALLOC* alloc) {
+static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, ref) alloc_ref) {
     DC_ASSUME(capacity > 0);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
 
-    BUCKET* buckets = (BUCKET*)NS(ALLOC, calloc)(alloc, capacity, sizeof(BUCKET));
-    DC_ASSERT(buckets);
+    BUCKET* buckets = (BUCKET*)NS(ALLOC, allocate_zeroed)(alloc_ref, capacity * sizeof(BUCKET));
 
     return (SELF){
         .buckets_capacity = capacity,
         .buckets = buckets,
-        .slots = NS(SLOT_VECTOR, new_with_capacity)(capacity, alloc),
-        .alloc = alloc,
+        .slots = NS(SLOT_VECTOR, new_with_capacity)(capacity, alloc_ref),
+        .alloc_ref = alloc_ref,
     };
 }
 
-static SELF NS(SELF, new_with_capacity_for)(size_t for_items, ALLOC* alloc) {
+static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(for_items > 0);
-    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_buckets_capacity(for_items), alloc);
+    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_buckets_capacity(for_items),
+                                                   alloc_ref);
 }
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
-    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_initial_items, alloc);
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+    return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_initial_items, alloc_ref);
 }
 
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
-    BUCKET* new_buckets =
-        (BUCKET*)NS(ALLOC, malloc)(self->alloc, self->buckets_capacity * sizeof(BUCKET));
-    DC_ASSERT(new_buckets);
+    BUCKET* new_buckets = (BUCKET*)NS(ALLOC, allocate_uninit)(
+        self->alloc_ref, self->buckets_capacity * sizeof(BUCKET));
     memcpy(new_buckets, self->buckets, self->buckets_capacity * sizeof(BUCKET));
 
     return (SELF){
         .buckets_capacity = self->buckets_capacity,
         .buckets = new_buckets,
         .slots = NS(SLOT_VECTOR, clone)(&self->slots),
-        .alloc = self->alloc,
+        .alloc_ref = self->alloc_ref,
         .derive_c_hashmap = dc_gdb_marker_new(),
     };
 }
@@ -223,7 +254,7 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
             }
 
             if (b->mdata.fingerprint == fp) {
-                const size_t di = NS(INDEX_KIND, get)(&b->index);
+                const size_t di = PRIV(NS(BUCKET, get_index))(b);
                 SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
                 if (KEY_EQ(&slot->key, &key)) {
                     return NULL;
@@ -239,15 +270,12 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
                                             .key = key,
                                             .value = value,
                                         });
-
-    BUCKET cur = {
-        .mdata =
-            {
-                .fingerprint = fp,
-                .dfd = dc_ankerl_dfd_new(0),
-            },
-        .index = NS(INDEX_KIND, new)(dense_index),
-    };
+    BUCKET cur = PRIV(NS(BUCKET, new))(
+        (dc_ankerl_mdata){
+            .fingerprint = fp,
+            .dfd = dc_ankerl_dfd_new(0),
+        },
+        dense_index);
 
     for (size_t pos = desired;; pos = (pos + 1) & mask) {
         BUCKET* b = &self->buckets[pos];
@@ -271,8 +299,8 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(new_capacity));
 
-    BUCKET* new_buckets = (BUCKET*)NS(ALLOC, calloc)(self->alloc, new_capacity, sizeof(BUCKET));
-    DC_ASSERT(new_buckets);
+    BUCKET* new_buckets =
+        (BUCKET*)NS(ALLOC, allocate_zeroed)(self->alloc_ref, new_capacity * sizeof(BUCKET));
 
     const size_t new_mask = new_capacity - 1;
     const size_t n = NS(SLOT_VECTOR, size)(&self->slots);
@@ -284,12 +312,12 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
         const uint8_t fp = dc_ankerl_fingerprint_from_hash(hash);
         const size_t desired = hash & new_mask;
 
-        BUCKET cur = {.mdata =
-                          {
-                              .fingerprint = fp,
-                              .dfd = dc_ankerl_dfd_new(0),
-                          },
-                      .index = NS(INDEX_KIND, new)(dense_index)};
+        BUCKET cur = PRIV(NS(BUCKET, new))(
+            (dc_ankerl_mdata){
+                .fingerprint = fp,
+                .dfd = dc_ankerl_dfd_new(0),
+            },
+            dense_index);
 
         for (size_t pos = desired;; pos = (pos + 1) & new_mask) {
             BUCKET* b = &new_buckets[pos];
@@ -309,7 +337,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
         }
     }
 
-    NS(ALLOC, free)(self->alloc, self->buckets);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->buckets, self->buckets_capacity * sizeof(BUCKET));
     self->buckets = new_buckets;
     self->buckets_capacity = new_capacity;
 }
@@ -327,6 +355,10 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
 
 static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
+
+    if (NS(SLOT_VECTOR, size)(&self->slots) >= NS(SELF, max_capacity)) {
+        return NULL;
+    }
 
     const size_t size = NS(SLOT_VECTOR, size)(&self->slots);
     if (size >= self->buckets_capacity) {
@@ -369,7 +401,7 @@ static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* key, size_t* o
         }
 
         if (b->mdata.fingerprint == fp) {
-            const size_t di = NS(INDEX_KIND, get)(&b->index);
+            const size_t di = PRIV(NS(BUCKET, get_index))(b);
             SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
             if (KEY_EQ(&slot->key, key)) {
                 *out_bucket_pos = pos;
@@ -481,10 +513,10 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
                 }
 
                 if (b->mdata.fingerprint == moved_fp) {
-                    const size_t di = NS(INDEX_KIND, get)(&b->index);
+                    const size_t di = PRIV(NS(BUCKET, get_index))(b);
                     SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
                     if (KEY_EQ(&slot->key, &dst->key)) {
-                        b->index = NS(INDEX_KIND, new)(removed_dense_index);
+                        *b = PRIV(NS(BUCKET, new))(b->mdata, removed_dense_index);
                         break;
                     }
                 }
@@ -518,7 +550,7 @@ static size_t NS(SELF, size)(SELF const* self) {
 static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
 
-    NS(ALLOC, free)(self->alloc, self->buckets);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->buckets, self->buckets_capacity * sizeof(BUCKET));
     NS(SLOT_VECTOR, delete)(&self->slots);
 }
 
@@ -560,13 +592,13 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "bucket capacity: %lu,\n", self->buckets_capacity);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
     dc_debug_fmt_print(fmt, stream, "slots: ");
@@ -621,9 +653,8 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #undef INVARIANT_CHECK
-#undef BUCKET
-#undef BUCKET_SIZE
 #undef INDEX_KIND
+#undef BUCKET
 #undef SLOT_VECTOR
 #undef SLOT
 

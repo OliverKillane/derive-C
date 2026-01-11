@@ -21,7 +21,7 @@ DC_STATIC_ASSERT(DC_MATH_IS_POWER_OF_2(DC_SWISS_SIMD_PROBE_SIZE));
 typedef uint8_t dc_swiss_id;
 typedef uint8_t dc_swiss_ctrl;
 
-static bool dc_swiss_is_present(dc_swiss_ctrl ctrl) {
+DC_PURE static bool dc_swiss_is_present(dc_swiss_ctrl ctrl) {
     switch (ctrl) {
     case DC_SWISS_VAL_EMPTY:
     case DC_SWISS_VAL_DELETED:
@@ -80,3 +80,8 @@ static dc_swiss_rehash_action dc_swiss_heuristic_should_extend(size_t tombstones
 
 #define DC_SWISS_NO_INDEX ((size_t)-1)
 typedef size_t dc_swiss_optional_index;
+
+// JUSTIFY: Not just size_t
+//  - We need to store the NONE index (as the max index)
+//  - We have a buffer at the end of the table
+static size_t const dc_swiss_index_capacity = SIZE_MAX - (1 + DC_SWISS_SIMD_PROBE_SIZE);

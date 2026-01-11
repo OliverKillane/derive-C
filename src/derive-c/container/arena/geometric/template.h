@@ -35,14 +35,14 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined INDEX_BITS
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The number of bits (8,16,32,64) to use for the arena's key")
     #endif
     #define INDEX_BITS 32
 #endif
 
 #if !defined VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The value type to place in the arena must be defined")
     #endif
 typedef struct {
@@ -104,7 +104,7 @@ typedef struct {
     INDEX_TYPE free_list;
     size_t count;
 
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
     dc_gdb_marker derive_c_arena_blocks;
     mutation_tracker iterator_invalidation_tracker;
 
@@ -122,17 +122,17 @@ typedef struct {
               (self)->block_current_exclusive_end);                                                \
     DC_ASSUME((self)->count <= MAX_INDEX);
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     uint8_t initial_block = 0;
     size_t initial_block_items =
         DC_ARENA_GEO_BLOCK_TO_SIZE(initial_block, INITIAL_BLOCK_INDEX_BITS);
-    SLOT* initial_block_slots = (SLOT*)NS(ALLOC, malloc)(alloc, initial_block_items * sizeof(SLOT));
-    DC_ASSERT(initial_block_slots);
+    SLOT* initial_block_slots =
+        (SLOT*)NS(ALLOC, allocate_uninit)(alloc_ref, initial_block_items * sizeof(SLOT));
 
     SELF self = {
         .free_list = INDEX_NONE,
         .count = 0,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
         .derive_c_arena_blocks = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
         .block_current_exclusive_end = 0,
@@ -176,8 +176,8 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         self->block_current++;
         size_t block_items =
             DC_ARENA_GEO_BLOCK_TO_SIZE(self->block_current, INITIAL_BLOCK_INDEX_BITS);
-        SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
-        DC_ASSERT(block_slots);
+        SLOT* block_slots =
+            (SLOT*)NS(ALLOC, allocate_uninit)(self->alloc_ref, block_items * sizeof(SLOT));
 
         self->blocks[self->block_current] = block_slots;
         self->block_current_exclusive_end = 0;
@@ -241,7 +241,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = {
         .free_list = self->free_list,
         .count = self->count,
-        .alloc = self->alloc,
+        .alloc_ref = self->alloc_ref,
         .derive_c_arena_blocks = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
         .block_current_exclusive_end = self->block_current_exclusive_end,
@@ -251,8 +251,8 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
     for (size_t block_index = 0; block_index <= self->block_current; block_index++) {
         size_t block_items = DC_ARENA_GEO_BLOCK_TO_SIZE(block_index, INITIAL_BLOCK_INDEX_BITS);
-        SLOT* block_slots = (SLOT*)NS(ALLOC, malloc)(self->alloc, block_items * sizeof(SLOT));
-        DC_ASSERT(block_slots);
+        SLOT* block_slots =
+            (SLOT*)NS(ALLOC, allocate_uninit)(self->alloc_ref, block_items * sizeof(SLOT));
         new_self.blocks[block_index] = block_slots;
 
         size_t const to_offset =
@@ -319,10 +319,11 @@ static void NS(SELF, delete)(SELF* self) {
             }
         }
 
-        dc_memory_tracker_set(
-            DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE, self->blocks[block],
-            DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS) * sizeof(SLOT));
-        NS(ALLOC, free)(self->alloc, self->blocks[block]);
+        size_t block_size =
+            DC_ARENA_GEO_BLOCK_TO_SIZE(block, INITIAL_BLOCK_INDEX_BITS) * sizeof(SLOT);
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
+                              self->blocks[block], block_size);
+        NS(ALLOC, deallocate)(self->alloc_ref, self->blocks[block], block_size);
     }
 }
 
@@ -392,7 +393,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
 
@@ -403,10 +404,10 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     }
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
-    dc_debug_fmt_print(fmt, stream, "blocks: [");
+    dc_debug_fmt_print(fmt, stream, "blocks: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
     for (size_t block = 0; block <= self->block_current; block++) {
         dc_debug_fmt_print(fmt, stream, "{\n");

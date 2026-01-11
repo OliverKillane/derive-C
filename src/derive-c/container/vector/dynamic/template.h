@@ -9,7 +9,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined ITEM
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No ITEM")
     #endif
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
     size_t size;
     size_t capacity;
     ITEM* data;
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
     dc_gdb_marker derive_c_vector_marker;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
@@ -51,44 +51,42 @@ typedef struct {
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
     DC_ASSUME((self)->size <= (self)->capacity);                                                   \
-    DC_ASSUME((self)->alloc);                                                                      \
     DC_ASSUME(DC_WHEN(!((self)->data), (self)->capacity == 0 && (self)->size == 0));
 
-static size_t NS(SELF, max_size)() { return SIZE_MAX; }
+DC_STATIC_CONSTANT size_t NS(SELF, max_size) = SIZE_MAX;
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     SELF self = (SELF){
         .size = 0,
         .capacity = 0,
         .data = NULL,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
         .derive_c_vector_marker = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
     return self;
 }
 
-static SELF NS(SELF, new_with_capacity)(size_t capacity, ALLOC* alloc) {
+static SELF NS(SELF, new_with_capacity)(size_t capacity, NS(ALLOC, ref) alloc_ref) {
     if (capacity == 0) {
-        return NS(SELF, new)(alloc);
+        return NS(SELF, new)(alloc_ref);
     }
 
-    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, capacity * sizeof(ITEM));
-    DC_ASSERT(DC_LIKELY(data));
+    ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(alloc_ref, capacity * sizeof(ITEM));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, data,
                           capacity * sizeof(ITEM));
     return (SELF){
         .size = 0,
         .capacity = capacity,
         .data = data,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
         .derive_c_vector_marker = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
-static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* alloc) {
-    ITEM* data = (ITEM*)NS(ALLOC, malloc)(alloc, size * sizeof(ITEM));
+static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, NS(ALLOC, ref) alloc_ref) {
+    ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(alloc_ref, size * sizeof(ITEM));
     if (size > 0) {
         // JUSTIFY: We only need to copy size-1 entries - can move the first as default.
         data[0] = default_item;
@@ -96,12 +94,11 @@ static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item, ALLOC* a
             data[i] = ITEM_CLONE(&default_item);
         }
     }
-    DC_ASSERT(DC_LIKELY(data));
     return (SELF){
         .size = size,
         .capacity = size,
         .data = data,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
         .derive_c_vector_marker = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -113,7 +110,8 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
         if (self->data == NULL) {
             DC_ASSUME(self->capacity == 0);
 
-            ITEM* new_data = (ITEM*)NS(ALLOC, malloc)(self->alloc, new_capacity * sizeof(ITEM));
+            ITEM* new_data =
+                (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, new_capacity * sizeof(ITEM));
             self->data = new_data;
             self->capacity = new_capacity;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
@@ -125,9 +123,11 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
                                   &self->data[self->size], uninit_elements * sizeof(ITEM));
 
+            size_t old_size = self->capacity * sizeof(ITEM);
+            size_t new_size = new_capacity * sizeof(ITEM);
             ITEM* new_data =
-                (ITEM*)NS(ALLOC, realloc)(self->alloc, self->data, new_capacity * sizeof(ITEM));
-            DC_ASSERT(new_data);
+                (ITEM*)NS(ALLOC, reallocate)(self->alloc_ref, self->data, old_size, new_size);
+
             self->data = new_data;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
                                   &self->data[self->size],
@@ -139,8 +139,8 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
 
 static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
-    ITEM* data = (ITEM*)NS(ALLOC, malloc)(self->alloc, self->capacity * sizeof(ITEM));
-    DC_ASSERT(data);
+    ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, self->capacity * sizeof(ITEM));
+
     for (size_t index = 0; index < self->size; index++) {
         data[index] = ITEM_CLONE(&self->data[index]);
     }
@@ -150,7 +150,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .size = self->size,
         .capacity = self->capacity,
         .data = data,
-        .alloc = self->alloc,
+        .alloc_ref = self->alloc_ref,
         .derive_c_vector_marker = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -222,7 +222,7 @@ static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
                           &self->data[self->size], count * sizeof(ITEM));
 }
 
-static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
+static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -250,6 +250,12 @@ static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     ITEM* entry = &self->data[self->size];
     *entry = item;
     self->size++;
+    return entry;
+}
+
+static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
+    ITEM* entry = NS(SELF, try_push)(self, item);
+    DC_ASSERT(entry != NULL);
     return entry;
 }
 
@@ -308,9 +314,10 @@ static void NS(SELF, delete)(SELF* self) {
 
         // JUSTIFY: Return to write level before passing to allocator
         //  - Is uninitialised, but still valid memory
+        size_t const size = self->capacity * sizeof(ITEM);
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
-                              self->data, self->capacity * sizeof(ITEM));
-        NS(ALLOC, free)(self->alloc, self->data);
+                              self->data, size);
+        NS(ALLOC, deallocate)(self->alloc_ref, self->data, size);
     }
 }
 
@@ -440,13 +447,13 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "size: %lu,\n", self->size);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
-    NS(ALLOC, debug)(self->alloc, fmt, stream);
+    NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
     dc_debug_fmt_print(fmt, stream, "items: @%p [\n", self->data);

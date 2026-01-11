@@ -1,11 +1,10 @@
 #pragma once
 
+#include <limits>
 #include <rapidcheck.h>
 #include <rapidcheck/gtest.h>
 #include <rapidcheck/state.h>
 #include <unordered_set>
-
-namespace containers::bitset {
 
 using SutModel = std::unordered_set<size_t>;
 
@@ -83,13 +82,41 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel, SutWrapp
     }
 };
 
+template <typename SutNS> struct SetOutOfBounds : Command<SutNS> {
+    using Base = Command<SutNS>;
+    using typename Base::Model;
+    using typename Base::Wrapper;
+
+    bool const mValue = *rc::gen::arbitrary<bool>();
+    typename SutNS::Sut_index_t mIndex =
+        *rc::gen::oneOf(rc::gen::inRange(std::numeric_limits<typename SutNS::Sut_index_t>::min(),
+                                         SutNS::Sut_min_index),
+                        rc::gen::inRange(SutNS::Sut_max_index,
+                                         std::numeric_limits<typename SutNS::Sut_index_t>::max()));
+
+    void checkPreconditions(const Model& /*m*/) const override {
+        // JUSTIFY: Additional check after generation
+        // - As the max bound includes the max index, and we cannot +1 as this overflows to zero
+        // - Easier to just re-check ranges here.
+        RC_PRE(mIndex > SutNS::Sut_max_index || mIndex < SutNS::Sut_min_index);
+    }
+    void apply(Model& /*m*/) const override {}
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
+        RC_ASSERT(!SutNS::Sut_try_set(w.get(), mIndex, true));
+    }
+
+    void show(std::ostream& os) const override {
+        os << "SetOutOfBounds(" << static_cast<size_t>(mIndex) << " = true)";
+    }
+};
+
 template <typename SutNS> struct SetTrue : Command<SutNS> {
     using Base = Command<SutNS>;
     using typename Base::Model;
     using typename Base::Wrapper;
 
     typename SutNS::Sut_index_t mIndex =
-        *rc::gen::inRange(SutNS::Sut_min_index(), SutNS::Sut_max_index());
+        *rc::gen::inRange(SutNS::Sut_min_index, SutNS::Sut_max_index);
 
     void checkPreconditions(const Model& m) const override {}
     void apply(Model& m) const override { m.insert((size_t)mIndex); }
@@ -108,7 +135,7 @@ template <typename SutNS> struct SetFalse : Command<SutNS> {
     using typename Base::Wrapper;
 
     typename SutNS::Sut_index_t mIndex =
-        *rc::gen::inRange(SutNS::Sut_min_index(), SutNS::Sut_max_index());
+        *rc::gen::inRange(SutNS::Sut_min_index, SutNS::Sut_max_index);
 
     void checkPreconditions(const Model& m) const override {}
     void apply(Model& m) const override { m.erase((size_t)mIndex); }
@@ -120,5 +147,3 @@ template <typename SutNS> struct SetFalse : Command<SutNS> {
         os << "Set(" << static_cast<size_t>(mIndex) << " = false)";
     }
 };
-
-} // namespace containers::bitset

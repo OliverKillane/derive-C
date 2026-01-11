@@ -52,3 +52,4 @@ In development, remaining tasks:
  - Increase coverage
  - Regression benchmarks
  - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
+ - Remove all the null checks for allocations (allocators now handle this)

@@ -9,6 +9,8 @@
 #include "../commands.hpp"
 #include "../../objects.hpp"
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
@@ -28,7 +30,7 @@ namespace {
 namespace {
 template <typename SutNS> void Test() {
     SutModel<SutNS> model;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity_for(4, stdalloc_get()));
+    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new_with_capacity_for(4, stdalloc_get_ref()));
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<PushFront<SutNS>, PushFront<SutNS>, PushBack<SutNS>,
@@ -36,9 +38,10 @@ template <typename SutNS> void Test() {
 }
 } // namespace
 
-RC_GTEST_PROP(QueueCircularSmall, Fuzz, ()) { Test<SutObject<Primitive<uint8_t>>>(); }
-RC_GTEST_PROP(QueueCircularMedium, Fuzz, ()) { Test<SutObject<Primitive<size_t>>>(); }
-RC_GTEST_PROP(QueueCircularEmpty, Fuzz, ()) { Test<SutObject<Empty>>(); }
-RC_GTEST_PROP(QueueCircularComplex, Fuzz, ()) { Test<SutObject<Complex>>(); }
+// clang-format off
+FUZZ(Small,   SutObject<Primitive<uint8_t>>)
+FUZZ(Empty,   SutObject<Empty             >)
+FUZZ(Complex, SutObject<Complex           >)
+// clang-format on
 
 } // namespace

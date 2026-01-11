@@ -118,7 +118,7 @@ foreach(TEST_FILE IN LISTS TEST_CPP_FILES)
     TEST_PREFIX "tests/${test_hierarchy}/"
     DISCOVERY_TIMEOUT 30
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    PROPERTIES LABELS "correctness"
+    PROPERTIES LABELS "unit"
   )
 
   list(APPEND ALL_TEST_EXECUTABLES ${TEST_TARGET})
@@ -159,7 +159,7 @@ foreach(FUZZ_FILE IN LISTS FUZZ_CPP_FILES)
     TEST_PREFIX "fuzz/${fuzz_hierarchy}/"
     DISCOVERY_TIMEOUT 30
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    PROPERTIES LABELS "correctness"
+    PROPERTIES LABELS "fuzz"
     ENVIRONMENT
       "RC_PARAMS=max_success=2000"
   )
@@ -200,7 +200,7 @@ if(COVERAGE)
         -E env
           LLVM_PROFILE_FILE=${COVERAGE_DIR}/coverage_%p_%m.profraw
         ${CMAKE_CTEST_COMMAND}
-          -L correctness
+          -L "fuzz|unit"
           -j
           --output-on-failure
 

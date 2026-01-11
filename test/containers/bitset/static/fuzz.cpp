@@ -7,6 +7,8 @@
 
 #include "../commands.hpp"
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
@@ -26,26 +28,20 @@ struct SutMedium {
 #include <derive-c/container/bitset/static/template.h>
 };
 
-namespace containers::bitset::staticbitset {
+namespace {
 
-RC_GTEST_PROP(StaticSmallTests, Fuzz, ()) {
-    using SutNS = SutSmall;
+template <typename SutNS> void Test() {
     SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
     SutModel model;
 
-    rc::state::check(
-        model, sutWrapper,
-        rc::state::gen::execOneOfWithArgs<SetTrue<SutNS>, SetTrue<SutNS>, SetFalse<SutNS>>());
+    rc::state::check(model, sutWrapper,
+                     rc::state::gen::execOneOfWithArgs<SetTrue<SutNS>, SetTrue<SutNS>,
+                                                       SetFalse<SutNS>, SetOutOfBounds<SutNS>>());
 }
 
-RC_GTEST_PROP(StaticMediumTests, Fuzz, ()) {
-    using SutNS = SutMedium;
-    SutWrapper<SutNS> sutWrapper(SutNS::Sut_new());
-    SutModel model;
+// clang-format off
+FUZZ(Small,  SutSmall)
+FUZZ(Medium, SutMedium)
+// clang-format on
 
-    rc::state::check(
-        model, sutWrapper,
-        rc::state::gen::execOneOfWithArgs<SetTrue<SutNS>, SetTrue<SutNS>, SetFalse<SutNS>>());
-}
-
-} // namespace containers::bitset::staticbitset
+} // namespace

@@ -37,15 +37,15 @@
         #pragma push_macro("SELF")
         #define SELF_PUSHED
         #undef SELF
-        #define SELF EXPAND(INTERNAL_NAME)
+        #define SELF DC_EXPAND(INTERNAL_NAME)
     #endif
 #elif defined NAME
     #if defined SELF
         #error "Cannot redefine SELF"
     #endif
-    #define SELF EXPAND(NAME)
+    #define SELF DC_EXPAND(NAME)
 #else
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
         #error "The `SELF` type for a data structure must be defined (by `NAME` or `INTERNAL_NAME`)"
     #endif
     #define NAME self_t
@@ -53,4 +53,4 @@
 #endif
 
 /// With the user provided name, even in nested templates
-#define TEMPLATE_ERROR(...) _Pragma(STRINGIFY(GCC error EXPAND_STRING(NAME) ": " __VA_ARGS__))
+#define TEMPLATE_ERROR(...) _Pragma(DC_STRINGIFY(GCC error DC_EXPAND_STRING(NAME) ": " __VA_ARGS__))

@@ -2,7 +2,7 @@
 
 #define CAPACITY 2048
 #define NAME alloc_2048
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 
 #define ITEM char
 #define ALLOC alloc_2048
@@ -11,7 +11,7 @@
 
 int main() {
     alloc_2048_buffer buf;
-    alloc_2048 alloc = alloc_2048_new(&buf);
+    alloc_2048 alloc = alloc_2048_new(&buf, stdalloc_get_ref());
     vec_char vec = vec_char_new(&alloc);
 
     for (char x = 1; x <= 9; x++) {

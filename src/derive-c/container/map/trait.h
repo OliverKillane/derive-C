@@ -5,6 +5,7 @@
 #define DC_TRAIT_MAP(SELF)                                                                         \
     DC_REQUIRE_TYPE(SELF, key_t);                                                                  \
     DC_REQUIRE_TYPE(SELF, value_t);                                                                \
+    DC_REQUIRE_CONSTANT(SELF, max_capacity, size_t);                                               \
     DC_REQUIRE_METHOD(NS(SELF, value_t)*, SELF, insert,                                            \
                       (SELF*, NS(SELF, key_t), NS(SELF, value_t)));                                \
     DC_REQUIRE_METHOD(NS(SELF, value_t)*, SELF, try_insert,                                        \

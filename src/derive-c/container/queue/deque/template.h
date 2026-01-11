@@ -9,7 +9,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined ITEM
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("No ITEM")
     #endif
 
@@ -66,19 +66,19 @@ typedef struct {
 
 #define INVARIANT_CHECK(self) DC_ASSUME(self);
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
-        .front = NS(ITEM_VECTORS, new)(alloc),
-        .back = NS(ITEM_VECTORS, new)(alloc),
+        .front = NS(ITEM_VECTORS, new)(alloc_ref),
+        .back = NS(ITEM_VECTORS, new)(alloc_ref),
         .derive_c_deque = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
 }
 
-static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, ALLOC* alloc) {
+static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity, NS(ALLOC, ref) alloc_ref) {
     return (SELF){
-        .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
-        .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc),
+        .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc_ref),
+        .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc_ref),
         .derive_c_deque = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -307,7 +307,7 @@ static void NS(SELF, delete)(SELF* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
 
@@ -320,7 +320,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, ",\n");
 
     fmt = dc_debug_fmt_scope_end(fmt);
-    dc_debug_fmt_print(fmt, stream, "}\n");
+    dc_debug_fmt_print(fmt, stream, "}");
 }
 
 #undef INVARIANT_CHECK

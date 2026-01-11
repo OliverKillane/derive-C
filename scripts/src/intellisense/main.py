@@ -33,8 +33,13 @@ def generate_settings(config: Config) -> None:
         f"--resource-dir={config.resource_dir}",
         f"--compile-commands-dir={config.compile_commands_dir}",
         "--log=verbose",
-        "--pch-storage=memory",
     ]
+
+    # Add test explorer settings
+    settings["cmake.ctest.testSuiteDelimiter"] = "/"
+    settings["cmake.ctest.allowParallelJobs"] = True
+    settings["cmake.generator"] = "Ninja"
+    settings["cmake.buildDirectory"] = r"${workspaceFolder}/build"
 
     # Ensure .vscode directory exists
     config.vscode_dir.mkdir(parents=True, exist_ok=True)

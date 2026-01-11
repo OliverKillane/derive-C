@@ -2,7 +2,7 @@
 # Optional toggle for dumping IR (very noisy)
 option(CLANG_IR_DUMPS "Dump IR before/after all passes" OFF)
 
-# TODO(oliverkillane): descr
+# TODO(oliverkillane): get the ui for opt reports working
 function(enable_clang_opt_reports target)
   # C
   target_compile_options(${target} PRIVATE

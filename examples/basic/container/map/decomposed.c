@@ -9,14 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <derive-c/algorithm/hash/hashers.h>
+#include <derive-c/algorithm/hash/default.h>
+#include <derive-c/algorithm/hash/murmur.h>
+#include <derive-c/algorithm/hash/combine.h>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/prelude.h>
 #include <derive-c/utils/for.h>
 
 #define KEY uint32_t
-#define KEY_EQ uint32_t_eq
-#define KEY_HASH hash_id_uint32_t
+#define KEY_HASH DC_DEFAULT_HASH
 #define VALUE char const*
 #define NAME id_to_name
 #include <derive-c/container/map/decomposed/template.h>
@@ -24,7 +26,7 @@
 void print_map(id_to_name const* map) {
     printf("Map has items:\n");
     size_t pos = 0;
-    FOR_CONST(id_to_name, map, iter, entry) {
+    DC_FOR_CONST(id_to_name, map, iter, entry) {
         printf("position: %zu key: %" PRIu32 " string: %s\n", pos, *entry.key, *entry.value);
         pos++;
     }
@@ -32,7 +34,7 @@ void print_map(id_to_name const* map) {
 
 void id_to_name_example() {
     printf("Id to Name Map Example:\n");
-    id_to_name map = id_to_name_new(stdalloc_get());
+    id_to_name map = id_to_name_new(stdalloc_get_ref());
 
     id_to_name_insert(&map, 23, "hello");
     id_to_name_insert(&map, 10, "bob");
@@ -67,8 +69,8 @@ bool report_id_equality(struct report_id const* report_1, struct report_id const
 }
 
 size_t report_id_hash(struct report_id const* report_id) {
-    return hash_combine(hash_murmurhash_string(report_id->name),
-                        hash_id_uint32_t(&report_id->section));
+    return dc_hash_combine(dc_murmur_hash_string(report_id->name),
+                           uint32_t_hash_id(&report_id->section));
 }
 
 void report_id_delete(struct report_id* self) { free(self->name); }
@@ -99,7 +101,7 @@ void report_delete(struct report* self) { free(self->description); }
 
 void report_map_example() {
     printf("Report Map Example:\n");
-    report_map map = report_map_new(stdalloc_get());
+    report_map map = report_map_new(stdalloc_get_ref());
 
     struct report_id id1 = {.name = strdup("Report A"), .section = 1};
     struct report_id id2 = {.name = strdup("Report B"), .section = 2};
@@ -113,7 +115,7 @@ void report_map_example() {
 
     {
         size_t pos = 0;
-        FOR_CONST(report_map, &map, iter, entry) {
+        DC_FOR_CONST(report_map, &map, iter, entry) {
             printf("Position: %zu Key: %s Section: %u Value: %d\n", pos, entry.key->name,
                    entry.key->section, entry.value->value);
             pos++;
@@ -144,7 +146,7 @@ bool fixed_string_eq(struct fixed_string const* str1, struct fixed_string const*
 }
 
 size_t fixed_string_hash(struct fixed_string const* str) {
-    return hash_murmurhash_string_4(str->value);
+    return dc_murmur_hash_string_4(str->value);
 }
 
 #define KEY struct fixed_string
@@ -157,7 +159,7 @@ size_t fixed_string_hash(struct fixed_string const* str) {
 
 void fixed_string_example() {
     printf("Fixed Strings Example:\n");
-    fixed_string_map map = fixed_string_map_new(stdalloc_get());
+    fixed_string_map map = fixed_string_map_new(stdalloc_get_ref());
 
     struct fixed_string key1 = {.value = "abc"};
     struct fixed_string key2 = {.value = "def"};
@@ -172,7 +174,7 @@ void fixed_string_example() {
     DC_ASSERT(*fixed_string_map_read(&map, key3) == 789);
 
     size_t pos = 0;
-    FOR_CONST(fixed_string_map, &map, iter, entry) {
+    DC_FOR_CONST(fixed_string_map, &map, iter, entry) {
         printf("Position: %zu Key: %.3s Value: %u\n", pos, entry.key->value, *entry.value);
         pos++;
     }

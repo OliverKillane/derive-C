@@ -8,14 +8,14 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined SLOT_INDEX_TYPE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("A SLOT_INDEX_TYPE needs to be specified for a slot")
     #endif
     #define SLOT_INDEX_TYPE int
 #endif
 
 #if !defined SLOT_VALUE
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("A SLOT_VALUE must be defined for a slot")
     #endif
     #define SLOT_VALUE slot_value_t

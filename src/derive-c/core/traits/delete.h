@@ -1,3 +1,5 @@
+/// @brief The delete trait
+/// For deleting an owned object.
 #pragma once
 
 #include <derive-c/core/namespace.h>

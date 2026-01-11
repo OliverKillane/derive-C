@@ -1,5 +1,4 @@
-build
-build_release
+build*
 .cache
 .notifier
 infer-out

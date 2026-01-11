@@ -64,7 +64,7 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
         Wrapper wrapperCopy = w;
         typename SutNS::Sut_key_t const invalid_key =
             *rc::gen::suchThat(rc::gen::arbitrary<typename SutNS::Sut_key_t>(),
-                               [&](auto const& k) { return m.find(k) == m.end(); });
+                               [=](auto const& k) { return m.find(k) == m.end(); });
         RC_ASSERT(SutNS::Sut_try_read(w.getConst(), invalid_key) == nullptr);
         RC_ASSERT(SutNS::Sut_try_write(wrapperCopy.get(), invalid_key) == nullptr);
         typename SutNS::Sut_value_t removed;
@@ -92,7 +92,10 @@ template <typename SutNS> struct Insert : Command<SutNS> {
     typename SutNS::Sut_key_t mKey = *rc::gen::arbitrary<typename SutNS::Sut_key_t>();
     typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
 
-    void checkPreconditions(const Model& s) const override { RC_PRE(s.find(mKey) == s.end()); }
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(m.size() < SutNS::Sut_max_capacity);
+        RC_PRE(m.find(mKey) == m.end());
+    }
     void apply(Model& s) const override { s[mKey] = mValue; }
     void runCommand(const Model& /*m*/, Wrapper& w) const override {
         typename SutNS::Sut_value_t* foundValue = SutNS::Sut_insert(w.get(), mKey, mValue);
@@ -137,6 +140,30 @@ template <typename SutNS> struct Write : Command<SutNS> {
     }
 };
 
+template <typename SutNS> struct InsertOverMaxSize : Command<SutNS> {
+    using Base = Command<SutNS>;
+    using typename Base::Model;
+    using typename Base::Wrapper;
+
+    typename SutNS::Sut_key_t mKey = *rc::gen::arbitrary<typename SutNS::Sut_key_t>();
+    typename SutNS::Sut_value_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_value_t>();
+
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(m.size() >= SutNS::Sut_max_capacity);
+
+        // JUSTIFY: Also checking key uniqueness
+        //  - This command should only check against max size
+        RC_PRE(m.find(mKey) == m.end());
+    }
+    void apply(Model& /*m*/) const override {}
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
+        RC_ASSERT(!SutNS::Sut_try_insert(w.get(), mKey, mValue));
+    }
+    void show(std::ostream& os) const override {
+        os << "InsertOverMaxSize(" << mKey << ", " << mValue << ")";
+    }
+};
+
 template <typename SutNS> struct DuplicateInsert : Command<SutNS> {
     using Base = Command<SutNS>;
     using typename Base::Model;
@@ -157,6 +184,9 @@ template <typename SutNS> struct DuplicateInsert : Command<SutNS> {
     }
 
     void checkPreconditions(const Model& m) const override {
+        // To avoid tripping other assertions on capacity
+        RC_PRE(m.size() < SutNS::Sut_max_capacity);
+
         RC_PRE(mKey.has_value());
         RC_PRE(m.find(mKey.value()) != m.end());
     }

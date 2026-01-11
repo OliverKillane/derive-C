@@ -7,7 +7,7 @@
 #endif
 
 #if !defined _GNU_SOURCE
-    #error "_GNU_SOURCE must be defined (is in the src/derive-c CMakeLists.txt) to use cookie_io"
+    #error "_GNU_SOURCE must be defined to use cookie_io"
 #endif
 
 #include <derive-c/core/alloc/def.h>
@@ -18,14 +18,13 @@ typedef struct {
     char* buf;
     size_t size_without_null;
     size_t capacity;
-    ALLOC* alloc;
+    NS(ALLOC, ref) alloc_ref;
 } SELF;
 
 static size_t const NS(SELF, additional_alloc_size) = 32;
 
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
-    DC_ASSUME((self)->alloc);                                                                      \
     DC_ASSUME(DC_WHEN((self)->buf, (self)->stream && (self)->capacity > 0));                       \
     DC_ASSUME(DC_WHEN((self)->capacity == 0, !(self)->buf));                                       \
     DC_ASSUME(DC_WHEN((self)->buf, (self)->size_without_null + 1 <= (self)->capacity));
@@ -46,6 +45,13 @@ static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t siz
     SELF* self = (SELF*)capture;
     INVARIANT_CHECK(self);
 
+    // JUSTIFY: Unpoisoning passed data to write
+    //  - glibc is not instrumented for msan, so sometimes the entire buffer can be deivered as
+    //    uninitialised.
+    //  - Hence we consider fopenccokie's write as a 'tainted source', and enforce correct memory
+    //    capabilities
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_NONE, DC_MEMORY_TRACKER_CAP_READ_WRITE, data, size);
+
     if (self->size_without_null + size + 1 > self->capacity) {
         size_t new_capacity;
         char* new_buf;
@@ -53,16 +59,12 @@ static ssize_t PRIV(NS(SELF, write))(void* capture, const char* data, size_t siz
             size_t const growth_factor = 2;
             new_capacity =
                 (self->capacity * growth_factor) + size + NS(SELF, additional_alloc_size);
-            new_buf = (char*)NS(ALLOC, realloc)(self->alloc, self->buf, new_capacity);
+            new_buf = (char*)NS(ALLOC, reallocate)(self->alloc_ref, self->buf, self->capacity,
+                                                   new_capacity);
         } else {
             DC_ASSUME(self->capacity == 0);
             new_capacity = size + 1 + NS(SELF, additional_alloc_size);
-            new_buf = (char*)NS(ALLOC, malloc)(self->alloc, new_capacity);
-        }
-
-        if (!new_buf) {
-            errno = ENOMEM; // NOLINT(misc-include-cleaner)
-            return -1;
+            new_buf = (char*)NS(ALLOC, allocate_uninit)(self->alloc_ref, new_capacity);
         }
 
         self->capacity = new_capacity;
@@ -93,13 +95,13 @@ static int PRIV(NS(SELF, close))(void* capture) {
     return 0;
 }
 
-static SELF NS(SELF, new)(ALLOC* alloc) {
+static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .stream = NULL,
         .buf = NULL,
         .size_without_null = 0,
         .capacity = 0,
-        .alloc = alloc,
+        .alloc_ref = alloc_ref,
     };
 }
 
@@ -144,6 +146,8 @@ static char const* NS(SELF, string)(SELF const* self) {
 }
 
 /// Disowns the current string, free/management with chosen allocator determined by user.
+/// DANGER: The user needs to be careful to cleanup the string using the same allocator as the
+/// string builder.
 static char* NS(SELF, release_string)(SELF* self) {
     INVARIANT_CHECK(self);
     char* buf = self->buf;
@@ -165,7 +169,7 @@ static void NS(SELF, delete)(SELF* self) {
         fclose(self->stream);
     }
     if (self->buf) {
-        NS(ALLOC, free)(self->alloc, self->buf);
+        NS(ALLOC, deallocate)(self->alloc_ref, self->buf, self->capacity);
     }
 }
 

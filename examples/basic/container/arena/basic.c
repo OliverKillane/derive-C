@@ -16,7 +16,7 @@
 #include <derive-c/container/arena/contiguous/template.h>
 
 void int_example() {
-    ints arena = ints_new_with_capacity_for(12, stdalloc_get());
+    ints arena = ints_new_with_capacity_for(12, stdalloc_get_ref());
     ints_insert(&arena, 23);
     ints_insert(&arena, 42);
     ints_insert(&arena, 1000);
@@ -24,13 +24,13 @@ void int_example() {
 
     DC_ASSERT(ints_size(&arena) == 4);
     {
-        FOR(ints, &arena, iter, entry) {
+        DC_FOR(ints, &arena, iter, entry) {
             printf("entry for %d at %d\n", *entry.value, entry.index.index);
         }
     }
 
     {
-        FOR(ints, &arena, iter, entry) {
+        DC_FOR(ints, &arena, iter, entry) {
             printf("incrementing for %d = %d + 1 at %d\n", *entry.value, *entry.value,
                    entry.index.index);
             *entry.value += 1;
@@ -70,7 +70,7 @@ int* new_owned_int(int value) {
 #include <derive-c/container/arena/contiguous/template.h>
 
 void foo_example() {
-    foo_arena arena = foo_arena_new_with_capacity_for(12, stdalloc_get());
+    foo_arena arena = foo_arena_new_with_capacity_for(12, stdalloc_get_ref());
     foo_arena_index_t index_a =
         foo_arena_insert(&arena, (struct foo){.x = 42, .y = "A", .owned_data = new_owned_int(3)});
     foo_arena_index_t index_b =

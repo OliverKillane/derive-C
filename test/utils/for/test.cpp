@@ -10,18 +10,18 @@
 #include <derive-c/utils/for.h>
 
 TEST(For, empty_iterator) {
-    int_vec v = int_vec_new(stdalloc_get());
+    int_vec v = int_vec_new(stdalloc_get_ref());
 
-    FOR(int_vec, &v, iter, item) { FAIL() << "Iterator should be empty"; }
+    DC_FOR(int_vec, &v, iter, item) { FAIL() << "Iterator should be empty"; }
 
     int_vec_delete(&v);
 }
 
 TEST(For, single_item) {
-    int_vec v = int_vec_new(stdalloc_get());
+    int_vec v = int_vec_new(stdalloc_get_ref());
     int_vec_push(&v, 42);
     size_t count = 0;
-    FOR(int_vec, &v, iter, item) {
+    DC_FOR(int_vec, &v, iter, item) {
         count++;
         EXPECT_EQ(*item, 42);
     }
@@ -31,13 +31,13 @@ TEST(For, single_item) {
 }
 
 TEST(For, multiple_items) {
-    int_vec v = int_vec_new(stdalloc_get());
+    int_vec v = int_vec_new(stdalloc_get_ref());
     for (int i = 0; i < 10; i++) {
         int_vec_push(&v, i);
     }
 
     size_t count = 0;
-    FOR(int_vec, &v, iter, item) {
+    DC_FOR(int_vec, &v, iter, item) {
         EXPECT_EQ(*item, count);
         count++;
     }

@@ -12,6 +12,6 @@
     #undef INTERNAL_NAME // [DERIVE-C] argument
 #elif defined NAME
     #undef NAME
-#elif !defined PLACEHOLDERS
+#elif !defined DC_PLACEHOLDERS
     #error "If `INTERNAL_NAME` is not defined, `NAME` must be defined"
 #endif

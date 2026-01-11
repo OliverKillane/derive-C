@@ -16,7 +16,7 @@
 // to store values, plus room for realloc
 #define CAPACITY 300000
 #define NAME bump_alloc
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 
 #define ITEM bool
 #define ALLOC bump_alloc
@@ -83,7 +83,7 @@ int main() {
     DC_ASSERT(up_to < MAX_UP_TO);
     printf("Listing primes up to: %zu\n", up_to);
     bump_alloc_buffer buf;
-    bump_alloc alloc = bump_alloc_new(&buf);
+    bump_alloc alloc = bump_alloc_new(&buf, stdalloc_get_ref());
     sieve_vec values = sieve_vec_new_with_defaults(up_to, false, &alloc);
     compute(&values);
     display(&values);

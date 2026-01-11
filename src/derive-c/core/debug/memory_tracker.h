@@ -17,10 +17,10 @@
     // - See: https://clang.llvm.org/docs/LanguageExtensions.html#has-feature-and-has-extension
     #if defined __has_feature
         #if __has_feature(address_sanitizer)
-            #define ASAN_ON
+            #define DC_ASAN_ON
         #endif
         #if __has_feature(memory_sanitizer)
-            #define MSAN_ON
+            #define DC_MSAN_ON
         #endif
     #endif
 
@@ -28,16 +28,16 @@
     // - See: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/cpp.pdf
     // - No support for msan as of GCC 15.2.0
     #if defined __SANITIZE_ADDRESS__
-        #define ASAN_ON
+        #define DC_ASAN_ON
     #endif
 #endif
 
-#if defined ASAN_ON
-    #if defined MSAN_ON
+#if defined DC_ASAN_ON
+    #if defined DC_MSAN_ON
         #error "cannot support asan and msan simultaneously"
     #endif
     #include <sanitizer/asan_interface.h>
-#elif defined MSAN_ON
+#elif defined DC_MSAN_ON
     #include <sanitizer/msan_interface.h>
 #endif
 
@@ -62,19 +62,20 @@ typedef enum { // NOLINT(performance-enum-size)
 } dc_memory_tracker_level;
 
 #if defined CUSTOM_MEMORY_TRACKING
-static const dc_memory_tracker_level memory_tracker_global_level =
+static const dc_memory_tracker_level dc_memory_tracker_global_level =
     (dc_memory_tracker_level)CUSTOM_MEMORY_TRACKING;
 #else
 // JUSTIFY: Default as container
 //  - Library users assume correct library implementation, so expect tracking from the container
 //  level
-static const dc_memory_tracker_level memory_tracker_global_level = DC_MEMORY_TRACKER_LVL_CONTAINER;
+static const dc_memory_tracker_level dc_memory_tracker_global_level =
+    DC_MEMORY_TRACKER_LVL_CONTAINER;
 #endif
 
 static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
                                   const volatile void* addr, size_t size) {
-    if (level <= memory_tracker_global_level) {
-#if defined(MSAN_ON)
+    if (level <= dc_memory_tracker_global_level) {
+#if defined(DC_MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
         switch (cap) {
         case DC_MEMORY_TRACKER_CAP_NONE:
@@ -88,7 +89,7 @@ static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_track
         }
         }
         DC_UNREACHABLE("Invalid capability");
-#elif defined(ASAN_ON)
+#elif defined(DC_ASAN_ON)
         switch (cap) {
         case DC_MEMORY_TRACKER_CAP_NONE: {
             __asan_poison_memory_region(addr, size);
@@ -111,8 +112,9 @@ static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_track
 
 static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
                                     const void* addr, size_t size) {
-    if (level <= memory_tracker_global_level) {
-#if defined(MSAN_ON)
+    DC_ASSERT(size > 0, "Cannot check zero sized region");
+    if (level <= dc_memory_tracker_global_level) {
+#if defined(DC_MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
         intptr_t poisoned_from = __msan_test_shadow((void*)addr, size);
         switch (cap) {
@@ -145,7 +147,7 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
         }
         }
         DC_UNREACHABLE("Invalid capability");
-#elif defined(ASAN_ON)
+#elif defined(DC_ASAN_ON)
         bool const region_is_poisoned = __asan_region_is_poisoned((void*)addr, size);
         switch (cap) {
         case DC_MEMORY_TRACKER_CAP_NONE: {
@@ -190,18 +192,21 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
 
 static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size) {
     fprintf(stream, "memory tracker debug (%zu bytes) at %p ", size, addr);
-#if defined(MSAN_ON)
-    fprintf(stream, "[MSAN]: ");
+#if defined DC_MSAN_ON
+    fprintf(stream, "[MSAN]:");
     // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
     for (size_t i = 0; i < size; i++) {
-        fprintf(stream, "\n%p: ", (char*)addr + i);
-        if (__msan_test_shadow((char*)addr + i, 1) == -1) {
-            fprintf(stream, "U [%02x]", *((unsigned char*)addr + i));
+        char const* ptr = (char const*)addr + i;
+        fprintf(stream, "\n%p: ", ptr);
+        if (__msan_test_shadow(ptr, 1) != -1) {
+            __msan_unpoison(ptr, 1);
+            fprintf(stream, "U [%02x]", *((unsigned char*)ptr));
+            __msan_poison(ptr, 1);
         } else {
-            fprintf(stream, "I [%02x]", *((unsigned char*)addr + i));
+            fprintf(stream, "I [%02x]", *((unsigned char*)ptr));
         }
     }
-#elif defined(ASAN_ON)
+#elif defined DC_ASAN_ON
     // Each shadow memory entry covers 8 bytes of memory, aligned to 8 bytes, so we print this.
     char* addr_start = (char*)addr;
     char* addr_end = addr_start + size;

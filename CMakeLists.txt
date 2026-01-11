@@ -130,7 +130,7 @@ add_compile_definitions(CUSTOM_MEMORY_TRACKING=${CUSTOM_MEMORY_TRACKING})
 # - Want to additionally add macro debug information
 # - g1-3 flags supported by both clang and gcc
 # - See: https://clang.llvm.org/docs/ClangCommandLineReference.html#debug-level
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "")
   set(CMAKE_C_FLAGS_DEBUG   "-g3 -O1 -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O1 -fno-omit-frame-pointer")
   message(STATUS "Additional debug information enabled")

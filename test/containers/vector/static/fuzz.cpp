@@ -9,6 +9,8 @@
 #include "../commands.hpp"
 #include "../../objects.hpp"
 
+#include <derive-cpp/test/rapidcheck_fuzz.hpp>
+
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
 
@@ -31,12 +33,15 @@ template <typename SutNS> void Test() {
     rc::state::check(
         model, sutWrapper,
         rc::state::gen::execOneOfWithArgs<Push<SutNS>, Push<SutNS>, Push<SutNS>, Write<SutNS>,
-                                          TryInsertAt<SutNS>, RemoveAt<SutNS>, Pop<SutNS>>());
+                                          TryInsertAt<SutNS>, RemoveAt<SutNS>, Pop<SutNS>,
+                                          TryPushOverCapacity<SutNS>,
+                                          TryInsertAtOverCapacity<SutNS>>());
 }
 
-RC_GTEST_PROP(VectorStaticSmall, Fuzz, ()) { Test<SutObject<Primitive<uint8_t>>>(); }
-RC_GTEST_PROP(VectorStaticMedium, Fuzz, ()) { Test<SutObject<Primitive<size_t>>>(); }
-RC_GTEST_PROP(VectorStaticEmpty, Fuzz, ()) { Test<SutObject<Empty>>(); }
-RC_GTEST_PROP(VectorStaticComplex, Fuzz, ()) { Test<SutObject<Complex>>(); }
+// clang-format off
+FUZZ(Small,   SutObject<Primitive<uint8_t>>)
+FUZZ(Empty,   SutObject<Empty             >)
+FUZZ(Complex, SutObject<Complex           >)
+// clang-format on
 
 } // namespace

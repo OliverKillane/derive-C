@@ -2,32 +2,33 @@
 #include <assert.h>
 
 #include <derive-c/core/placeholder.h>
+#include <derive-c/core/compiler.h>
 
 // JUSTIFY: Disabled under clangd to avoid spurious errors in C code.
 // - We have tests & fuzz tests with panic defined using C++ headers from gtest & rapidcheck
 // - Hence when analysing a header, clangd assumes this is the header as included for these tests
 // - which results in errors for missing macros (e.g. RC_FAIL)
 // Hence for clangd, we just assume the default implementations
-#if !defined PLACEHOLDERS
+#if !defined DC_PLACEHOLDERS
     #if defined DC_PANIC_HEADER
         #include DC_PANIC_HEADER
     #endif
 #endif
 
 #if !defined DC_STATIC_ASSERT
-    #if defined __cplusplus
-        #define DC_STATIC_ASSERT static_assert
-    #else
+    #if defined DC_STATIC_ASSERT_SUPPORTED
         #define DC_STATIC_ASSERT _Static_assert
+    #else
+        #define DC_STATIC_ASSERT static_assert
     #endif
 #endif
 
 #if !defined DC_PANIC
     #include <stdio.h>  // NOLINT(misc-include-cleaner) (for default panic implementation)
     #include <stdlib.h> // NOLINT(misc-include-cleaner) (for default panic implementation)
-    #define DC_PANIC(...)                                                                          \
+    #define DC_PANIC(str, ...)                                                                     \
         do {                                                                                       \
-            fprintf(stderr, __VA_ARGS__);                                                          \
+            fprintf(stderr, "[%s:%d] " str, __FILE__, __LINE__ __VA_OPT__(, ) __VA_ARGS__);        \
             abort();                                                                               \
         } while (0);
 #endif

@@ -9,7 +9,7 @@
 #include <derive-c/core/self/def.h>
 
 #if !defined ITEM
-    #if !defined PLACEHOLDERS
+    #if !defined DC_PLACEHOLDERS
         #error "The contained type must be defined"
     #endif
 typedef struct {
@@ -118,15 +118,12 @@ static bool NS(SELF, replace)(SELF* self, ITEM value) {
 
 static void NS(SELF, debug)(SELF* self, dc_debug_fmt fmt, FILE* stream) {
     if (self->present) {
-        fprintf(stream, EXPAND_STRING(SELF) "@%p {\n", self);
+        fprintf(stream, DC_EXPAND_STRING(SELF) "@%p { ", self);
         fmt = dc_debug_fmt_scope_begin(fmt);
-        dc_debug_fmt_print(fmt, stream, "value: ");
         ITEM_DEBUG(&self->item, fmt, stream);
-        fprintf(stream, ",\n");
-        fmt = dc_debug_fmt_scope_end(fmt);
-        dc_debug_fmt_print(fmt, stream, "}");
+        fprintf(stream, " }");
     } else {
-        fprintf(stream, EXPAND_STRING(SELF) "@%p { NONE }", self);
+        fprintf(stream, DC_EXPAND_STRING(SELF) "@%p { NONE }", self);
     }
 }
 

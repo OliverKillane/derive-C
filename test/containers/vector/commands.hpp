@@ -80,6 +80,24 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
     }
 };
 
+template <typename SutNS> struct TryPushOverCapacity : Command<SutNS> {
+    using Base = Command<SutNS>;
+    using typename Base::Model;
+    using typename Base::Wrapper;
+
+    typename SutNS::Sut_item_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_item_t>();
+
+    void checkPreconditions(const Model& s) const override {
+        RC_PRE(s.size() >= SutNS::Sut_max_size);
+    }
+
+    void apply(Model& /*m*/) const override {}
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
+        RC_ASSERT(SutNS::Sut_try_push(w.get(), mValue) == nullptr);
+    }
+    void show(std::ostream& os) const override { os << "TryPushOverCapacity(" << mValue << ")"; }
+};
+
 template <typename SutNS> struct Push : Command<SutNS> {
     using Base = Command<SutNS>;
     using typename Base::Model;
@@ -88,7 +106,7 @@ template <typename SutNS> struct Push : Command<SutNS> {
     typename SutNS::Sut_item_t mValue = *rc::gen::arbitrary<typename SutNS::Sut_item_t>();
 
     void checkPreconditions(const Model& s) const override {
-        RC_PRE(s.size() < SutNS::Sut_max_size());
+        RC_PRE(s.size() < SutNS::Sut_max_size);
     }
 
     void apply(Model& m) const override { m.push_back(mValue); }
@@ -142,7 +160,7 @@ template <typename SutNS> struct TryInsertAt : Command<SutNS> {
         : mFromIndex(*rc::gen::inRange(static_cast<size_t>(0), m.size())) {}
 
     void checkPreconditions(const Model& m) const override {
-        RC_PRE(m.size() + mValues.size() <= SutNS::Sut_max_size());
+        RC_PRE(m.size() + mValues.size() < SutNS::Sut_max_size);
     }
     void apply(Model& m) const override {
         m.insert(m.begin() + mFromIndex, mValues.begin(), mValues.end());
@@ -158,6 +176,35 @@ template <typename SutNS> struct TryInsertAt : Command<SutNS> {
     }
     void show(std::ostream& os) const override {
         os << "TryInsertAt(index=" << mFromIndex << ", values.size()=" << mValues.size() << ")";
+    }
+};
+
+template <typename SutNS> struct TryInsertAtOverCapacity : Command<SutNS> {
+    using Base = Command<SutNS>;
+    using typename Base::Model;
+    using typename Base::Wrapper;
+
+    std::vector<typename SutNS::Sut_item_t> mValues =
+        *rc::gen::container<std::vector<typename SutNS::Sut_item_t>>(
+            *rc::gen::inRange(static_cast<size_t>(0), static_cast<size_t>(10)),
+            rc::gen::arbitrary<typename SutNS::Sut_item_t>());
+    size_t mFromIndex;
+
+    explicit TryInsertAtOverCapacity(const Model& m)
+        : mFromIndex(*rc::gen::inRange(static_cast<size_t>(0), m.size())) {}
+
+    void checkPreconditions(const Model& m) const override {
+        RC_PRE(m.size() + mValues.size() >= SutNS::Sut_max_size);
+    }
+    void apply(Model& m) const override {}
+
+    void runCommand(const Model& /*m*/, Wrapper& w) const override {
+        typename SutNS::Sut_item_t dummy;
+        RC_ASSERT(SutNS::Sut_try_insert_at(w.get(), mFromIndex, &dummy, 0) == nullptr);
+    }
+    void show(std::ostream& os) const override {
+        os << "TryInsertAtOverCapacity(index=" << mFromIndex << ", values.size()=" << mValues.size()
+           << ")";
     }
 };
 

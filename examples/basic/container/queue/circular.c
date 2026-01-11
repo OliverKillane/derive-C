@@ -3,7 +3,7 @@
 
 #define CAPACITY 300000
 #define NAME bump_alloc
-#include <derive-c/alloc/staticbump/template.h>
+#include <derive-c/alloc/hybridstatic/template.h>
 
 #define ITEM int
 #define ALLOC bump_alloc
@@ -12,7 +12,7 @@
 
 void basic_example() {
     bump_alloc_buffer buffer = {};
-    bump_alloc alloc = bump_alloc_new(&buffer);
+    bump_alloc alloc = bump_alloc_new(&buffer, stdalloc_get_ref());
 
     int_queue q = int_queue_new_with_capacity_for(8, &alloc);
 
