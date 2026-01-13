@@ -15,4 +15,4 @@
     DC_TRAIT_ITERABLE(SELF);                                                                       \
     DC_TRAIT_CLONEABLE(SELF);                                                                      \
     DC_TRAIT_DELETABLE(SELF);                                                                      \
-    DC_TRAIT_DEBUGABLE(SELF);
+    DC_TRAIT_DEBUGABLE(SELF)

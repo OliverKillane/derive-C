@@ -17,7 +17,7 @@ typedef struct {
     char const* surname;
 } name;
 
-bool name_eq(const name* name_1, const name* name_2) {
+static bool name_eq(const name* name_1, const name* name_2) {
     if (!name_1 || !name_2)
         return false;
     if (!name_1->forename || !name_2->forename)
@@ -29,7 +29,7 @@ bool name_eq(const name* name_1, const name* name_2) {
            strcmp(name_1->surname, name_2->surname) == 0;
 }
 
-void name_debug(const name* self, dc_debug_fmt fmt, FILE* stream) {
+static void name_debug(const name* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "name@%p { forename: \"%s\", surname: \"%s\" }", self, self->forename,
             self->surname);
@@ -39,9 +39,9 @@ typedef struct {
     int value;
 } age;
 
-bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->value; }
-size_t age_hash(age const* age) { return age->value; }
-void age_debug(age const* self, dc_debug_fmt fmt, FILE* stream) {
+static bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->value; }
+static size_t age_hash(age const* age) { return age->value; }
+static void age_debug(age const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "%d years", self->value);
 }
@@ -52,7 +52,7 @@ typedef struct {
     age age;
 } employee;
 
-void employee_debug(employee const* self, dc_debug_fmt fmt, FILE* stream) {
+static void employee_debug(employee const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, "employee@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
@@ -95,14 +95,14 @@ typedef struct {
     employees_by_age by_age;
 } hr_system;
 
-hr_system hr_system_new() {
+static hr_system hr_system_new() {
     return (hr_system){
         .data = employees_new_with_capacity_for(1000, stdalloc_get_ref()),
         .by_age = employees_by_age_new(stdalloc_get_ref()),
     };
 }
 
-void hr_system_new_employee(hr_system* self, employee emp) {
+static void hr_system_new_employee(hr_system* self, employee emp) {
     printf("Adding employee %s %s\n", emp.name.forename, emp.name.surname);
     employees_index_t idx = employees_insert(&self->data, emp);
     same_age_employees* idxes = employees_by_age_try_write(&self->by_age, emp.age);
@@ -113,7 +113,7 @@ void hr_system_new_employee(hr_system* self, employee emp) {
     same_age_employees_push(idxes, idx);
 }
 
-employee const* hr_system_newest_of_age(hr_system const* self, age age) {
+static employee const* hr_system_newest_of_age(hr_system const* self, age age) {
     same_age_employees const* idxes = employees_by_age_try_read(&self->by_age, age);
     if (!idxes) {
         return NULL;
@@ -126,7 +126,7 @@ employee const* hr_system_newest_of_age(hr_system const* self, age age) {
     return employees_read(&self->data, *idx);
 }
 
-void hr_system_debug(hr_system const* self, dc_debug_fmt fmt, FILE* stream) {
+static void hr_system_debug(hr_system const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, "hr_system@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
@@ -142,7 +142,7 @@ void hr_system_debug(hr_system const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-void hr_system_delete(hr_system* self) {
+static void hr_system_delete(hr_system* self) {
     employees_delete(&self->data);
 
     DC_FOR(employees_by_age, &self->by_age, iter, entry) { same_age_employees_delete(entry.value); }

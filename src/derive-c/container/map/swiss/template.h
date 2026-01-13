@@ -493,8 +493,8 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
 
     dc_debug_fmt_print(fmt, stream, "ctrl: @%p[%lu + simd probe size additional %lu],\n",
-                       self->ctrl, self->capacity, DC_SWISS_SIMD_PROBE_SIZE);
-    dc_debug_fmt_print(fmt, stream, "slots: @%p[%lu],\n", self->slots, self->capacity);
+                       (void*)self->ctrl, self->capacity, (size_t)DC_SWISS_SIMD_PROBE_SIZE);
+    dc_debug_fmt_print(fmt, stream, "slots: @%p[%lu],\n", (void*)self->slots, self->capacity);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
@@ -504,7 +504,6 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
-    KV_PAIR_CONST item;
 
     for (KV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
          item = NS(ITER_CONST, next)(&iter)) {

@@ -19,6 +19,45 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
 endif()
 
+# Warnings
+# Applied to the derive-c (c compiled) examples, and for warning tests.
+#  - Not used for tests, as these are not a product of the library, and as rapidcheck and gtest 
+#    fail many stricter warnings.
+add_library(dc_warnings_c INTERFACE)
+target_compile_options(dc_warnings_c INTERFACE
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wall>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wextra>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wpedantic>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Werror>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wformat=2>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wformat-security>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wnull-dereference>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wvla>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wcast-align>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wwrite-strings>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wconversion>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wsign-conversion>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wshadow>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wundef>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wpointer-arith>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wswitch-enum>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-noreturn>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wimplicit-fallthrough>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wunreachable-code>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wdouble-promotion>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wfloat-equal>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wstrict-aliasing>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wstrict-prototypes>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-prototypes>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-declarations>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-unused-function>
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-extra-semi>
+
+  # We allow for empty structs (required to keep the release overhead of debug 
+  # only memory tracking, invalidation tracking zero)
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-gnu-empty-struct>
+)
+
 # Sanitizers
 #  - Supporting address,undefined by default. Msan and tsan are enableable separately.
 #  - Defaulted only in debug

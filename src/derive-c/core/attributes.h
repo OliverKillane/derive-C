@@ -4,6 +4,7 @@
 #define DC_CONST __attribute__((const))
 #define DC_PURE __attribute__((pure))
 #define DC_NODISCARD __attribute__((warn_unused_result))
+#define DC_UNUSED __attribute__((unused))
 
 // JUSTIFY: Different values for cpp
 //  - When embedded in a struct (e.g. for fuzz tests), we need to avoid ODR

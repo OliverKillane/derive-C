@@ -13,20 +13,20 @@ struct complex_data {
     char* description;
 };
 
-void complex_data_delete(struct complex_data* self) { free(self->description); }
-struct complex_data complex_data_clone(struct complex_data const* self) {
+static void complex_data_delete(struct complex_data* self) { free(self->description); }
+static struct complex_data complex_data_clone(struct complex_data const* self) {
     return (struct complex_data){
         .x = self->x,
         .y = self->y,
         .description = strdup(self->description),
     };
 }
-void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt, FILE* stream) {
+static void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, "complex_data@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "x: %d,\n", self->x);
     dc_debug_fmt_print(fmt, stream, "y: %lf,\n", self->y);
-    dc_debug_fmt_print(fmt, stream, "description: %lf,\n", self->description);
+    dc_debug_fmt_print(fmt, stream, "description: %s,\n", self->description);
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "}");
 }
@@ -38,7 +38,7 @@ void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt, FILE*
 #define NAME complex_data_option
 #include <derive-c/utils/option/template.h>
 
-void option_example() {
+static void option_example() {
     complex_data_option opt = complex_data_option_empty();
     DC_ASSERT(!complex_data_option_is_present(&opt));
 

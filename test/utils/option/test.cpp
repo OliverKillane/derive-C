@@ -133,20 +133,3 @@ TEST_F(OptionTests, DebugNone) {
     EXPECT_EQ("optional_int@" DC_PTR_REPLACE " { NONE }",
               derivecpp::fmt::pointer_replace(dc_debug_string_builder_string(&sb)));
 }
-
-// TODO(oliverkilane): determine why this fails!!!
-// TEST(OptionTest, Foo) {
-//     dc_debug_string_builder sb_1 = dc_debug_string_builder_new(stdalloc_get_ref());
-//     std::cout << "str: " << dc_debug_string_builder_string(&sb_1) << "\n";
-//     EXPECT_EQ("o", dc_debug_string_builder_string(&sb_1));
-
-//     dc_debug_string_builder sb_2 = dc_debug_string_builder_new(stdalloc_get_ref());
-//     fprintf(dc_debug_string_builder_stream(&sb_2), "optional_int@0x7ffc151585d0 { NONE }");
-
-//     const char* x = dc_debug_string_builder_string(&sb_2);
-//     dc_memory_tracker_debug(stdout, x, 10);
-//     std::cout << "ptr" << &x[0] << "\n";
-
-//     dc_debug_string_builder_delete(&sb_2);
-//     dc_debug_string_builder_delete(&sb_1);
-// }

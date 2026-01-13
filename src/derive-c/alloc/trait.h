@@ -1,6 +1,6 @@
 #pragma once
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/require.h>
 
 /// The trait for derive-c allocators.
 /// Behaviour is more restrictive that the standard allocator, and provides additional information.
@@ -23,4 +23,4 @@
     DC_REQUIRE_METHOD(void, SELF, deallocate, (NS(SELF, ref), void* ptr, size_t size));            \
     DC_TRAIT_REFERENCABLE(SELF);                                                                   \
     DC_TRAIT_DELETABLE(SELF);                                                                      \
-    DC_TRAIT_DEBUGABLE(SELF);
+    DC_TRAIT_DEBUGABLE(SELF)

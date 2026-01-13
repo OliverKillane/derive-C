@@ -424,7 +424,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
-    dc_debug_fmt_print(fmt, stream, "queue: @%p [\n", self->data);
+    dc_debug_fmt_print(fmt, stream, "queue: @%p [\n", (void*)self->data);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);

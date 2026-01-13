@@ -6,7 +6,7 @@
 #include <derive-c/core/require.h>
 #include <derive-c/core/std/reflect.h>
 
-#define DC_TRAIT_DELETABLE(SELF) DC_REQUIRE_METHOD(void, SELF, delete, (SELF*));
+#define DC_TRAIT_DELETABLE(SELF) DC_REQUIRE_METHOD(void, SELF, delete, (SELF*))
 
 #define DC_NO_DELETE(SELF) (void)(SELF)
 
@@ -22,3 +22,4 @@
     }
 
 DC_STD_REFLECT(_DC_DERIVE_STD_DELETE)
+DC_FLOAT_REFLECT(_DC_DERIVE_STD_DELETE)

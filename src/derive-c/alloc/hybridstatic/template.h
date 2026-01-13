@@ -21,7 +21,9 @@ TEMPLATE_ERROR("No CAPACITY")
     #define CAPACITY 1024
 #endif
 
-#if CAPACITY <= UINT8_MAX
+#if CAPACITY == 0
+TEMPLATE_ERROR("CAPACITY must be > 0")
+#elif CAPACITY <= UINT8_MAX
     #define USED uint8_t
     #define UNALIGNED_VALID
 #elif CAPACITY <= UINT16_MAX
@@ -59,7 +61,7 @@ typedef struct {
 
 static bool PRIV(NS(SELF, contains_ptr))(SELF const* self, void* ptr) {
     void* buffer_start = &(*self->buffer)[0];
-    void* buffer_end = &(*self->buffer)[sizeof(NS(SELF, buffer))];
+    void* buffer_end = &(*self->buffer)[CAPACITY];
     return buffer_start <= ptr && ptr < buffer_end;
 }
 
@@ -92,7 +94,7 @@ static void* PRIV(NS(SELF, static_allocate_zeroed))(SELF* self, size_t size) {
     }
 
     char* ptr = &(*self->buffer)[self->head_offset];
-    USED* used_ptr = (USED*)ptr;
+    char* used_ptr = ptr;
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, used_ptr,
                           sizeof(USED));
@@ -145,7 +147,8 @@ static void PRIV(NS(SELF, static_deallocate))(SELF* self, void* ptr, size_t size
     DC_ASSUME(self);
     DC_ASSUME(ptr);
 
-    USED* used_ptr = (USED*)((char*)ptr - sizeof(USED));
+    char* byte_ptr = (char*)ptr;
+    char* used_ptr = byte_ptr - sizeof(USED);
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, used_ptr,
                           sizeof(USED));
     USED old_size_value = PRIV(NS(SELF, read_used))(used_ptr);
@@ -172,7 +175,7 @@ static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
 static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, size_t old_size,
                                                size_t new_size) {
     char* byte_ptr = (char*)ptr;
-    USED* old_size_ptr = (USED*)(byte_ptr - sizeof(USED));
+    char* old_size_ptr = byte_ptr - sizeof(USED);
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
                           old_size_ptr, sizeof(USED));
     USED old_size_value = PRIV(NS(SELF, read_used))(old_size_ptr);
@@ -252,9 +255,9 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     DC_ASSUME(self);
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
-    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", CAPACITY);
-    dc_debug_fmt_print(fmt, stream, "used: %lu,\n", self->head_offset);
-    dc_debug_fmt_print(fmt, stream, "buffer: %p,\n", self->buffer);
+    dc_debug_fmt_print(fmt, stream, "capacity: %zu,\n", (size_t)CAPACITY);
+    dc_debug_fmt_print(fmt, stream, "used: %zu,\n", (size_t)self->head_offset);
+    dc_debug_fmt_print(fmt, stream, "buffer: %p,\n", (void*)self->buffer);
     dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, "\n");

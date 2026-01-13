@@ -26,5 +26,7 @@
         #define CAPACITY_EXCLUSIVE_UPPER UINT64_MAX
         #define MAX_INDEX (UINT64_MAX - 1ULL)
         #define INDEX_NONE UINT64_MAX
+    #else
+        #error "Invalid number of bits specified for index, should be (8,16,32,64)"
     #endif
 #endif

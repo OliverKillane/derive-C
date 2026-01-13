@@ -22,11 +22,15 @@
 /// Reflection on std types
 /// `F(type, print_fmt)`
 // clang-format off
+#define DC_FLOAT_REFLECT(F, ...)              \
+    /* floating point types */                \
+    F(float,              "%f" , __VA_ARGS__) \
+    F(double,             "%lf", __VA_ARGS__)
+// clang-format on
+
+// clang-format off
 #define DC_STD_REFLECT(F, ...)                \
     /* character types */                     \
     F(char,               "%c" , __VA_ARGS__) \
-    /* floating point types */                \
-    F(float,              "%f" , __VA_ARGS__) \
-    F(double,             "%lf", __VA_ARGS__) \
     DC_INT_REFLECT(F, __VA_ARGS__)
 // clang-format on

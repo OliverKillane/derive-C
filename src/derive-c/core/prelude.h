@@ -2,6 +2,9 @@
 // Panic (always first)
 #include <derive-c/core/panic.h> // IWYU pragma: export
 
+// Allocation
+#include <derive-c/alloc/std.h>
+
 // Helpful
 #include <derive-c/core/attributes.h>  // IWYU pragma: export
 #include <derive-c/core/derive.h>      // IWYU pragma: export

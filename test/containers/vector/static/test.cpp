@@ -6,7 +6,7 @@
 #include <derive-cpp/fmt/remove_ptrs.hpp>
 
 #define NAME test_vec
-#define INPLACE_CAPACITY 16
+#define CAPACITY 16
 #define ITEM char const*
 #include <derive-c/container/vector/static/template.h>
 

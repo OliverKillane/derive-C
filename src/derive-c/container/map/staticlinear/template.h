@@ -71,6 +71,8 @@ typedef VALUE NS(SELF, value_t);
 #define INTERNAL_NAME BITSET         // [DERIVE-C] for template
 #include <derive-c/container/bitset/static/template.h>
 
+#define BITSET_INDEX_TYPE NS(BITSET, index_t)
+
 typedef struct {
     BITSET presence;
     KEY keys[CAPACITY];
@@ -97,7 +99,8 @@ static SELF NS(SELF, new)() {
 static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     INVARIANT_CHECK(self);
     for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, index) && KEY_EQ(&self->keys[index], &key)) {
+        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index) &&
+            KEY_EQ(&self->keys[index], &key)) {
             return &self->values[index];
         }
     }
@@ -134,8 +137,8 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     }
 
     for (size_t index = 0; index < CAPACITY; index++) {
-        if (!NS(BITSET, get)(&self->presence, index)) {
-            NS(BITSET, set)(&self->presence, index, true);
+        if (!NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
+            NS(BITSET, set)(&self->presence, (BITSET_INDEX_TYPE)index, true);
             self->keys[index] = key;
             self->values[index] = value;
             return &self->values[index];
@@ -156,8 +159,9 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* dest) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, index) && KEY_EQ(&self->keys[index], &key)) {
-            NS(BITSET, set)(&self->presence, index, false);
+        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index) &&
+            KEY_EQ(&self->keys[index], &key)) {
+            NS(BITSET, set)(&self->presence, (BITSET_INDEX_TYPE)index, false);
             KEY_DELETE(&self->keys[index]);
             *dest = self->values[index];
             return true;
@@ -188,7 +192,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
     for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, index)) {
+        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
             new_self.keys[index] = KEY_CLONE(&self->keys[index]);
             new_self.values[index] = VALUE_CLONE(&self->values[index]);
         }
@@ -200,7 +204,7 @@ static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
 
     for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, index)) {
+        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
             KEY_DELETE(&self->keys[index]);
             VALUE_DELETE(&self->values[index]);
         }
@@ -215,7 +219,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "entries: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
     for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, index)) {
+        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
             dc_debug_fmt_print(fmt, stream, "{index: %lu, key: ", index);
             KEY_DEBUG(&self->keys[index], fmt, stream);
             fprintf(stream, ", value: ");
@@ -258,7 +262,7 @@ static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
 
     iter->next_index++;
     while (iter->next_index < CAPACITY &&
-           !NS(BITSET, get)(&iter->map->presence, iter->next_index)) {
+           !NS(BITSET, get)(&iter->map->presence, (BITSET_INDEX_TYPE)iter->next_index)) {
         iter->next_index++;
     }
 
@@ -276,7 +280,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 
     NS(BITSET, NS(iter_const, item)) next_index = 0;
     while (next_index < CAPACITY &&
-           !NS(BITSET, get)(&self->presence, (NS(BITSET, index_t))next_index)) {
+           !NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)next_index)) {
         next_index++;
     }
 
@@ -318,7 +322,7 @@ static KV_PAIR NS(ITER, next)(ITER* iter) {
 
     iter->next_index++;
     while (iter->next_index < CAPACITY &&
-           !NS(BITSET, get)(&iter->map->presence, (NS(BITSET, index_t))iter->next_index)) {
+           !NS(BITSET, get)(&iter->map->presence, (BITSET_INDEX_TYPE)iter->next_index)) {
         iter->next_index++;
     }
 
@@ -336,7 +340,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 
     NS(BITSET, NS(iter, item)) next_index = 0;
     while (next_index < CAPACITY &&
-           !NS(BITSET, get)(&self->presence, (NS(BITSET, index_t))next_index)) {
+           !NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)next_index)) {
         next_index++;
     }
 
@@ -351,6 +355,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #undef INVARIANT_CHECK
+#undef BITSET_INDEX_TYPE
 #undef BITSET
 
 #undef VALUE_DEBUG

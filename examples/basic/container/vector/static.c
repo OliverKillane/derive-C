@@ -10,11 +10,11 @@
 #define MAX_CAPACITY 8
 
 #define ITEM unsigned char
-#define INPLACE_CAPACITY MAX_CAPACITY
+#define CAPACITY MAX_CAPACITY
 #define NAME staticvec_chars
 #include <derive-c/container/vector/static/template.h>
 
-void push_example() {
+static void push_example() {
     staticvec_chars vec = staticvec_chars_new();
 
     // Push characters into the static vector
@@ -39,7 +39,7 @@ void push_example() {
     staticvec_chars_delete(&vec);
 }
 
-void iter_example() {
+static void iter_example() {
     staticvec_chars vec = staticvec_chars_new();
 
     // Push characters into the static vector

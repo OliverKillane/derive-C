@@ -12,14 +12,6 @@
 
 #include <derive-c/alloc/hybridstatic/includes.h>
 
-struct SutNone {
-#define EXPAND_IN_STRUCT
-#define ALLOC stdalloc
-#define NAME Sut
-#define CAPACITY 0
-#include <derive-c/alloc/hybridstatic/template.h>
-};
-
 struct SutUint8Size {
 #define EXPAND_IN_STRUCT
 #define ALLOC stdalloc
@@ -59,7 +51,6 @@ template <typename SutNS> void Test() {
 }
 
 // clang-format off
-FUZZ(SutNone,        SutNone       )
 FUZZ(SutUint8Size,   SutUint8Size  )
 FUZZ(SutUint8Larger, SutUint8Larger)
 FUZZ(SutMedium,      SutMedium     )
