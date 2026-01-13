@@ -17,6 +17,7 @@ Checks: >
   -readability-avoid-const-params-in-decls,
   -readability-implicit-bool-conversion,
   -readability-duplicate-include,
+  -readability-redundant-casting,
   -bugprone-macro-parentheses,
   -misc-non-private-member-variables-in-classes,
   -clang-diagnostic-*,

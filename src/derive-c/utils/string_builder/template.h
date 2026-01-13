@@ -7,7 +7,7 @@
 #endif
 
 #if !defined _GNU_SOURCE
-    #error "the gnu source macro must be defined to use cookie_io"
+    #error "the gnu source macro must be defined to use cookie io"
 #endif
 
 #include <derive-c/core/alloc/def.h>

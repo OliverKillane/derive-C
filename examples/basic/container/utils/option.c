@@ -2,7 +2,7 @@
 /// @example utils/option.c
 /// @brief Examples for using the optional type.
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

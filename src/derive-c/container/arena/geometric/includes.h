@@ -15,6 +15,7 @@
 #include <derive-c/core/debug/memory_tracker.h>   // IWYU pragma: export
 #include <derive-c/core/debug/mutation_tracker.h> // IWYU pragma: export
 #include <derive-c/core/prelude.h>                // IWYU pragma: export
+#include <derive-c/alloc/std.h>                   // IWYU pragma: export
 
 // [DERIVE-C] container includes
 #include "utils.h" // IWYU pragma: export

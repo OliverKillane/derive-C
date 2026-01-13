@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 #include <derive-c/utils/for.h>
 
 typedef struct {

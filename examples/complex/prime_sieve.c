@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define MAX_UP_TO 100000
 

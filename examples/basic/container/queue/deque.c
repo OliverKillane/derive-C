@@ -1,5 +1,5 @@
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define CAPACITY 300000
 #define NAME bump_alloc

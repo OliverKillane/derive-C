@@ -1,5 +1,5 @@
 #include <derive-c/algorithm/hash/default.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define KEY int
 #define KEY_HASH DC_DEFAULT_HASH

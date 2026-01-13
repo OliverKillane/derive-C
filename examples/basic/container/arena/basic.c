@@ -8,7 +8,7 @@
 #include <derive-c/utils/for.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define INDEX_BITS 32
 #define VALUE uint32_t

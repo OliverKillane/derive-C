@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define ITEM int32_t
 #define NAME vec_ints

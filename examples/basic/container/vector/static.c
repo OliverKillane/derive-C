@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define MAX_CAPACITY 8
 

@@ -14,7 +14,7 @@
 #include <derive-c/algorithm/hash/combine.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 #include <derive-c/utils/for.h>
 
 #define KEY uint32_t

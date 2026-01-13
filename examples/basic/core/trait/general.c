@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define Foo_REFLECT(F)                                                                             \
     F(uint32_t, bing)                                                                              \

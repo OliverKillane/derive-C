@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 #include <derive-c/alloc/std.h>
 
 #define ALLOC stdalloc
