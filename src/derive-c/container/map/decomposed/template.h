@@ -13,7 +13,7 @@
 TEMPLATE_ERROR("No KEY")
     #endif
     #define KEY map_key_t
-typedef int KEY;
+typedef size_t KEY;
 #endif
 
 #if !defined KEY_HASH
@@ -22,7 +22,7 @@ TEMPLATE_ERROR("No KEY_HASH")
     #endif
 
     #define KEY_HASH key_hash
-static size_t KEY_HASH(KEY const* key);
+static size_t KEY_HASH(KEY const* key) { return *key; }
 #endif
 
 #if !defined KEY_EQ

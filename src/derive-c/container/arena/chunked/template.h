@@ -35,11 +35,11 @@ typedef struct {
     int x;
 } VALUE;
     #define VALUE_DELETE value_delete
-static void VALUE_DELETE(value_t* self);
+static void VALUE_DELETE(value_t* /* self */) {}
     #define VALUE_CLONE value_clone
-static value_t VALUE_CLONE(value_t const* self);
+static value_t VALUE_CLONE(value_t const* self) { return *self; }
     #define VALUE_DEBUG value_debug
-static void VALUE_DEBUG(VALUE const*, dc_debug_fmt, FILE* stream);
+static void VALUE_DEBUG(VALUE const* /* self */, dc_debug_fmt /* fmt */, FILE* /* stream */) {}
 #endif
 
 DC_STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
