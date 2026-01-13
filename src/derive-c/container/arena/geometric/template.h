@@ -529,7 +529,6 @@ static ITER NS(SELF, get_iter)(SELF* self) {
 #undef INVARIANT_CHECK
 #undef SLOT
 #undef INITIAL_BLOCK_INDEX_BITS
-#undef INITIAL_BLOCK_INDEX_BITS
 
 #include <derive-c/core/index/type_to_strong/undef.h>
 #include <derive-c/core/index/bits_to_type/undef.h>

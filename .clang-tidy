@@ -8,6 +8,7 @@ Checks: >
   misc-*,
   -misc-no-recursion,
   performance-*,
+  -performance-no-int-to-ptr,
   portability-*,
   readability-*,
   -readability-braces-around-statements,
