@@ -10,7 +10,7 @@
 #define NAME int_queue
 #include <derive-c/container/queue/circular/template.h>
 
-void basic_example() {
+static void basic_example() {
     bump_alloc_buffer buffer = {};
     bump_alloc alloc = bump_alloc_new(&buffer, stdalloc_get_ref());
 

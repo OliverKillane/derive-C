@@ -36,7 +36,7 @@ static void name_debug(const name* self, dc_debug_fmt fmt, FILE* stream) {
 }
 
 typedef struct {
-    int value;
+    size_t value;
 } age;
 
 static bool age_eq(age const* age_1, age const* age_2) { return age_1->value == age_2->value; }

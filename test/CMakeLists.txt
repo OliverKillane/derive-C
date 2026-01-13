@@ -206,7 +206,6 @@ foreach(WARN_FILE IN LISTS WARN_C_FILES)
   set_property(TARGET ${WARN_TARGET} PROPERTY C_STANDARD_REQUIRED ON)
   set_property(TARGET ${WARN_TARGET} PROPERTY C_EXTENSIONS OFF)
 
-  # If warn.c needs your headers / symbols
   target_link_libraries(${WARN_TARGET} PRIVATE derivec dc_warnings_c)
 
   # Build-only test: ensures it compiles (and links) as C.

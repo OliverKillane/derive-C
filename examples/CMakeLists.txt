@@ -21,43 +21,6 @@ function(enable_clang_opt_reports target)
   )
 endfunction()
 
-function(enable_example_warnings target)
-  target_compile_options(${target} PRIVATE
-    # C (Clang)
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wall>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wextra>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wpedantic>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Werror>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wformat=2>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wformat-security>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wnull-dereference>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wvla>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wcast-align>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wwrite-strings>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wconversion>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wsign-conversion>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wshadow>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wundef>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wpointer-arith>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wswitch-enum>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-noreturn>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wimplicit-fallthrough>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wunreachable-code>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wdouble-promotion>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wfloat-equal>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wstrict-aliasing>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wstrict-prototypes>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-prototypes>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-declarations>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-unused-function>
-    # $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-extra-semi>
-
-    # JUSTIFY: Allowing empty structs
-    #  - Can be optimised awway easily by the compiler in release
-    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-gnu-empty-struct>
-  )
-endfunction()
-
 function(add_example file)
   file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}" "${file}")
   get_filename_component(example_name_we "${rel_path}" NAME_WE)
@@ -67,8 +30,7 @@ function(add_example file)
 
   add_executable(${example_target_safe} ${file})
 
-  # Strict warnings only for examples (does not affect FetchContent deps)
-  enable_example_warnings(${example_target_safe})
+  target_link_libraries(${example_target_safe} PRIVATE derivec dc_warnings_c)
 
   if(OPT_REPORTS)
     enable_clang_opt_reports(${example_target_safe})
