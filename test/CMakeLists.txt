@@ -53,10 +53,14 @@ FetchContent_MakeAvailable(rapidcheck)
 include(GoogleTest)
 
 # ------------------------------------------------------------------------------
-# Discover test / fuzz sources (deep)
+# Discover test / fuzz / warn sources (deep)
 # ------------------------------------------------------------------------------
 file(GLOB_RECURSE _ALL_TEST_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+)
+
+file(GLOB_RECURSE _ALL_TEST_C
+  "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
 )
 
 set(TEST_CPP_FILES "")
@@ -71,11 +75,24 @@ foreach(p IN LISTS _ALL_TEST_CPP)
 endforeach()
 unset(_ALL_TEST_CPP)
 
+set(WARN_C_FILES "")
+foreach(p IN LISTS _ALL_TEST_C)
+  get_filename_component(name "${p}" NAME)
+  if(name STREQUAL "warn.c")
+    list(APPEND WARN_C_FILES "${p}")
+  endif()
+endforeach()
+unset(_ALL_TEST_C)
+
 list(SORT TEST_CPP_FILES)
 list(SORT FUZZ_CPP_FILES)
+list(SORT WARN_C_FILES)
 
 # All binaries that should be included in coverage
 set(ALL_TEST_EXECUTABLES)
+
+# All "warn" targets (compile checks); not executed; not included in coverage
+set(ALL_WARN_TARGETS)
 
 # Helper: derive a stable, Ninja-safe target name from a source path
 function(_derive_test_target_name out_var src_file)
@@ -139,7 +156,7 @@ foreach(FUZZ_FILE IN LISTS FUZZ_CPP_FILES)
     OUTPUT_NAME "${FUZZ_TARGET}"
   )
 
-  target_compile_definitions(${FUZZ_TARGET} PRIVATE 
+  target_compile_definitions(${FUZZ_TARGET} PRIVATE
     ENABLE_MOCKING
     DC_PANIC_HEADER=<derive-cpp/test/runtime_panic.hpp>
   )
@@ -166,6 +183,45 @@ foreach(FUZZ_FILE IN LISTS FUZZ_CPP_FILES)
 
   list(APPEND ALL_TEST_EXECUTABLES ${FUZZ_TARGET})
 endforeach()
+
+# ------------------------------------------------------------------------------
+# Warn tests (warn.c) — compiled as C (compile-check style)
+#   - These are intended to validate warning policies / diagnostics.
+#   - They are added to CTest as build-only tests (no main() required).
+# ------------------------------------------------------------------------------
+foreach(WARN_FILE IN LISTS WARN_C_FILES)
+  _derive_test_target_name(WARN_TARGET "${WARN_FILE}")
+
+  file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}" "${WARN_FILE}")
+  get_filename_component(warn_hierarchy "${REL_PATH}" DIRECTORY)
+
+  add_executable(${WARN_TARGET} "${WARN_FILE}")
+  set_target_properties(${WARN_TARGET} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    OUTPUT_NAME "${WARN_TARGET}"
+    LINKER_LANGUAGE C
+  )
+
+  set_property(TARGET ${WARN_TARGET} PROPERTY C_STANDARD 23)
+  set_property(TARGET ${WARN_TARGET} PROPERTY C_STANDARD_REQUIRED ON)
+  set_property(TARGET ${WARN_TARGET} PROPERTY C_EXTENSIONS OFF)
+
+  target_link_libraries(${WARN_TARGET} PRIVATE derivec dc_warnings_c)
+
+  # Build-only test: ensures it compiles (and links) as C.
+  add_test(
+    NAME warn/${warn_hierarchy}/${WARN_TARGET}
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target ${WARN_TARGET}
+  )
+  set_tests_properties(warn/${warn_hierarchy}/${WARN_TARGET} PROPERTIES LABELS "warn")
+
+  list(APPEND ALL_WARN_TARGETS ${WARN_TARGET})
+endforeach()
+
+# Optional convenience target to build all warn tests
+if (ALL_WARN_TARGETS)
+  add_custom_target(warn DEPENDS ${ALL_WARN_TARGETS})
+endif()
 
 # ------------------------------------------------------------------------------
 # Coverage target

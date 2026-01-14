@@ -1,31 +1,23 @@
+# Examples
 
 # Optional toggle for dumping IR (very noisy)
 option(CLANG_IR_DUMPS "Dump IR before/after all passes" OFF)
 
-# TODO(oliverkillane): get the ui for opt reports working
 function(enable_clang_opt_reports target)
-  # C
   target_compile_options(${target} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:C,Clang>:
-      -gline-tables-only
-      -Rpass=inline -Rpass-missed=inline -Rpass-analysis=inline
-      -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize
-      -Rpass=slp-vectorizer -Rpass-missed=slp-vectorizer -Rpass-analysis=slp-vectorizer
-      -fsave-optimization-record
-      -Xclang -fdebug-pass-manager
-    >
-  )
-
-  # C++
-  target_compile_options(${target} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:CXX,Clang>:
-      -gline-tables-only
-      -Rpass=inline -Rpass-missed=inline -Rpass-analysis=inline
-      -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize
-      -Rpass=slp-vectorizer -Rpass-missed=slp-vectorizer -Rpass-analysis=slp-vectorizer
-      -fsave-optimization-record
-      -Xclang -fdebug-pass-manager
-    >
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-gline-tables-only>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass=inline>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass-missed=inline>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass-analysis=inline>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass=loop-vectorize>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass-missed=loop-vectorize>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass-analysis=loop-vectorize>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass=slp-vectorizer>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass-missed=slp-vectorizer>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Rpass-analysis=slp-vectorizer>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-fsave-optimization-record>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Xclang>
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-fdebug-pass-manager>
   )
 endfunction()
 
@@ -37,11 +29,14 @@ function(add_example file)
   string(REPLACE "/" "_" example_target_safe "${example_target}")
 
   add_executable(${example_target_safe} ${file})
+
+  target_link_libraries(${example_target_safe} PRIVATE derivec dc_warnings_c)
+
   if(OPT_REPORTS)
     enable_clang_opt_reports(${example_target_safe})
   endif()
 
-  set_target_properties(${example_target_safe} PROPERTIES 
+  set_target_properties(${example_target_safe} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${example_dir}"
     OUTPUT_NAME "${example_name_we}"
   )
@@ -52,13 +47,12 @@ function(add_example file)
   set_property(GLOBAL APPEND PROPERTY EXAMPLE_TARGETS ${example_target_safe})
 
   add_test(NAME examples/${example_target} COMMAND $<TARGET_FILE:${example_target_safe}>)
-  set_tests_properties(examples/${example_target} 
+  set_tests_properties(examples/${example_target}
     PROPERTIES
-      DEPENDS ${example_target_safe} 
+      DEPENDS ${example_target_safe}
       LABELS "examples"
   )
 endfunction()
-
 
 file(GLOB_RECURSE EXAMPLES "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
 
@@ -70,7 +64,7 @@ if(OPT_REPORTS)
   # (optional) ensure the tool exists
   find_program(LLVM_OPT_REPORT llvm-opt-report REQUIRED)
 
-  # NEW: fetch the list of example targets
+  # fetch the list of example targets
   get_property(_examples GLOBAL PROPERTY EXAMPLE_TARGETS)
 
   file(GLOB_RECURSE OPT_YAMLS "${CMAKE_BINARY_DIR}/*.opt.yaml")

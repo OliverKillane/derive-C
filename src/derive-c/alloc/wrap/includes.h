@@ -8,3 +8,4 @@
 #include <derive-c/alloc/trait.h>  // IWYU pragma: export
 #include <derive-c/core/prelude.h> // IWYU pragma: export
 #include <derive-c/test/mock.h>    // IWYU pragma: export
+#include <derive-c/alloc/std.h>    // IWYU pragma: export

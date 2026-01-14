@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define MAX_UP_TO 100000
 
@@ -23,7 +23,7 @@
 #define NAME sieve_vec
 #include <derive-c/container/vector/dynamic/template.h>
 
-size_t sqrt_size_t(size_t n) {
+static size_t sqrt_size_t(size_t n) {
     if (n == 0 || n == 1) {
         return n;
     }
@@ -50,7 +50,7 @@ size_t sqrt_size_t(size_t n) {
     return result;
 }
 
-void display(sieve_vec const* sieve) {
+static void display(sieve_vec const* sieve) {
     sieve_vec_iter_const iter = sieve_vec_get_iter_const(sieve);
 
     sieve_vec_iter_const_next(&iter); // skip 0
@@ -66,7 +66,7 @@ void display(sieve_vec const* sieve) {
     }
 }
 
-void compute(sieve_vec* sieve) {
+static void compute(sieve_vec* sieve) {
     size_t size = sieve_vec_size(sieve);
     size_t sqrt = sqrt_size_t(size);
     printf("Sieve size: %zu, sqrt: %zu\n", size, sqrt);

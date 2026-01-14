@@ -8,14 +8,14 @@
 #include <derive-c/utils/for.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define INDEX_BITS 32
 #define VALUE uint32_t
 #define NAME ints
 #include <derive-c/container/arena/contiguous/template.h>
 
-void int_example() {
+static void int_example() {
     ints arena = ints_new_with_capacity_for(12, stdalloc_get_ref());
     ints_insert(&arena, 23);
     ints_insert(&arena, 42);
@@ -48,15 +48,15 @@ struct foo {
     int* owned_data;
 };
 
-void my_foo_delete(struct foo* self) { free(self->owned_data); }
+static void my_foo_delete(struct foo* self) { free(self->owned_data); }
 
-void foo_debug(struct foo const* self, dc_debug_fmt fmt, FILE* stream) {
+static void foo_debug(struct foo const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "foo@%p { x: %d, y: \"%s\", owned_data: @%p { %d }, }", self, self->x, self->y,
             self->owned_data, *self->owned_data);
 }
 
-int* new_owned_int(int value) {
+static int* new_owned_int(int value) {
     int* v = (int*)malloc(sizeof(int));
     *v = value;
     return v;
@@ -69,7 +69,7 @@ int* new_owned_int(int value) {
 #define NAME foo_arena
 #include <derive-c/container/arena/contiguous/template.h>
 
-void foo_example() {
+static void foo_example() {
     foo_arena arena = foo_arena_new_with_capacity_for(12, stdalloc_get_ref());
     foo_arena_index_t index_a =
         foo_arena_insert(&arena, (struct foo){.x = 42, .y = "A", .owned_data = new_owned_int(3)});

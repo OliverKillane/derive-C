@@ -10,16 +10,18 @@
     #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The number of bits (8,16,32,64) to use for the arena's key")
     #endif
-    #define INDEX_BITS 32
+    #define INDEX_BITS 8
 #endif
 
 #if !defined BLOCK_INDEX_BITS
     #if !defined DC_PLACEHOLDERS
 TEMPLATE_ERROR("The number of bits used to get the offset within a block must be specified")
     #endif
-    #define BLOCK_INDEX_BITS 8
+    #define BLOCK_INDEX_BITS 7
 #endif
 
+DC_STATIC_ASSERT(BLOCK_INDEX_BITS > 0, "Cannot have zero block index bits");
+DC_STATIC_ASSERT(INDEX_BITS > 0, "Cannot have zero index bits");
 DC_STATIC_ASSERT(INDEX_BITS > BLOCK_INDEX_BITS,
                  "The number of bits for offset within a block must be "
                  "less than the number of bits used for an index");
@@ -33,11 +35,11 @@ typedef struct {
     int x;
 } VALUE;
     #define VALUE_DELETE value_delete
-static void VALUE_DELETE(value_t* self);
+static void VALUE_DELETE(value_t* /* self */) {}
     #define VALUE_CLONE value_clone
-static value_t VALUE_CLONE(value_t const* self);
+static value_t VALUE_CLONE(value_t const* self) { return *self; }
     #define VALUE_DEBUG value_debug
-static void VALUE_DEBUG(VALUE const*, dc_debug_fmt, FILE* stream);
+static void VALUE_DEBUG(VALUE const* /* self */, dc_debug_fmt /* fmt */, FILE* /* stream */) {}
 #endif
 
 DC_STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
@@ -165,7 +167,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     SLOT* slot = &(*self->blocks[self->block_current])[self->block_current_exclusive_end];
     NS(SLOT, fill)(slot, value);
 
-    INDEX_TYPE index = DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(
+    INDEX_TYPE index = (INDEX_TYPE)DC_ARENA_CHUNKED_BLOCK_OFFSET_TO_INDEX(
         self->block_current, self->block_current_exclusive_end, BLOCK_INDEX_BITS);
     self->count++;
     self->block_current_exclusive_end++;
@@ -245,7 +247,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     };
 }
 
-static INDEX_TYPE NS(SELF, size)(SELF const* self) {
+static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->count;
 }
@@ -324,7 +326,7 @@ typedef struct {
 
 #define ITER_INVARIANT_CHECK(iter)                                                                 \
     DC_ASSUME(iter);                                                                               \
-    DC_ASSUME(                                                                                     \
+    DC_DEBUG_ASSERT(                                                                               \
         DC_WHEN((iter)->next_index != INDEX_NONE,                                                  \
                 NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
         "The next index is either valid, or the iterator is empty");
@@ -403,7 +405,7 @@ typedef struct {
 
 #define ITER_CONST_INVARIANT_CHECK(iter)                                                           \
     DC_ASSUME(iter);                                                                               \
-    DC_ASSUME(                                                                                     \
+    DC_DEBUG_ASSERT(                                                                               \
         DC_WHEN((iter)->next_index != INDEX_NONE,                                                  \
                 NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
         "The next index is either valid, or the iterator is empty");
@@ -470,7 +472,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
 
     for (INDEX_TYPE b = 0; b <= self->block_current; b++) {
 
-        dc_debug_fmt_print(fmt, stream, "block[%lu]: @%p [\n", (size_t)b, self->blocks[b]);
+        dc_debug_fmt_print(fmt, stream, "block[%lu]: @%p [\n", (size_t)b, (void*)self->blocks[b]);
         fmt = dc_debug_fmt_scope_begin(fmt);
 
         INDEX_TYPE block_entry_exclusive_end = b == self->block_current

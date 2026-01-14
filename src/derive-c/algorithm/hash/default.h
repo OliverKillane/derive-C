@@ -21,7 +21,8 @@
             uint32_t: uint32_t_hash_id,                                                            \
             int64_t: int64_t_hash_id,                                                              \
             uint64_t: uint64_t_hash_id,                                                            \
-            const char*: dc_fnv1a_str)(obj)
+            char*: dc_fnv1a_str,                                                                   \
+            const char*: dc_fnv1a_str_const)(obj)
 #else
 namespace dc::hash {
 
@@ -47,8 +48,10 @@ template <class T> constexpr uint64_t default_hash_impl(T const* obj) {
         return int64_t_hash_id(obj);
     else if constexpr (std::is_same_v<U, uint64_t>)
         return uint64_t_hash_id(obj);
+    else if constexpr (std::is_same_v<U, char*>)
+        return dc_fnv1a_str(obj);
     else if constexpr (std::is_same_v<U, char const*>)
-        return dc_fnv1a_str(*obj); // obj: char const* const*
+        return dc_fnv1a_str_const(obj);
     else {
         // always-false, but dependent, without a helper variable
         static_assert([]<class>() { return false; }.template operator()<U>(),

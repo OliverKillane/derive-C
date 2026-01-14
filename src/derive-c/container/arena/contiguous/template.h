@@ -24,11 +24,11 @@ typedef struct {
 } value_t;
     #define VALUE value_t
     #define VALUE_DELETE value_delete
-static void VALUE_DELETE(value_t* self);
+static void VALUE_DELETE(value_t* /* self */) {}
     #define VALUE_CLONE value_clone
-static value_t VALUE_CLONE(value_t const* self);
+static value_t VALUE_CLONE(value_t const* self) { return *self; }
     #define VALUE_DEBUG value_debug
-static void VALUE_DEBUG(VALUE const* self, dc_debug_fmt fmt, FILE* stream);
+static void VALUE_DEBUG(VALUE const* /* self */, dc_debug_fmt /* fmt */, FILE* /* stream */) {}
 #endif
 
 DC_STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
@@ -145,7 +145,7 @@ static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
         }
     }
 
-    INDEX_TYPE new_index = self->exclusive_end;
+    INDEX_TYPE new_index = (INDEX_TYPE)self->exclusive_end;
     SLOT* slot = &self->slots[new_index];
     NS(SLOT, fill)(slot, value);
 
@@ -210,7 +210,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     };
 }
 
-static INDEX_TYPE NS(SELF, size)(SELF const* self) {
+static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->count;
 }
@@ -416,7 +416,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
     dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
-    dc_debug_fmt_print(fmt, stream, "slots: %p,\n", self->slots);
+    dc_debug_fmt_print(fmt, stream, "slots: %p,\n", (void*)self->slots);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);

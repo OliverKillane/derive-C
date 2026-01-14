@@ -123,7 +123,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) " @%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "base: " DC_EXPAND_STRING(ALLOC) "@%p,\n",
-                       NS(NS(ALLOC, ref), deref)(self->alloc_ref));
+                       (void*)NS(NS(ALLOC, ref), deref)(self->alloc_ref));
 
     dc_debug_fmt_print(fmt, stream, "allocations: ");
     NS(ALLOCATIONS_MAP, debug)(&self->allocations, fmt, stream);

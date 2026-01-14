@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 #include <derive-c/alloc/std.h>
 
 #define ALLOC stdalloc
@@ -8,7 +8,7 @@
 #define NAME foopool
 #include <derive-c/alloc/hybridstatic/template.h>
 
-void foopool_raw_example() {
+static void foopool_raw_example() {
     foopool_buffer buf;
     foopool pool = foopool_new(&buf, stdalloc_get_ref());
 

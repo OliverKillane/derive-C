@@ -10,8 +10,8 @@
 #define DC_FNV1A_64_PRIME 1099511628211ull
 
 /// Hashes a null terminated string
-static inline uint64_t dc_fnv1a_str(const char* const* s) {
-    const unsigned char* p = (const unsigned char*)(*s);
+static inline uint64_t dc_fnv1a_str_borrow(const char* s) {
+    const unsigned char* p = (const unsigned char*)(s);
     uint64_t h = DC_FNV1A_64_OFFSET;
 
     for (unsigned char c = *p; c != 0; c = *++p) {
@@ -20,6 +20,10 @@ static inline uint64_t dc_fnv1a_str(const char* const* s) {
     }
     return h;
 }
+
+static inline uint64_t dc_fnv1a_str(char* const* s) { return dc_fnv1a_str_borrow(*s); }
+
+static inline uint64_t dc_fnv1a_str_const(const char* const* s) { return dc_fnv1a_str_borrow(*s); }
 
 static inline uint64_t dc_fnv1a_u64(uint64_t const* v) {
     uint64_t h = DC_FNV1A_64_OFFSET;

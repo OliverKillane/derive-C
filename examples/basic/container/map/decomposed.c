@@ -14,7 +14,7 @@
 #include <derive-c/algorithm/hash/combine.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 #include <derive-c/utils/for.h>
 
 #define KEY uint32_t
@@ -23,7 +23,7 @@
 #define NAME id_to_name
 #include <derive-c/container/map/decomposed/template.h>
 
-void print_map(id_to_name const* map) {
+static void print_map(id_to_name const* map) {
     printf("Map has items:\n");
     size_t pos = 0;
     DC_FOR_CONST(id_to_name, map, iter, entry) {
@@ -32,7 +32,7 @@ void print_map(id_to_name const* map) {
     }
 }
 
-void id_to_name_example() {
+static void id_to_name_example() {
     printf("Id to Name Map Example:\n");
     id_to_name map = id_to_name_new(stdalloc_get_ref());
 
@@ -59,34 +59,34 @@ struct report_id {
     uint32_t section;
 };
 
-void report_id_debug(struct report_id const* self, dc_debug_fmt fmt, FILE* stream) {
+static void report_id_debug(struct report_id const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, " report_id@%p { name: \"%s\", section: %d}", self, self->name, self->section);
 }
 
-bool report_id_equality(struct report_id const* report_1, struct report_id const* report_2) {
+static bool report_id_equality(struct report_id const* report_1, struct report_id const* report_2) {
     return strcmp(report_1->name, report_2->name) == 0 && report_1->section == report_2->section;
 }
 
-size_t report_id_hash(struct report_id const* report_id) {
+static size_t report_id_hash(struct report_id const* report_id) {
     return dc_hash_combine(dc_murmur_hash_string(report_id->name),
                            uint32_t_hash_id(&report_id->section));
 }
 
-void report_id_delete(struct report_id* self) { free(self->name); }
+static void report_id_delete(struct report_id* self) { free(self->name); }
 
 struct report {
     char* description;
     int value;
 };
 
-void report_debug(struct report const* self, dc_debug_fmt fmt, FILE* stream) {
+static void report_debug(struct report const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, " report@%p { description: \"%s\", value: %d}", self, self->description,
             self->value);
 }
 
-void report_delete(struct report* self) { free(self->description); }
+static void report_delete(struct report* self) { free(self->description); }
 
 #define KEY struct report_id
 #define KEY_EQ report_id_equality
@@ -99,7 +99,7 @@ void report_delete(struct report* self) { free(self->description); }
 #define NAME report_map
 #include <derive-c/container/map/decomposed/template.h>
 
-void report_map_example() {
+static void report_map_example() {
     printf("Report Map Example:\n");
     report_map map = report_map_new(stdalloc_get_ref());
 
@@ -136,16 +136,16 @@ struct fixed_string {
     char value[4];
 };
 
-void fixed_string_debug(struct fixed_string const* self, dc_debug_fmt fmt, FILE* stream) {
+static void fixed_string_debug(struct fixed_string const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "fixed_string@%p { value: \"%.*s\" }", self, 4, self->value);
 }
 
-bool fixed_string_eq(struct fixed_string const* str1, struct fixed_string const* str2) {
+static bool fixed_string_eq(struct fixed_string const* str1, struct fixed_string const* str2) {
     return memcmp(str1->value, str2->value, sizeof(str1->value)) == 0;
 }
 
-size_t fixed_string_hash(struct fixed_string const* str) {
+static size_t fixed_string_hash(struct fixed_string const* str) {
     return dc_murmur_hash_string_4(str->value);
 }
 
@@ -157,7 +157,7 @@ size_t fixed_string_hash(struct fixed_string const* str) {
 #define NAME fixed_string_map
 #include <derive-c/container/map/decomposed/template.h>
 
-void fixed_string_example() {
+static void fixed_string_example() {
     printf("Fixed Strings Example:\n");
     fixed_string_map map = fixed_string_map_new(stdalloc_get_ref());
 

@@ -14,7 +14,6 @@
 #else
     #define DC_ZERO_SIZED(TYPE)                                                                    \
         typedef struct {                                                                           \
-            char zero_sized_marker[0];                                                             \
         } TYPE;                                                                                    \
         _Static_assert(sizeof(TYPE) == 0)
 #endif

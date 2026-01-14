@@ -59,7 +59,7 @@ static void* NS(stdalloc, reallocate)(stdalloc_ref /* ref */, void* ptr, size_t 
 
     if (new_size > old_size) {
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
-                              ((char*)new_ptr) + old_size, new_size - old_size);
+                              (char*)new_ptr + old_size, new_size - old_size);
     }
 
     return new_ptr;

@@ -13,7 +13,7 @@
 TEMPLATE_ERROR("No KEY")
     #endif
     #define KEY map_key_t
-typedef int KEY;
+typedef size_t KEY;
 #endif
 
 #if !defined KEY_HASH
@@ -22,7 +22,7 @@ TEMPLATE_ERROR("No KEY_HASH")
     #endif
 
     #define KEY_HASH key_hash
-static size_t KEY_HASH(KEY const* key);
+static size_t KEY_HASH(KEY const* key) { return *key; }
 #endif
 
 #if !defined KEY_EQ
@@ -523,11 +523,11 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
-    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
-    dc_debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
+    dc_debug_fmt_print(fmt, stream, "capacity: %zu,\n", self->capacity);
+    dc_debug_fmt_print(fmt, stream, "size: %zu,\n", NS(SELF, size)(self));
 
-    dc_debug_fmt_print(fmt, stream, "keys: @%p,\n", self->keys);
-    dc_debug_fmt_print(fmt, stream, "values: @%p,\n", self->values);
+    dc_debug_fmt_print(fmt, stream, "keys: @%p,\n", (void*)self->keys);
+    dc_debug_fmt_print(fmt, stream, "values: @%p,\n", (void*)self->values);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
@@ -537,8 +537,6 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
-    KV_PAIR_CONST item;
-
     for (KV_PAIR_CONST item = NS(ITER_CONST, next)(&iter); !NS(ITER_CONST, empty_item)(&item);
          item = NS(ITER_CONST, next)(&iter)) {
         dc_debug_fmt_print(fmt, stream, "{\n");

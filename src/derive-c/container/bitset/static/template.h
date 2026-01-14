@@ -95,7 +95,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "blocks: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
     for (size_t index = 0; index < EXCLUSIVE_END_INDEX; index++) {
-        if (NS(SELF, get)(self, index)) {
+        if (NS(SELF, get)(self, (INDEX_TYPE)index)) {
             dc_debug_fmt_print(fmt, stream, "{ byte: %lu, offset: %lu, index: %lu},\n",
                                DC_BITSET_STATIC_INDEX_TO_BYTES(index),
                                DC_BITSET_STATIC_INDEX_TO_OFFSET(index), index);
@@ -123,7 +123,7 @@ static size_t NS(SELF, size)(SELF const* self) {
 
     for (INDEX_TYPE byte = 0;
          byte < (INDEX_TYPE)DC_BITSET_STATIC_CAPACITY_TO_BYTES(EXCLUSIVE_END_INDEX); byte++) {
-        size += __builtin_popcount((unsigned int)self->bits[byte]);
+        size += (uint32_t)__builtin_popcount((unsigned int)self->bits[byte]);
     }
 
     return size;
@@ -163,7 +163,7 @@ static ITER_INDEX_TYPE NS(ITER_CONST, next)(ITER_CONST* iter) {
     ITER_INDEX_TYPE next_index = iter->next_index;
     iter->next_index++;
     while (iter->next_index < EXCLUSIVE_END_INDEX &&
-           !NS(SELF, get)(iter->bitset, iter->next_index)) {
+           !NS(SELF, get)(iter->bitset, (INDEX_TYPE)iter->next_index)) {
         iter->next_index++;
     }
     return next_index;
@@ -173,7 +173,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     ITER_INDEX_TYPE next_index = 0;
-    while (next_index < EXCLUSIVE_END_INDEX && !NS(SELF, get)(self, next_index)) {
+    while (next_index < EXCLUSIVE_END_INDEX && !NS(SELF, get)(self, (INDEX_TYPE)next_index)) {
         next_index++;
     }
 
@@ -209,7 +209,7 @@ static ITER_INDEX_TYPE NS(ITER, next)(ITER* iter) {
     ITER_INDEX_TYPE next_index = iter->next_index;
     iter->next_index++;
     while (iter->next_index < EXCLUSIVE_END_INDEX &&
-           !NS(SELF, get)(iter->bitset, iter->next_index)) {
+           !NS(SELF, get)(iter->bitset, (INDEX_TYPE)iter->next_index)) {
         iter->next_index++;
     }
     return next_index;
@@ -219,7 +219,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
 
     ITER_INDEX_TYPE next_index = 0;
-    while (next_index < EXCLUSIVE_END_INDEX && !NS(SELF, get)(self, next_index)) {
+    while (next_index < EXCLUSIVE_END_INDEX && !NS(SELF, get)(self, (INDEX_TYPE)next_index)) {
         next_index++;
     }
 

@@ -70,3 +70,13 @@
         #endif
     #endif
 #endif
+
+// JUSTIFY: `DC_DEBUG_ASSERT` when `DC_ASSUME` exists
+//  - Some expressions cannot be used as compiler assumptions.
+#if !defined DC_DEBUG_ASSERT
+    #if !defined NDEBUG
+        #define DC_DEBUG_ASSERT DC_ASSERT
+    #else
+        #define DC_DEBUG_ASSERT(expr, ...) (void)(expr)
+    #endif
+#endif

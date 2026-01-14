@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 
+#include <derive-c/core/attributes.h>
 #include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/namespace.h>
 #include <derive-c/core/require.h>
@@ -16,7 +17,7 @@
 #include <derive-c/core/compiler.h>
 
 #define DC_TRAIT_DEBUGABLE(SELF)                                                                   \
-    DC_REQUIRE_METHOD(void, SELF, debug, (SELF const*, dc_debug_fmt fmt, FILE*));
+    DC_REQUIRE_METHOD(void, SELF, debug, (SELF const*, dc_debug_fmt fmt, FILE*))
 
 #define DC_NO_DEBUG PRIV(no_debug)
 
@@ -29,7 +30,7 @@ static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
 #define _DC_DERIVE_DEBUG_MEMBER(MEMBER_TYPE, MEMBER_NAME)                                          \
     dc_debug_fmt_print(fmt, stream, DC_STRINGIFY(MEMBER_NAME) ": ");                               \
     NS(MEMBER_TYPE, debug)(&self->MEMBER_NAME, fmt, stream);                                       \
-    fprintf(fmt, stream, ",\n");
+    fprintf(stream, ",\n");
 
 #define DC_DERIVE_DEBUG(TYPE)                                                                      \
     static TYPE NS(TYPE, DEBUG)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {                \
@@ -40,21 +41,38 @@ static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
     }
 
 #define _DC_DERIVE_STD_DEBUG(TYPE, FMT, ...)                                                       \
-    static void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {                \
+    static DC_UNUSED void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {      \
         (void)fmt;                                                                                 \
         fprintf(stream, FMT, *self);                                                               \
     }
 
-DC_STD_REFLECT(_DC_DERIVE_STD_DEBUG)
+#define _DC_DERIVE_STD_DEBUG_FLOAT(TYPE, FMT, ...)                                                 \
+    static DC_UNUSED void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {      \
+        (void)fmt;                                                                                 \
+        fprintf(stream, FMT, (double)*self);                                                       \
+    }
 
-static void dc_string_debug(char const* const* string, dc_debug_fmt fmt, FILE* stream) {
+DC_STD_REFLECT(_DC_DERIVE_STD_DEBUG)
+DC_FLOAT_REFLECT(_DC_DERIVE_STD_DEBUG_FLOAT)
+
+static void dc_string_debug(char* const* string, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "char*@%p \"%s\"", *string, *string);
 }
 
-static void dc_void_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* stream) {
+static void dc_string_const_debug(char const* const* string, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "char*@%p \"%s\"", *string, *string);
+}
+
+static void dc_void_ptr_debug(void* const* ptr, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "void*@%p", *ptr);
+}
+
+static void dc_void_const_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* stream) {
+    (void)fmt;
+    fprintf(stream, "void const*@%p", *ptr);
 }
 
 #if defined DC_GENERIC_KEYWORD_SUPPORTED
@@ -64,9 +82,10 @@ static void dc_void_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* st
 
     #define _DC_DEFAULT_DEBUG(SELF, FMT, STREAM)                                                   \
         _Generic(*(SELF),                                                                          \
-            DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, f) char const*: dc_string_debug,                \
+            DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, f)                                              \
+                DC_FLOAT_REFLECT(_DC_DEFAULT_DEBUG_CASE, f) char const*: dc_string_const_debug,    \
             char*: dc_string_debug,                                                                \
-            void const*: dc_void_ptr_debug,                                                        \
+            void const*: dc_void_const_ptr_debug,                                                  \
             void*: dc_void_ptr_debug,                                                              \
             default: PRIV(no_debug))(SELF, FMT, STREAM);
 #else
@@ -81,18 +100,21 @@ static void dc_void_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* st
     #define _DC_DEFAULT_DEBUG(SELF, FMT, STREAM)                                                   \
         [&]<typename T>(T item) {                                                                  \
             DC_STD_REFLECT(_DC_DEFAULT_DEBUG_CASE, FMT, STREAM)                                    \
+            DC_FLOAT_REFLECT(_DC_DEFAULT_DEBUG_CASE, FMT, STREAM)                                  \
             if constexpr (std::is_same_v<void*, std::remove_cv_t<                                  \
-                                                    std::remove_reference_t<decltype(*item)>>> ||  \
-                          std::is_same_v<                                                          \
-                              void const*,                                                         \
-                              std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {       \
+                                                    std::remove_reference_t<decltype(*item)>>>) {  \
+                dc_void_const_ptr_debug(item, FMT, STREAM);                                        \
+            } else if constexpr (std::is_same_v<void const*,                                       \
+                                                std::remove_cv_t<                                  \
+                                                    std::remove_reference_t<decltype(*item)>>>) {  \
                 dc_void_ptr_debug(item, FMT, STREAM);                                              \
-            } else if constexpr (                                                                  \
-                std::is_same_v<char*,                                                              \
-                               std::remove_cv_t<std::remove_reference_t<decltype(*item)>>> ||      \
-                std::is_same_v<char const*,                                                        \
-                               std::remove_cv_t<std::remove_reference_t<decltype(*item)>>>) {      \
+            } else if constexpr (std::is_same_v<char*, std::remove_cv_t<std::remove_reference_t<   \
+                                                           decltype(*item)>>>) {                   \
                 dc_string_debug(item, FMT, STREAM);                                                \
+            } else if constexpr (std::is_same_v<char const*,                                       \
+                                                std::remove_cv_t<                                  \
+                                                    std::remove_reference_t<decltype(*item)>>>) {  \
+                dc_string_const_debug(item, FMT, STREAM);                                          \
             } else {                                                                               \
                 DC_NO_DEBUG(item, FMT, STREAM);                                                    \
             }                                                                                      \

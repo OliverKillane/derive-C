@@ -23,11 +23,12 @@ typedef struct {
     int x;
 } SLOT_VALUE;
     #define SLOT_VALUE_DELETE slot_value_delete
-static void SLOT_VALUE_DELETE(slot_value_t* self);
+static void SLOT_VALUE_DELETE(slot_value_t* /* self */) {}
     #define SLOT_VALUE_CLONE slot_value_clone
-static slot_value_t SLOT_VALUE_CLONE(slot_value_t const* self);
+static slot_value_t SLOT_VALUE_CLONE(slot_value_t const* self) { return *self; }
     #define SLOT_VALUE_DEBUG slot_value_debug
-static void SLOT_VALUE_DEBUG(SLOT_VALUE const*, dc_debug_fmt, FILE* stream);
+static void SLOT_VALUE_DEBUG(SLOT_VALUE const* /* self */, dc_debug_fmt /*fmt */,
+                             FILE* /* stream */) {}
 #endif
 
 #if !defined SLOT_VALUE_DELETE

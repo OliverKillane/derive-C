@@ -13,9 +13,17 @@ DC_INLINE uint32_t dc_rotl32(uint32_t x, int8_t r) { return (x << r) | (x >> (32
 
 DC_INLINE uint64_t dc_rotl64(uint64_t x, int8_t r) { return (x << r) | (x >> (64 - r)); }
 
-DC_INLINE uint32_t dc_getblock32(const uint32_t* p, int32_t i) { return p[i]; }
+DC_INLINE uint32_t dc_getblock32(const uint8_t* p, int32_t i) {
+    uint32_t out;
+    memcpy(&out, p + ((ptrdiff_t)i * 4), sizeof(out));
+    return out;
+}
 
-DC_INLINE uint64_t dc_getblock64(const uint64_t* p, int32_t i) { return p[i]; }
+DC_INLINE uint64_t dc_getblock64(const uint8_t* p, int32_t i) {
+    uint64_t out;
+    memcpy(&out, p + ((ptrdiff_t)i * 8), sizeof(out));
+    return out;
+}
 
 DC_INLINE uint32_t dc_fmix32(uint32_t h) {
     h ^= h >> 16;
@@ -37,7 +45,7 @@ DC_INLINE uint64_t dc_fmix64(uint64_t k) {
     return k;
 }
 
-void dc_MurmurHash3_x86_32(const void* key, int32_t len, uint32_t seed, void* out) {
+static inline void dc_MurmurHash3_x86_32(const void* key, int32_t len, uint32_t seed, void* out) {
     const uint8_t* data = (const uint8_t*)key;
     const int32_t nblocks = len / 4;
 
@@ -48,7 +56,7 @@ void dc_MurmurHash3_x86_32(const void* key, int32_t len, uint32_t seed, void* ou
 
     // body
 
-    const uint32_t* blocks = (const uint32_t*)(data + (ptrdiff_t)(nblocks * 4));
+    const uint8_t* blocks = data + (ptrdiff_t)(nblocks * 4);
 
     for (int i = -nblocks; i; i++) {
         uint32_t k1 = dc_getblock32(blocks, i);
@@ -70,28 +78,32 @@ void dc_MurmurHash3_x86_32(const void* key, int32_t len, uint32_t seed, void* ou
 
     switch (len & 3) {
     case 3:
-        k1 ^= tail[2] << 16;
+        k1 ^= ((uint32_t)tail[2]) << 16;
+        [[fallthrough]];
     case 2:
-        k1 ^= tail[1] << 8;
+        k1 ^= ((uint32_t)tail[1]) << 8;
+        [[fallthrough]];
     case 1:
-        k1 ^= tail[0];
+        k1 ^= ((uint32_t)tail[0]);
         k1 *= c1;
         k1 = dc_rotl32(k1, 15);
         k1 *= c2;
         h1 ^= k1;
+        [[fallthrough]];
     default:
     };
 
     // finalization
 
-    h1 ^= len;
+    h1 ^= (uint32_t)len;
 
     h1 = dc_fmix32(h1);
 
     *(uint32_t*)out = h1;
 }
 
-void dc_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t seed, void* out) {
+static inline void dc_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t seed,
+                                          void* out) {
     const uint8_t* data = (const uint8_t*)key;
     const int32_t nblocks = len / 16;
 
@@ -107,7 +119,7 @@ void dc_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t seed, v
 
     // body
 
-    const uint32_t* blocks = (const uint32_t*)(data + (ptrdiff_t)(nblocks * 16));
+    const uint8_t* blocks = data + (ptrdiff_t)(nblocks * 16);
 
     for (int i = -nblocks; i; i++) {
         uint32_t k1 = dc_getblock32(blocks, (i * 4) + 0);
@@ -163,63 +175,78 @@ void dc_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t seed, v
 
     switch (len & 15) {
     case 15:
-        k4 ^= tail[14] << 16;
+        k4 ^= ((uint32_t)tail[14]) << 16;
+        [[fallthrough]];
     case 14:
-        k4 ^= tail[13] << 8;
+        k4 ^= ((uint32_t)tail[13]) << 8;
+        [[fallthrough]];
     case 13:
-        k4 ^= tail[12] << 0;
+        k4 ^= ((uint32_t)tail[12]) << 0;
         k4 *= c4;
         k4 = dc_rotl32(k4, 18);
         k4 *= c1;
         h4 ^= k4;
 
+        [[fallthrough]];
     case 12:
-        k3 ^= tail[11] << 24;
+        k3 ^= ((uint32_t)tail[11]) << 24;
+        [[fallthrough]];
     case 11:
-        k3 ^= tail[10] << 16;
+        k3 ^= ((uint32_t)tail[10]) << 16;
+        [[fallthrough]];
     case 10:
-        k3 ^= tail[9] << 8;
+        k3 ^= ((uint32_t)tail[9]) << 8;
+        [[fallthrough]];
     case 9:
-        k3 ^= tail[8] << 0;
+        k3 ^= ((uint32_t)tail[8]) << 0;
         k3 *= c3;
         k3 = dc_rotl32(k3, 17);
         k3 *= c4;
         h3 ^= k3;
 
+        [[fallthrough]];
     case 8:
-        k2 ^= tail[7] << 24;
+        k2 ^= ((uint32_t)tail[7]) << 24;
+        [[fallthrough]];
     case 7:
-        k2 ^= tail[6] << 16;
+        k2 ^= ((uint32_t)tail[6]) << 16;
+        [[fallthrough]];
     case 6:
-        k2 ^= tail[5] << 8;
+        k2 ^= ((uint32_t)tail[5]) << 8;
+        [[fallthrough]];
     case 5:
-        k2 ^= tail[4] << 0;
+        k2 ^= ((uint32_t)tail[4]) << 0;
         k2 *= c2;
         k2 = dc_rotl32(k2, 16);
         k2 *= c3;
         h2 ^= k2;
 
+        [[fallthrough]];
     case 4:
-        k1 ^= tail[3] << 24;
+        k1 ^= ((uint32_t)tail[3]) << 24;
+        [[fallthrough]];
     case 3:
-        k1 ^= tail[2] << 16;
+        k1 ^= ((uint32_t)tail[2]) << 16;
+        [[fallthrough]];
     case 2:
-        k1 ^= tail[1] << 8;
+        k1 ^= ((uint32_t)tail[1]) << 8;
+        [[fallthrough]];
     case 1:
-        k1 ^= tail[0] << 0;
+        k1 ^= ((uint32_t)tail[0]) << 0;
         k1 *= c1;
         k1 = dc_rotl32(k1, 15);
         k1 *= c2;
         h1 ^= k1;
+        [[fallthrough]];
     default:
     };
 
     // finalization
 
-    h1 ^= len;
-    h2 ^= len;
-    h3 ^= len;
-    h4 ^= len;
+    h1 ^= (uint32_t)len;
+    h2 ^= (uint32_t)len;
+    h3 ^= (uint32_t)len;
+    h4 ^= (uint32_t)len;
 
     h1 += h2;
     h1 += h3;
@@ -246,7 +273,8 @@ void dc_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t seed, v
     ((uint32_t*)out)[3] = h4;
 }
 
-void dc_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t seed, void* out) {
+static inline void dc_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t seed,
+                                          void* out) {
     const uint8_t* data = (const uint8_t*)key;
     const int32_t nblocks = len / 16;
 
@@ -258,7 +286,7 @@ void dc_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t s
 
     // body
 
-    const uint64_t* blocks = (const uint64_t*)(data);
+    const uint8_t* blocks = data;
 
     for (int32_t i = 0; i < nblocks; i++) {
         uint64_t k1 = dc_getblock64(blocks, (i * 2) + 0);
@@ -293,16 +321,22 @@ void dc_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t s
     switch (len & 15) {
     case 15:
         k2 ^= ((uint64_t)tail[14]) << 48;
+        [[fallthrough]];
     case 14:
         k2 ^= ((uint64_t)tail[13]) << 40;
+        [[fallthrough]];
     case 13:
         k2 ^= ((uint64_t)tail[12]) << 32;
+        [[fallthrough]];
     case 12:
         k2 ^= ((uint64_t)tail[11]) << 24;
+        [[fallthrough]];
     case 11:
         k2 ^= ((uint64_t)tail[10]) << 16;
+        [[fallthrough]];
     case 10:
         k2 ^= ((uint64_t)tail[9]) << 8;
+        [[fallthrough]];
     case 9:
         k2 ^= ((uint64_t)tail[8]) << 0;
         k2 *= c2;
@@ -310,33 +344,42 @@ void dc_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t s
         k2 *= c1;
         h2 ^= k2;
 
+        [[fallthrough]];
     case 8:
         k1 ^= ((uint64_t)tail[7]) << 56;
+        [[fallthrough]];
     case 7:
         k1 ^= ((uint64_t)tail[6]) << 48;
+        [[fallthrough]];
     case 6:
         k1 ^= ((uint64_t)tail[5]) << 40;
+        [[fallthrough]];
     case 5:
         k1 ^= ((uint64_t)tail[4]) << 32;
+        [[fallthrough]];
     case 4:
         k1 ^= ((uint64_t)tail[3]) << 24;
+        [[fallthrough]];
     case 3:
         k1 ^= ((uint64_t)tail[2]) << 16;
+        [[fallthrough]];
     case 2:
         k1 ^= ((uint64_t)tail[1]) << 8;
+        [[fallthrough]];
     case 1:
         k1 ^= ((uint64_t)tail[0]) << 0;
         k1 *= c1;
         k1 = dc_rotl64(k1, 31);
         k1 *= c2;
         h1 ^= k1;
+        [[fallthrough]];
     default:
     };
 
     // finalization
 
-    h1 ^= len;
-    h2 ^= len;
+    h1 ^= (uint64_t)len;
+    h2 ^= (uint64_t)len;
 
     h1 += h2;
     h2 += h1;
@@ -351,7 +394,7 @@ void dc_MurmurHash3_x64_128(const void* key, const int32_t len, const uint32_t s
     ((uint64_t*)out)[1] = h2;
 }
 
-size_t dc_murmurhash(const void* key, int32_t len, uint32_t seed) {
+static inline size_t dc_murmurhash(const void* key, int32_t len, uint32_t seed) {
 #if SIZE_MAX == UINT64_MAX
     // 64-bit platform: use the x64 128-bit variant, return lower 64 bits
     uint64_t out128[2];
@@ -360,7 +403,7 @@ size_t dc_murmurhash(const void* key, int32_t len, uint32_t seed) {
 #elif SIZE_MAX == UINT32_MAX
     // 32-bit platform: use the x86 32-bit variant
     uint32_t out32;
-    MurmurHash3_x86_32(key, len, seed, &out32);
+    dc_MurmurHash3_x86_32(key, len, seed, &out32);
     return (size_t)out32;
 #else
     #error "Unsupported size_t width"
@@ -403,7 +446,7 @@ DC_INT_REFLECT(MURMURHASH_3_FMIx64)
 
 STRING_SIZES(MURMURHASH_STRING_FIXED_SIZE)
 
-size_t dc_murmur_hash_string(const char* str) {
+static inline size_t dc_murmur_hash_string(const char* str) {
     return dc_murmurhash(str, (int)strlen(str), MURMURHASH_DEFAULT_SEED);
 }
 

@@ -1,5 +1,5 @@
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define CAPACITY 300000
 #define NAME bump_alloc
@@ -10,7 +10,7 @@
 #define NAME int_queue
 #include <derive-c/container/queue/circular/template.h>
 
-void basic_example() {
+static void basic_example() {
     bump_alloc_buffer buffer = {};
     bump_alloc alloc = bump_alloc_new(&buffer, stdalloc_get_ref());
 

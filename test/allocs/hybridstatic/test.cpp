@@ -14,7 +14,7 @@
 #include <derive-c/alloc/wrap/template.h>
 
 #define ALLOC mock_alloc
-#define CAPACITY 0
+#define CAPACITY 1
 #define NAME hybridstaticempty
 #include <derive-c/alloc/hybridstatic/template.h>
 

@@ -17,11 +17,11 @@ typedef struct {
 } item_t;
     #define ITEM item_t
     #define ITEM_DELETE item_delete
-static void ITEM_DELETE(item_t* self);
+static void ITEM_DELETE(item_t* /* self */) {}
     #define ITEM_CLONE item_clone
-static item_t ITEM_CLONE(item_t const* self);
+static item_t ITEM_CLONE(item_t const* self) { return *self; }
     #define ITEM_DEBUG item_debug
-static void ITEM_DEBUG(ITEM const* self, dc_debug_fmt fmt, FILE* stream);
+static void ITEM_DEBUG(ITEM const* /* self */, dc_debug_fmt /* fmt */, FILE* /* stream */) {}
 #endif
 
 #if !defined ITEM_DELETE
@@ -456,7 +456,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, ",\n");
 
-    dc_debug_fmt_print(fmt, stream, "items: @%p [\n", self->data);
+    dc_debug_fmt_print(fmt, stream, "items: @%p [\n", (void*)self->data);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     ITER_CONST iter = NS(SELF, get_iter_const)(self);

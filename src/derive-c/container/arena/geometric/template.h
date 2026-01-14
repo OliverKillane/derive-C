@@ -50,11 +50,11 @@ typedef struct {
 } value_t;
     #define VALUE value_t
     #define VALUE_DELETE value_delete
-static void VALUE_DELETE(value_t* self);
+static void VALUE_DELETE(value_t* /* self */) {}
     #define VALUE_CLONE value_clone
-static value_t VALUE_CLONE(value_t const* self);
+static value_t VALUE_CLONE(value_t const* self) { return *self; }
     #define VALUE_DEBUG value_debug
-static void VALUE_DEBUG(VALUE const* self, dc_debug_fmt fmt, FILE* stream);
+static void VALUE_DEBUG(VALUE const* /* self */, dc_debug_fmt /* fmt */, FILE* /* stream */) {}
 #endif
 
 DC_STATIC_ASSERT(sizeof(VALUE), "VALUE must be a non-zero sized type");
@@ -108,10 +108,9 @@ typedef struct {
     dc_gdb_marker derive_c_arena_blocks;
     mutation_tracker iterator_invalidation_tracker;
 
-    // JUSTIFY: Using index type for the block exclusive end
-    //  - We can use a smaller integer type (than size_t), as this is guarenteed to be smaller
-    //    half the largest index.
     size_t block_current_exclusive_end;
+    // JUSTIFY: Block is a uint8_t
+    //  - We can have at most 63 blocks, as we can have 64 bit indices, with an initial 1 bit size.
     uint8_t block_current;
     SLOT* blocks[DC_ARENA_GEO_MAX_NUM_BLOCKS(INDEX_BITS, INITIAL_BLOCK_INDEX_BITS)];
 } SELF;
@@ -230,7 +229,7 @@ static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
     return (VALUE*)NS(SELF, read)(self, index);
 }
 
-static INDEX_TYPE NS(SELF, size)(SELF const* self) {
+static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->count;
 }
@@ -418,7 +417,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
             block == self->block_current ? self->block_current_exclusive_end : capacity;
 
         dc_debug_fmt_print(fmt, stream, "block_index: %lu,\n", block);
-        dc_debug_fmt_print(fmt, stream, "block_ptr: %p,\n", self->blocks[block]);
+        dc_debug_fmt_print(fmt, stream, "block_ptr: %p,\n", (void*)self->blocks[block]);
         dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", capacity);
         dc_debug_fmt_print(fmt, stream, "size: %lu,\n", to_offset);
         dc_debug_fmt_print(fmt, stream, "slots: [\n");

@@ -21,7 +21,7 @@ template <ObjectType Item> struct SutObject {
 #define ITEM Item
 #define ITEM_CLONE Item::clone_
 #define ITEM_DELETE Item::delete_
-#define INPLACE_CAPACITY 10
+#define CAPACITY 10
 #define NAME Sut
 #include <derive-c/container/vector/static/template.h>
 };

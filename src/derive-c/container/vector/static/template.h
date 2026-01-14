@@ -24,11 +24,11 @@ typedef struct {
 } item_t;
     #define ITEM item_t
     #define ITEM_DELETE item_delete
-static void ITEM_DELETE(item_t* self);
+static void ITEM_DELETE(item_t* /* self */) {}
     #define ITEM_CLONE item_clone
-static item_t ITEM_CLONE(item_t const* self);
+static item_t ITEM_CLONE(item_t const* self) { return *self; }
     #define ITEM_DEBUG item_debug
-static void ITEM_DEBUG(ITEM const* self, dc_debug_fmt fmt, FILE* stream);
+static void ITEM_DEBUG(ITEM const* /* self */, dc_debug_fmt /* fmt */, FILE* /* stream */) {}
 #endif
 
 #if !defined ITEM_DELETE
@@ -43,20 +43,20 @@ static void ITEM_DEBUG(ITEM const* self, dc_debug_fmt fmt, FILE* stream);
     #define ITEM_DEBUG DC_DEFAULT_DEBUG
 #endif
 
-#if !defined INPLACE_CAPACITY
+#if !defined CAPACITY
     #if !defined DC_PLACEHOLDERS
-TEMPLATE_ERROR("The INPLACE_CAPACITY must be defined")
+TEMPLATE_ERROR("The CAPACITY must be defined")
     #endif
-    #define INPLACE_CAPACITY 8
+    #define CAPACITY 8
 #endif
-#if INPLACE_CAPACITY == 0
-TEMPLATE_ERROR("INPLACE_CAPACITY must be greater than 0")
-#elif INPLACE_CAPACITY <= 255
+#if CAPACITY == 0
+TEMPLATE_ERROR("CAPACITY must be greater than 0")
+#elif CAPACITY <= 255
     #define INDEX_TYPE uint8_t
-#elif INPLACE_CAPACITY <= 65535
+#elif CAPACITY <= 65535
     #define INDEX_TYPE uint16_t
 #else
-TEMPLATE_ERROR("INPLACE_CAPACITY must be less than or equal to 65535")
+TEMPLATE_ERROR("CAPACITY must be less than or equal to 65535")
     #define INDEX_TYPE size_t
 #endif
 
@@ -65,14 +65,14 @@ typedef ITEM NS(SELF, item_t);
 
 typedef struct {
     INDEX_TYPE size;
-    ITEM data[INPLACE_CAPACITY];
+    ITEM data[CAPACITY];
     dc_gdb_marker derive_c_staticvec;
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
-    DC_ASSUME((self->size) <= INPLACE_CAPACITY);
+    DC_ASSUME((self->size) <= CAPACITY);
 
 static SELF NS(SELF, new)() {
     SELF self = {
@@ -83,7 +83,7 @@ static SELF NS(SELF, new)() {
     return self;
 }
 
-DC_STATIC_CONSTANT size_t NS(SELF, max_size) = INPLACE_CAPACITY;
+DC_STATIC_CONSTANT size_t NS(SELF, max_size) = CAPACITY;
 
 static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
@@ -127,7 +127,7 @@ static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
 static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    if (self->size < INPLACE_CAPACITY) {
+    if (self->size < CAPACITY) {
         ITEM* slot = &self->data[self->size];
         *slot = item;
         self->size++;
@@ -143,7 +143,7 @@ static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* item
     DC_ASSERT(at <= self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
-    if (self->size + count > INPLACE_CAPACITY) {
+    if (self->size + count > CAPACITY) {
         return NULL;
     }
 
@@ -295,12 +295,12 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
-    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", (size_t)INPLACE_CAPACITY);
+    dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", (size_t)CAPACITY);
     dc_debug_fmt_print(fmt, stream, "size: %lu,\n", (size_t)self->size);
 
-    dc_debug_fmt_print(fmt, stream, "items: @%p [\n", self->data);
+    dc_debug_fmt_print(fmt, stream, "items: @%p [\n", (void*)self->data);
     fmt = dc_debug_fmt_scope_begin(fmt);
     ITER_CONST iter = NS(SELF, get_iter_const)(self);
     ITEM const* item;
@@ -318,7 +318,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
 #undef ITER_CONST
 #undef INVARIANT_CHECK
 #undef INDEX_TYPE
-#undef INPLACE_CAPACITY
+#undef CAPACITY
 #undef ITEM_DEBUG
 #undef ITEM_CLONE
 #undef ITEM_DELETE

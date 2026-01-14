@@ -6,7 +6,8 @@
 ///    before passing to allocator free.
 #pragma once
 
-#include <derive-c/core/prelude.h>
+#include <derive-c/core/panic.h>
+#include <derive-c/core/math.h>
 
 #include <stddef.h>
 #include <stdint.h>
@@ -116,7 +117,6 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
     if (level <= dc_memory_tracker_global_level) {
 #if defined(DC_MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
-        intptr_t poisoned_from = __msan_test_shadow((void*)addr, size);
         switch (cap) {
         case DC_MEMORY_TRACKER_CAP_NONE:
         case DC_MEMORY_TRACKER_CAP_WRITE: {
@@ -126,7 +126,7 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
                 // For size == 1:
                 //  - return -1  => unpoisoned (initialized)  -> ERROR here
                 //  - return 0   => poisoned (uninitialized)  -> OK
-                if (__msan_test_shadow((void*)p, 1) == -1) {
+                if (__msan_test_shadow(p, 1) == -1) {
                     DC_PANIC("Memory region %p (%zu bytes) is not fully uninitialised: "
                              "byte %zu (%p) is unpoisoned",
                              addr, size, offset, p);
@@ -137,7 +137,7 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
         case DC_MEMORY_TRACKER_CAP_READ_WRITE: {
             for (size_t offset = 0; offset < size; offset++) {
                 const unsigned char* p = (const unsigned char*)addr + offset;
-                if (__msan_test_shadow((void*)p, 1) != -1) {
+                if (__msan_test_shadow(p, 1) != -1) {
                     DC_PANIC("Memory region %p (%zu bytes) is not initialised: "
                              "byte %zu (%p) is poisoned",
                              addr, size, offset, p);
@@ -148,13 +148,14 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
         }
         DC_UNREACHABLE("Invalid capability");
 #elif defined(DC_ASAN_ON)
-        bool const region_is_poisoned = __asan_region_is_poisoned((void*)addr, size);
+        bool const region_is_poisoned = __asan_region_is_poisoned((void*)(uintptr_t)addr, size);
         switch (cap) {
         case DC_MEMORY_TRACKER_CAP_NONE: {
             if (!region_is_poisoned) {
-                bool const is_at_end_of_granule = dc_math_is_aligned_pow2_exp((char*)addr - 7, 3);
+                const char* addr_char = (const char*)addr;
+                bool const is_at_end_of_granule = dc_math_is_aligned_pow2(addr_char - 7, 8);
                 bool const is_next_byte_poisoned =
-                    __asan_region_is_poisoned((void*)((char*)addr + 1), 1);
+                    __asan_region_is_poisoned((void*)(uintptr_t)(addr_char + 1), 1);
 
                 // JUSTIFY: panic conditionally
                 //  - Asan tracks poisoning at the granule/8 byte level, with the number of bytes
@@ -208,11 +209,12 @@ static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size)
     }
 #elif defined DC_ASAN_ON
     // Each shadow memory entry covers 8 bytes of memory, aligned to 8 bytes, so we print this.
-    char* addr_start = (char*)addr;
-    char* addr_end = addr_start + size;
-    char* granule_base = (char*)((uintptr_t)addr & ~0x7); // NOLINT(performance-no-int-to-ptr)
-    char* granule_end =
-        (char*)(((uintptr_t)addr + size + 7) & ~0x7); // NOLINT(performance-no-int-to-ptr)
+    const char* addr_start = (const char*)addr;
+    const char* addr_end = addr_start + size;
+    const char* granule_base =
+        (const char*)((uintptr_t)addr & ~(uintptr_t)0x7U); // NOLINT(performance-no-int-to-ptr)
+    const char* granule_end = (const char*)(((uintptr_t)addr + size + 7U) &
+                                            ~(uintptr_t)0x7U); // NOLINT(performance-no-int-to-ptr)
 
     fprintf(stream, "[ASAN]:");
     fprintf(stream,
@@ -223,18 +225,18 @@ static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size)
         fprintf(stream, "    %lu  ", b);
     }
     fprintf(stream, "\n");
-    for (char* p = granule_base; p < granule_end; p += 8) {
+    for (const char* p = granule_base; p < granule_end; p += 8) {
         fprintf(stream, "%p: ", p);
-        for (char* b = p; b < p + 8; b++) {
-            bool const poisoned = __asan_region_is_poisoned(b, 1);
+        for (const char* b = p; b < p + 8; b++) {
+            bool const poisoned = __asan_region_is_poisoned((void*)(uintptr_t)b, 1);
             bool const in_selected = (b >= addr_start && b < addr_end);
             uint8_t value;
             if (poisoned) {
-                __asan_unpoison_memory_region(b, 1);
-                value = *b;
-                __asan_poison_memory_region(b, 1);
+                __asan_unpoison_memory_region((void*)(uintptr_t)b, 1);
+                value = (uint8_t)*b;
+                __asan_poison_memory_region((void*)(uintptr_t)b, 1);
             } else {
-                value = *b;
+                value = (uint8_t)*b;
             }
 
             char const status = poisoned ? 'P' : 'U';

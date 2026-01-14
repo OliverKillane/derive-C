@@ -9,13 +9,13 @@
 #include <string.h>
 
 #include <derive-c/alloc/std.h>
-#include <derive-c/core/prelude.h>
+#include <derive-c/prelude.h>
 
 #define ITEM int32_t
 #define NAME vec_ints
 #include <derive-c/container/vector/dynamic/template.h>
 
-void ints_example() {
+static void ints_example() {
     vec_ints ints = vec_ints_new_with_capacity(10, stdalloc_get_ref());
     const int32_t upto = 100;
 
@@ -25,12 +25,12 @@ void ints_example() {
     DC_ASSERT(vec_ints_size(&ints) == upto);
 
     for (int32_t i = 0; i < upto; i++) {
-        int* value = vec_ints_write(&ints, i);
+        int* value = vec_ints_write(&ints, (size_t)i);
         *value += 1; // Increment each value by 1
     }
 
     for (int32_t i = 0; i < upto; i++) {
-        DC_ASSERT(*vec_ints_read(&ints, i) == i + 1);
+        DC_ASSERT(*vec_ints_read(&ints, (size_t)i) == i + 1);
     }
 
     // Pop the last value
@@ -48,7 +48,7 @@ struct complex_data {
     size_t score;
 };
 
-void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt, FILE* stream) {
+static void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, "complex_data@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "description: %s,\n", self->description);
@@ -57,7 +57,7 @@ void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt, FILE*
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-void complex_data_delete(struct complex_data* self) { free(self->description); }
+static void complex_data_delete(struct complex_data* self) { free(self->description); }
 
 #define ITEM struct complex_data
 #define ITEM_DELETE complex_data_delete
@@ -65,7 +65,7 @@ void complex_data_delete(struct complex_data* self) { free(self->description); }
 #define NAME vec_complex_data
 #include <derive-c/container/vector/dynamic/template.h>
 
-void complex_data_example() {
+static void complex_data_example() {
     vec_complex_data vec = vec_complex_data_new_with_capacity(5, stdalloc_get_ref());
     size_t entries = 5;
     for (size_t i = 0; i < entries; i++) {
@@ -93,7 +93,7 @@ void complex_data_example() {
 #define NAME char_vec
 #include <derive-c/container/vector/dynamic/template.h>
 
-void iterate_example() {
+static void iterate_example() {
     char_vec vec = char_vec_new(stdalloc_get_ref());
     char_vec_push(&vec, 'H');
     char_vec_push(&vec, 'e');

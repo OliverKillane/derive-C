@@ -16,10 +16,10 @@
     #define DC_MATH_MSB_INDEX(x)                                                                   \
         ((x) == 0 ? 0                                                                              \
                   : _Generic((x),                                                                  \
-                 uint8_t: (7u - __builtin_clz((uint32_t)((x)) << 24)),                             \
-                 uint16_t: (15u - __builtin_clz((uint32_t)((x)) << 16)),                           \
-                 uint32_t: (31u - __builtin_clz((uint32_t)(x))),                                   \
-                 uint64_t: (63u - __builtin_clzll((uint64_t)(x)))))
+                 uint8_t: (7u - (uint32_t)__builtin_clz((uint32_t)((x)) << 24u)),                  \
+                 uint16_t: (15u - (uint32_t)__builtin_clz((uint32_t)((x)) << 16u)),                \
+                 uint32_t: (31u - (uint32_t)__builtin_clz((uint32_t)(x))),                         \
+                 uint64_t: (63u - (uint32_t)__builtin_clzll((uint64_t)(x)))))
 #else
     #include <bit>
     #include <type_traits>
@@ -63,7 +63,7 @@ static size_t DC_INLINE DC_CONST dc_math_modulus_power_of_2_capacity(size_t inde
     return index & (capacity - 1);
 }
 
-static bool DC_INLINE DC_CONST dc_math_is_aligned_pow2_exp(const void* ptr, unsigned exp) {
-    uintptr_t const mask = (1U << exp) - 1;
-    return (((uintptr_t)ptr) & mask) == 0;
+static bool DC_INLINE DC_CONST dc_math_is_aligned_pow2(const void* ptr, unsigned alignment) {
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2(alignment));
+    return ((uintptr_t)ptr & (alignment - 1)) == 0;
 }
