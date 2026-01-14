@@ -1,7 +1,7 @@
 If:
   PathMatch: [src/.*]
 CompileFlags:
-  Add: [-D__clang_daemon__]
+  Add: [-D__derive_c_placeholders__]
 ---
 # Apply to C++ sources/headers
 If:

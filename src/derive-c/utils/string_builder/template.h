@@ -95,7 +95,7 @@ static int PRIV(NS(SELF, close))(void* capture) {
     return 0;
 }
 
-static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .stream = NULL,
         .buf = NULL,
@@ -105,8 +105,7 @@ static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     };
 }
 
-/// Opens a file for
-static FILE* NS(SELF, stream)(SELF* self) {
+PUBLIC static FILE* NS(SELF, stream)(SELF* self) {
     INVARIANT_CHECK(self);
 
     if (self->stream == NULL) {
@@ -131,13 +130,13 @@ static FILE* NS(SELF, stream)(SELF* self) {
 }
 
 /// Resets the string, but keps the same stream pointer alive.
-static void NS(SELF, reset)(SELF* self) {
+PUBLIC static void NS(SELF, reset)(SELF* self) {
     INVARIANT_CHECK(self);
     self->size_without_null = 0;
 }
 
 /// Gets access to the null terminated string
-static char const* NS(SELF, string)(SELF const* self) {
+PUBLIC static char const* NS(SELF, string)(SELF const* self) {
     INVARIANT_CHECK(self);
     if (self->size_without_null == 0) {
         return "";
@@ -148,7 +147,7 @@ static char const* NS(SELF, string)(SELF const* self) {
 /// Disowns the current string, free/management with chosen allocator determined by user.
 /// DANGER: The user needs to be careful to cleanup the string using the same allocator as the
 /// string builder.
-static char* NS(SELF, release_string)(SELF* self) {
+PUBLIC static char* NS(SELF, release_string)(SELF* self) {
     INVARIANT_CHECK(self);
     char* buf = self->buf;
     self->size_without_null = 0;
@@ -158,12 +157,12 @@ static char* NS(SELF, release_string)(SELF* self) {
     return buf;
 }
 
-static size_t NS(SELF, string_size)(SELF* self) {
+PUBLIC static size_t NS(SELF, string_size)(SELF* self) {
     INVARIANT_CHECK(self);
     return self->size_without_null;
 }
 
-static void NS(SELF, delete)(SELF* self) {
+PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     if (self->stream) {
         fclose(self->stream);

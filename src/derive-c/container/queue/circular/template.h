@@ -58,7 +58,7 @@ typedef struct {
     DC_ASSUME(DC_WHEN((self)->empty, (self)->head == (self)->tail));                               \
     DC_ASSUME(DC_WHEN(!(self)->data, (self)->head == 0 && (self)->tail == 0));
 
-static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .data = NULL,
         .head = 0,
@@ -70,7 +70,7 @@ static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     };
 }
 
-static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, NS(ALLOC, ref) alloc_ref) {
+PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, NS(ALLOC, ref) alloc_ref) {
     if (capacity_for == 0) {
         return NS(SELF, new)(alloc_ref);
     }
@@ -93,7 +93,7 @@ static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for, NS(ALLOC, ref) 
     };
 }
 
-static bool NS(SELF, empty)(SELF const* self) {
+PUBLIC static bool NS(SELF, empty)(SELF const* self) {
     DC_ASSUME(self);
     if (self->empty) {
         DC_ASSUME(self->head == self->tail);
@@ -101,7 +101,7 @@ static bool NS(SELF, empty)(SELF const* self) {
     return self->empty;
 }
 
-static size_t NS(SELF, size)(SELF const* self) {
+PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     DC_ASSUME(self);
     if (self->empty) {
         DC_ASSUME(self->tail == self->head);
@@ -130,7 +130,7 @@ static void PRIV(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
     }
 }
 
-static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
+PUBLIC static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -185,7 +185,7 @@ static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
     INVARIANT_CHECK(self);
 }
 
-static void NS(SELF, push_back)(SELF* self, ITEM item) {
+PUBLIC static void NS(SELF, push_back)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
@@ -199,7 +199,7 @@ static void NS(SELF, push_back)(SELF* self, ITEM item) {
     self->empty = false;
 }
 
-static void NS(SELF, push_front)(SELF* self, ITEM item) {
+PUBLIC static void NS(SELF, push_front)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
@@ -217,7 +217,7 @@ static void NS(SELF, push_front)(SELF* self, ITEM item) {
     self->empty = false;
 }
 
-static ITEM NS(SELF, pop_front)(SELF* self) {
+PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     DC_ASSERT(!NS(SELF, empty)(self));
@@ -236,7 +236,7 @@ static ITEM NS(SELF, pop_front)(SELF* self) {
     return value;
 }
 
-static ITEM NS(SELF, pop_back)(SELF* self) {
+PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     DC_ASSERT(!NS(SELF, empty)(self));
@@ -256,7 +256,7 @@ static ITEM NS(SELF, pop_back)(SELF* self) {
     return value;
 }
 
-static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
+PUBLIC static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
     if (index < NS(SELF, size)(self)) {
         size_t const real_index =
@@ -266,7 +266,7 @@ static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index)
     return NULL;
 }
 
-static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
+PUBLIC static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
     if (index >= NS(SELF, size)(self)) {
         return NULL;
@@ -278,18 +278,18 @@ static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) 
     return &self->data[self->capacity - from_end];
 }
 
-static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
+PUBLIC static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
     return (ITEM*)NS(SELF, try_read_from_front)(self, index);
 }
 
-static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
+PUBLIC static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
     return (ITEM*)NS(SELF, try_read_from_back)(self, index);
 }
 
 #define ITER NS(SELF, iter)
 typedef ITEM* NS(ITER, item);
 
-static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
+PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF* circular;
@@ -297,13 +297,13 @@ typedef struct {
     mutation_version version;
 } ITER;
 
-static bool NS(ITER, empty)(ITER const* iter) {
+PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
-static ITEM* NS(ITER, next)(ITER* iter) {
+PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     ITEM* item = NS(SELF, try_write_from_front)(iter->circular, iter->position);
@@ -314,7 +314,7 @@ static ITEM* NS(ITER, next)(ITER* iter) {
     return item;
 }
 
-static ITER NS(SELF, get_iter)(SELF* self) {
+PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
     return (ITER){
         .circular = self,
@@ -323,7 +323,7 @@ static ITER NS(SELF, get_iter)(SELF* self) {
     };
 }
 
-static void NS(SELF, delete)(SELF* self) {
+PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     if (self->data) {
         ITER iter = NS(SELF, get_iter)(self);
@@ -345,7 +345,7 @@ static void NS(SELF, delete)(SELF* self) {
 #define ITER_CONST NS(SELF, iter_const)
 typedef ITEM const* NS(ITER_CONST, item);
 
-static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
+PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF const* circular;
@@ -353,13 +353,13 @@ typedef struct {
     mutation_version version;
 } ITER_CONST;
 
-static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return !NS(SELF, try_read_from_front)(iter->circular, iter->position);
 }
 
-static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     ITEM const* item = NS(SELF, try_read_from_front)(iter->circular, iter->position);
@@ -370,7 +370,7 @@ static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     return item;
 }
 
-static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
     return (ITER_CONST){
         .circular = self,
@@ -379,7 +379,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static SELF NS(SELF, clone)(SELF const* self) {
+PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     ITEM* new_data = NULL;
     size_t tail = 0;
@@ -412,7 +412,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     return new_self;
 }
 
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);

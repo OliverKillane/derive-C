@@ -20,7 +20,9 @@ typedef struct {
     NS(ALLOC, ref) alloc_ref;
 } SELF;
 
-static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) { return (SELF){.alloc_ref = alloc_ref}; }
+PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+    return (SELF){.alloc_ref = alloc_ref};
+}
 
 DC_MOCKABLE(void*, NS(SELF, allocate_uninit), (SELF * self, size_t size)) {
     return NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
@@ -39,8 +41,8 @@ DC_MOCKABLE(void, NS(SELF, deallocate), (SELF * self, void* ptr, size_t size)) {
     NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
 }
 
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
@@ -67,7 +69,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-static void NS(SELF, delete)(SELF* self) { DC_ASSUME(self); }
+PUBLIC static void NS(SELF, delete)(SELF* self) { DC_ASSUME(self); }
 
 DC_TRAIT_REFERENCABLE_BY_PTR(SELF);
 

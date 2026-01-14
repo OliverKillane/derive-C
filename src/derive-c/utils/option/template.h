@@ -17,7 +17,7 @@ typedef struct {
 } item_t;
     #define ITEM item_t
     #define ITEM_DELETE item_delete
-static void ITEM_DELETE(item_t* self) {}
+static void ITEM_DELETE(item_t* /* self */) {}
     #define ITEM_CLONE item_clone
 static item_t ITEM_CLONE(item_t const* self) { return *self; }
     #define ITEM_EQ item_eq
@@ -46,11 +46,11 @@ typedef struct {
     dc_gdb_marker derive_c_option;
 } SELF;
 
-static SELF NS(SELF, from)(ITEM value) { return (SELF){.item = value, .present = true}; }
+PUBLIC static SELF NS(SELF, from)(ITEM value) { return (SELF){.item = value, .present = true}; }
 
-static SELF NS(SELF, empty)() { return (SELF){.present = false}; }
+PUBLIC static SELF NS(SELF, empty)() { return (SELF){.present = false}; }
 
-static SELF NS(SELF, clone)(SELF const* self) {
+PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     DC_ASSUME(self);
     if (self->present) {
         return NS(SELF, from)(ITEM_CLONE(&self->item));
@@ -58,7 +58,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     return NS(SELF, empty)();
 }
 
-static ITEM* NS(SELF, get)(SELF* self) {
+PUBLIC static ITEM* NS(SELF, get)(SELF* self) {
     DC_ASSUME(self);
     if (self->present) {
         return &self->item;
@@ -66,7 +66,7 @@ static ITEM* NS(SELF, get)(SELF* self) {
     return NULL;
 }
 
-static ITEM const* NS(SELF, get_const)(SELF const* self) {
+PUBLIC static ITEM const* NS(SELF, get_const)(SELF const* self) {
     DC_ASSUME(self);
     if (self->present) {
         return &self->item;
@@ -74,7 +74,7 @@ static ITEM const* NS(SELF, get_const)(SELF const* self) {
     return NULL;
 }
 
-static ITEM const* NS(SELF, get_const_or)(SELF const* self, ITEM const* default_value) {
+PUBLIC static ITEM const* NS(SELF, get_const_or)(SELF const* self, ITEM const* default_value) {
     DC_ASSUME(self);
     if (self->present) {
         return &self->item;
@@ -82,7 +82,7 @@ static ITEM const* NS(SELF, get_const_or)(SELF const* self, ITEM const* default_
     return default_value;
 }
 
-static ITEM NS(SELF, get_value_or)(SELF const* self, ITEM const default_value) {
+PUBLIC static ITEM NS(SELF, get_value_or)(SELF const* self, ITEM const default_value) {
     DC_ASSUME(self);
     if (self->present) {
         return self->item;
@@ -90,19 +90,19 @@ static ITEM NS(SELF, get_value_or)(SELF const* self, ITEM const default_value) {
     return default_value;
 }
 
-static bool NS(SELF, is_present)(SELF const* self) {
+PUBLIC static bool NS(SELF, is_present)(SELF const* self) {
     DC_ASSUME(self);
     return self->present;
 }
 
-static void NS(SELF, delete)(SELF* self) {
+PUBLIC static void NS(SELF, delete)(SELF* self) {
     DC_ASSUME(self);
     if (self->present) {
         ITEM_DELETE(&self->item);
     }
 }
 
-static bool NS(SELF, replace)(SELF* self, ITEM value) {
+PUBLIC static bool NS(SELF, replace)(SELF* self, ITEM value) {
     DC_ASSUME(self);
     bool was_present;
     if (self->present) {
@@ -116,14 +116,14 @@ static bool NS(SELF, replace)(SELF* self, ITEM value) {
     return was_present;
 }
 
-static void NS(SELF, debug)(SELF* self, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void NS(SELF, debug)(SELF* self, dc_debug_fmt fmt, FILE* stream) {
     if (self->present) {
-        fprintf(stream, DC_EXPAND_STRING(SELF) "@%p { ", self);
+        fprintf(stream, DC_EXPAND_STRING(SELF) "@%p { ", (void*)self);
         fmt = dc_debug_fmt_scope_begin(fmt);
         ITEM_DEBUG(&self->item, fmt, stream);
         fprintf(stream, " }");
     } else {
-        fprintf(stream, DC_EXPAND_STRING(SELF) "@%p { NONE }", self);
+        fprintf(stream, DC_EXPAND_STRING(SELF) "@%p { NONE }", (void*)self);
     }
 }
 

@@ -1,6 +1,3 @@
-
-#include "derive-c/core/debug/fmt.h"
-#include "derive-c/core/debug/memory_tracker.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

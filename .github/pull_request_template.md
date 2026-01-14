@@ -14,3 +14,4 @@
 ## Testing
 <!-- All testing should always be in CI, care should be taken to instantiate templates with different types -->
  - [ ] Added necessary tests and checked `ninja coverage` (see CI coverage artifact)
+ - [ ] Check api (using `_dc` & `PRIV(..)` for private, functions correctly marked as `PUBLIC` or `INTERNAL`)

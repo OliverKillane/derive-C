@@ -6,11 +6,11 @@ typedef struct {
     INDEX_TYPE index;
 } INDEX;
 
-static bool NS(INDEX, eq)(INDEX const* idx_1, INDEX const* idx_2) {
+PUBLIC static bool NS(INDEX, eq)(INDEX const* idx_1, INDEX const* idx_2) {
     return idx_1->index == idx_2->index;
 }
 
-static void NS(INDEX, debug)(INDEX const* idx, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void NS(INDEX, debug)(INDEX const* idx, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, DC_EXPAND_STRING(INDEX) " { %lu }", (size_t)idx->index);
 }

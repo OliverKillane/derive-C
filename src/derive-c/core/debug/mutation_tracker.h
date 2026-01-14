@@ -10,16 +10,16 @@
 DC_ZERO_SIZED(mutation_tracker);
 DC_ZERO_SIZED(mutation_version);
 
-static mutation_tracker mutation_tracker_new() { return (mutation_tracker){}; }
+PUBLIC static mutation_tracker mutation_tracker_new() { return (mutation_tracker){}; }
 
-static void mutation_tracker_mutate(mutation_tracker* self) { (void)self; }
+PUBLIC static void mutation_tracker_mutate(mutation_tracker* self) { (void)self; }
 
-static mutation_version mutation_tracker_get(mutation_tracker const* self) {
+PUBLIC static mutation_version mutation_tracker_get(mutation_tracker const* self) {
     (void)self;
     return (mutation_version){};
 }
 
-static void mutation_version_check(mutation_version const* self) { (void)self; }
+PUBLIC static void mutation_version_check(mutation_version const* self) { (void)self; }
 
 #else
 
@@ -32,14 +32,14 @@ typedef struct {
     size_t const count;
 } mutation_version;
 
-static mutation_tracker mutation_tracker_new() { return (mutation_tracker){.count = 0}; }
+PUBLIC static mutation_tracker mutation_tracker_new() { return (mutation_tracker){.count = 0}; }
 
-static void mutation_tracker_mutate(mutation_tracker* self) {
+PUBLIC static void mutation_tracker_mutate(mutation_tracker* self) {
     DC_ASSERT(self);
     self->count++;
 }
 
-static mutation_version mutation_tracker_get(mutation_tracker const* self) {
+PUBLIC static mutation_version mutation_tracker_get(mutation_tracker const* self) {
     DC_ASSERT(self);
     return (mutation_version){.tracker = self, .count = self->count};
 }
@@ -47,7 +47,7 @@ static mutation_version mutation_tracker_get(mutation_tracker const* self) {
 /// Throw on the tracker version not matching.
 /// For example an iterator over a vector may store the version from it's creation, so that on
 /// access it can check it was not invalidated by mutation to the vector.
-static void mutation_version_check(mutation_version const* self) {
+PUBLIC static void mutation_version_check(mutation_version const* self) {
     DC_ASSERT(self->count == self->tracker->count,
               "No mutations to the tracker's data structure were "
               "expected... however it has been mutated");

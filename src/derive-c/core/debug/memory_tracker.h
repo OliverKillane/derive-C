@@ -73,8 +73,9 @@ static const dc_memory_tracker_level dc_memory_tracker_global_level =
     DC_MEMORY_TRACKER_LVL_CONTAINER;
 #endif
 
-static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
-                                  const volatile void* addr, size_t size) {
+PUBLIC static void dc_memory_tracker_set(dc_memory_tracker_level level,
+                                         dc_memory_tracker_capability cap,
+                                         const volatile void* addr, size_t size) {
     if (level <= dc_memory_tracker_global_level) {
 #if defined(DC_MSAN_ON)
         // msan tracks the initialised state, so for none & write we want poisoned / unreadable.
@@ -111,8 +112,9 @@ static void dc_memory_tracker_set(dc_memory_tracker_level level, dc_memory_track
     }
 }
 
-static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tracker_capability cap,
-                                    const void* addr, size_t size) {
+PUBLIC static void dc_memory_tracker_check(dc_memory_tracker_level level,
+                                           dc_memory_tracker_capability cap, const void* addr,
+                                           size_t size) {
     DC_ASSERT(size > 0, "Cannot check zero sized region");
     if (level <= dc_memory_tracker_global_level) {
 #if defined(DC_MSAN_ON)
@@ -191,7 +193,7 @@ static void dc_memory_tracker_check(dc_memory_tracker_level level, dc_memory_tra
     }
 }
 
-static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size) {
+PUBLIC static void dc_memory_tracker_debug(FILE* stream, const void* addr, size_t size) {
     fprintf(stream, "memory tracker debug (%zu bytes) at %p ", size, addr);
 #if defined DC_MSAN_ON
     fprintf(stream, "[MSAN]:");

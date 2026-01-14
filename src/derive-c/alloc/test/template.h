@@ -43,27 +43,27 @@ typedef struct {
     ALLOCATIONS_MAP allocations;
 } SELF;
 
-static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .alloc_ref = alloc_ref,
         .allocations = NS(ALLOCATIONS_MAP, new)(stdalloc_get_ref()),
     };
 }
 
-static ALLOCATIONS_MAP const* NS(SELF, get_allocations)(SELF const* self) {
+PUBLIC static ALLOCATIONS_MAP const* NS(SELF, get_allocations)(SELF const* self) {
     DC_ASSUME(self);
     return &self->allocations;
 }
 
-static void NS(SELF, delete)(SELF* self) { NS(ALLOCATIONS_MAP, delete)(&self->allocations); }
+PUBLIC static void NS(SELF, delete)(SELF* self) { NS(ALLOCATIONS_MAP, delete)(&self->allocations); }
 
-static void NS(SELF, unleak)(SELF* self) {
+PUBLIC static void NS(SELF, unleak)(SELF* self) {
     DC_FOR(ALLOCATIONS_MAP, &self->allocations, iter, entry) {
         NS(ALLOC, deallocate)(self->alloc_ref, *entry.key, *entry.value);
     }
 }
 
-static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
+PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
     size_t* alloc = NS(ALLOCATIONS_MAP, try_insert)(&self->allocations, ptr, size);
@@ -73,16 +73,18 @@ static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     return ptr;
 }
 
-static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
+PUBLIC static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
     size_t* alloc = NS(ALLOCATIONS_MAP, try_insert)(&self->allocations, ptr, size);
     DC_ASSERT(alloc != NULL,
-              "Got uninit allocation, that is already allocated at %p (attempted size: %zu)");
+              "Got uninit allocation, that is already allocated at %p (attempted size: %zu)", ptr,
+              *alloc);
     return ptr;
 }
 
-static void* NS(SELF, reallocate)(SELF* self, void* old_ptr, size_t old_size, size_t new_size) {
+PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* old_ptr, size_t old_size,
+                                         size_t new_size) {
     DC_ASSUME(self);
     DC_ASSUME(old_ptr);
 
@@ -103,7 +105,7 @@ static void* NS(SELF, reallocate)(SELF* self, void* old_ptr, size_t old_size, si
     return new_ptr;
 }
 
-static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
+PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(ptr);
     DC_ASSUME(self);
 
@@ -119,7 +121,7 @@ static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
 }
 
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) " @%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "base: " DC_EXPAND_STRING(ALLOC) "@%p,\n",

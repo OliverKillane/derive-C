@@ -21,7 +21,7 @@
 
 #define DC_NO_DEBUG PRIV(no_debug)
 
-static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
+INTERNAL static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)self;
     (void)fmt;
     fprintf(stream, "(no DEBUG function provided)");
@@ -33,7 +33,7 @@ static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, ",\n");
 
 #define DC_DERIVE_DEBUG(TYPE)                                                                      \
-    static TYPE NS(TYPE, DEBUG)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {                \
+    PUBLIC static TYPE NS(TYPE, DEBUG)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {         \
         fprintf(stream, DC_STRINGIFY(TYPE) "@%p {\n", self);                                       \
         fmt = dc_debug_fmt_scope_begin(fmt);                                                       \
         NS(TYPE, REFLECT)(_DC_DERIVE_DEBUG_MEMBER);                                                \
@@ -41,13 +41,13 @@ static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
     }
 
 #define _DC_DERIVE_STD_DEBUG(TYPE, FMT, ...)                                                       \
-    static DC_UNUSED void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {      \
+    PUBLIC static void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {         \
         (void)fmt;                                                                                 \
         fprintf(stream, FMT, *self);                                                               \
     }
 
 #define _DC_DERIVE_STD_DEBUG_FLOAT(TYPE, FMT, ...)                                                 \
-    static DC_UNUSED void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {      \
+    PUBLIC static void NS(TYPE, debug)(TYPE const* self, dc_debug_fmt fmt, FILE* stream) {         \
         (void)fmt;                                                                                 \
         fprintf(stream, FMT, (double)*self);                                                       \
     }
@@ -55,22 +55,23 @@ static void PRIV(no_debug)(void const* self, dc_debug_fmt fmt, FILE* stream) {
 DC_STD_REFLECT(_DC_DERIVE_STD_DEBUG)
 DC_FLOAT_REFLECT(_DC_DERIVE_STD_DEBUG_FLOAT)
 
-static void dc_string_debug(char* const* string, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void dc_string_debug(char* const* string, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "char*@%p \"%s\"", *string, *string);
 }
 
-static void dc_string_const_debug(char const* const* string, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void dc_string_const_debug(char const* const* string, dc_debug_fmt fmt,
+                                         FILE* stream) {
     (void)fmt;
     fprintf(stream, "char*@%p \"%s\"", *string, *string);
 }
 
-static void dc_void_ptr_debug(void* const* ptr, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void dc_void_ptr_debug(void* const* ptr, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "void*@%p", *ptr);
 }
 
-static void dc_void_const_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* stream) {
+PUBLIC static void dc_void_const_ptr_debug(void const* const* ptr, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
     fprintf(stream, "void const*@%p", *ptr);
 }
