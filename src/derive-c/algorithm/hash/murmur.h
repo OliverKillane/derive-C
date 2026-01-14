@@ -45,8 +45,8 @@ DC_INLINE uint64_t PRIV(murmur_fmix64)(uint64_t k) {
     return k;
 }
 
-PUBLIC static inline void dc_MurmurHash3_x86_32(const void* key, int32_t len, uint32_t seed,
-                                                void* out) {
+DC_PUBLIC static inline void dc_MurmurHash3_x86_32(const void* key, int32_t len, uint32_t seed,
+                                                   void* out) {
     const uint8_t* data = (const uint8_t*)key;
     const int32_t nblocks = len / 4;
 
@@ -103,8 +103,8 @@ PUBLIC static inline void dc_MurmurHash3_x86_32(const void* key, int32_t len, ui
     *(uint32_t*)out = h1;
 }
 
-PUBLIC static inline void dc_MurmurHash3_x86_128(const void* key, const int32_t len, uint32_t seed,
-                                                 void* out) {
+DC_PUBLIC static inline void dc_MurmurHash3_x86_128(const void* key, const int32_t len,
+                                                    uint32_t seed, void* out) {
     const uint8_t* data = (const uint8_t*)key;
     const int32_t nblocks = len / 16;
 
@@ -274,8 +274,8 @@ PUBLIC static inline void dc_MurmurHash3_x86_128(const void* key, const int32_t 
     ((uint32_t*)out)[3] = h4;
 }
 
-PUBLIC static inline void dc_MurmurHash3_x64_128(const void* key, const int32_t len,
-                                                 const uint32_t seed, void* out) {
+DC_PUBLIC static inline void dc_MurmurHash3_x64_128(const void* key, const int32_t len,
+                                                    const uint32_t seed, void* out) {
     const uint8_t* data = (const uint8_t*)key;
     const int32_t nblocks = len / 16;
 
@@ -395,7 +395,7 @@ PUBLIC static inline void dc_MurmurHash3_x64_128(const void* key, const int32_t 
     ((uint64_t*)out)[1] = h2;
 }
 
-PUBLIC static inline size_t dc_murmurhash(const void* key, int32_t len, uint32_t seed) {
+DC_PUBLIC static inline size_t dc_murmurhash(const void* key, int32_t len, uint32_t seed) {
 #if SIZE_MAX == UINT64_MAX
     // 64-bit platform: use the x64 128-bit variant, return lower 64 bits
     uint64_t out128[2];
@@ -416,7 +416,7 @@ PUBLIC static inline size_t dc_murmurhash(const void* key, int32_t len, uint32_t
 /// for integer hashing.
 // JUSTIFY: Casting signed to unsigned. This is just a hash, and signed->unsigned is not UB.
 #define MURMURHASH_3_FMIx64(type, ...)                                                             \
-    PUBLIC static size_t type##_hash_murmurhash3(type const* key) {                                \
+    DC_PUBLIC static size_t type##_hash_murmurhash3(type const* key) {                             \
         DC_STATIC_ASSERT(sizeof(type) <= sizeof(uint64_t),                                         \
                          "MurmurHash3 only supports up to 64-bit integers");                       \
         return (size_t)PRIV(murmur_fmix64)((uint64_t)(*key));                                      \
@@ -441,13 +441,13 @@ DC_INT_REFLECT(MURMURHASH_3_FMIx64)
 #define MURMURHASH_DEFAULT_SEED 0x9747b28c
 
 #define MURMURHASH_STRING_FIXED_SIZE(size)                                                         \
-    PUBLIC static size_t dc_murmur_hash_string_##size(const char str[size]) {                      \
+    DC_PUBLIC static size_t dc_murmur_hash_string_##size(const char str[size]) {                   \
         return dc_murmurhash(str, size, MURMURHASH_DEFAULT_SEED);                                  \
     }
 
 STRING_SIZES(MURMURHASH_STRING_FIXED_SIZE)
 
-PUBLIC static inline size_t dc_murmur_hash_string(const char* str) {
+DC_PUBLIC static inline size_t dc_murmur_hash_string(const char* str) {
     return dc_murmurhash(str, (int)strlen(str), MURMURHASH_DEFAULT_SEED);
 }
 

@@ -77,14 +77,14 @@ typedef struct {
     VALUE value;
 } SLOT;
 
-INTERNAL static SLOT PRIV(NS(SLOT, clone))(SLOT const* slot) {
+DC_INTERNAL static SLOT PRIV(NS(SLOT, clone))(SLOT const* slot) {
     return (SLOT){
         .key = KEY_CLONE(&slot->key),
         .value = VALUE_CLONE(&slot->value),
     };
 }
 
-INTERNAL static void PRIV(NS(SLOT, debug))(SLOT const* slot, dc_debug_fmt fmt, FILE* stream) {
+DC_INTERNAL static void PRIV(NS(SLOT, debug))(SLOT const* slot, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SLOT) "@%p {\n", slot);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
@@ -100,7 +100,7 @@ INTERNAL static void PRIV(NS(SLOT, debug))(SLOT const* slot, dc_debug_fmt fmt, F
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-INTERNAL static void PRIV(NS(SLOT, delete))(SLOT* slot) {
+DC_INTERNAL static void PRIV(NS(SLOT, delete))(SLOT* slot) {
     KEY_DELETE(&slot->key);
     VALUE_DELETE(&slot->value);
 }
@@ -114,7 +114,7 @@ INTERNAL static void PRIV(NS(SLOT, delete))(SLOT* slot) {
 #define ITEM_CLONE PRIV(NS(SLOT, clone)) // [DERIVE-C] for template
 #define ITEM_DEBUG PRIV(NS(SLOT, debug)) // [DERIVE-C] for template
 #define ITEM_CLONE PRIV(NS(SLOT, clone)) // [DERIVE-C] for template
-#define INTERNAL_NAME SLOT_VECTOR        // [DERIVE-C] for template
+#define DC_INTERNAL_NAME SLOT_VECTOR     // [DERIVE-C] for template
 #include <derive-c/container/vector/dynamic/template.h>
 
 #pragma pop_macro("ALLOC")
@@ -131,7 +131,7 @@ typedef struct {
 
 DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = (size_t)UINT16_MAX;
 
-INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
+DC_INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
     DC_ASSUME(index <= NS(SELF, max_capacity));
     return (BUCKET){
         .mdata = mdata,
@@ -139,7 +139,7 @@ INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index
     };
 }
 
-INTERNAL static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) {
+DC_INTERNAL static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) {
     return (size_t)bucket->index;
 }
 
@@ -156,7 +156,7 @@ typedef struct {
 
 DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = (size_t)UINT32_MAX + ((size_t)UINT16_MAX << 32);
 
-INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
+DC_INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
     DC_ASSUME(index <= NS(SELF, max_capacity));
     return (BUCKET){
         .mdata = mdata,
@@ -165,7 +165,7 @@ INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index
     };
 }
 
-INTERNAL static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) {
+DC_INTERNAL static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) {
     return (size_t)bucket->index_lo + ((size_t)bucket->index_hi << 32);
 }
 
@@ -188,8 +188,8 @@ typedef struct {
     DC_ASSUME(DC_MATH_IS_POWER_OF_2((self)->buckets_capacity));                                    \
     DC_ASSUME((self)->buckets);
 
-INTERNAL static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity,
-                                                             NS(ALLOC, ref) alloc_ref) {
+DC_INTERNAL static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity,
+                                                                NS(ALLOC, ref) alloc_ref) {
     DC_ASSUME(capacity > 0);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
 
@@ -203,17 +203,17 @@ INTERNAL static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity,
     };
 }
 
-PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(for_items > 0);
     return PRIV(NS(SELF, new_with_exact_capacity))(_dc_ankerl_buckets_capacity(for_items),
                                                    alloc_ref);
 }
 
-PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return PRIV(NS(SELF, new_with_exact_capacity))(dc_ankerl_initial_items, alloc_ref);
 }
 
-PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     BUCKET* new_buckets = (BUCKET*)NS(ALLOC, allocate_uninit)(
@@ -229,8 +229,8 @@ PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     };
 }
 
-INTERNAL static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
-                                                                     VALUE value) {
+DC_INTERNAL static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
+                                                                        VALUE value) {
     INVARIANT_CHECK(self);
     DC_DEBUG_ASSERT(NS(SLOT_VECTOR, size)(&self->slots) < self->buckets_capacity);
     const size_t mask = self->buckets_capacity - 1;
@@ -299,7 +299,7 @@ INTERNAL static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self,
     }
 }
 
-INTERNAL static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
+DC_INTERNAL static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(new_capacity));
 
@@ -346,7 +346,7 @@ INTERNAL static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     self->buckets_capacity = new_capacity;
 }
 
-PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+DC_PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     INVARIANT_CHECK(self);
 
     const size_t required = _dc_ankerl_buckets_capacity(expected_items);
@@ -357,7 +357,7 @@ PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_ite
     PRIV(NS(SELF, rehash))(self, required);
 }
 
-PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
 
     if (NS(SLOT_VECTOR, size)(&self->slots) >= NS(SELF, max_capacity)) {
@@ -372,14 +372,14 @@ PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     return PRIV(NS(SELF, try_insert_no_extend_capacity))(self, key, value);
 }
 
-PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
     DC_ASSERT(value_ptr);
     return value_ptr;
 }
 
-INTERNAL static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* key,
-                                              size_t* out_bucket_pos, size_t* out_dense_index) {
+DC_INTERNAL static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* key,
+                                                 size_t* out_bucket_pos, size_t* out_dense_index) {
     INVARIANT_CHECK(self);
     DC_ASSUME(key);
     DC_ASSUME(out_bucket_pos);
@@ -418,7 +418,7 @@ INTERNAL static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* key,
     }
 }
 
-PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     INVARIANT_CHECK(self);
     size_t pos;
     size_t di;
@@ -429,24 +429,24 @@ PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     return &NS(SLOT_VECTOR, read)(&self->slots, di)->value;
 }
 
-PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
     INVARIANT_CHECK(self);
     return (VALUE*)NS(SELF, try_read)((SELF const*)self, key);
 }
 
-PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
+DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     INVARIANT_CHECK(self);
 
     size_t found_pos;
@@ -535,23 +535,23 @@ PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination)
     return true;
 }
 
-PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
     DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
-PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
+DC_PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
     VALUE value = NS(SELF, remove)(self, key);
     VALUE_DELETE(&value);
 }
 
-PUBLIC static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return NS(SLOT_VECTOR, size)(&self->slots);
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
 
     NS(ALLOC, deallocate)(self->alloc_ref, self->buckets, self->buckets_capacity * sizeof(BUCKET));
@@ -570,11 +570,11 @@ typedef struct {
     VALUE const* value;
 } KV_PAIR_CONST;
 
-PUBLIC static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
-PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     SLOT const* next_item = NS(NS(SLOT_VECTOR, iter_const), next)(&iter->iter);
     if (!next_item) {
         return (KV_PAIR_CONST){
@@ -588,14 +588,14 @@ PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     };
 }
 
-PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
     return (ITER_CONST){
         .iter = NS(SLOT_VECTOR, get_iter_const)(&self->slots),
     };
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
@@ -628,11 +628,11 @@ typedef struct {
     VALUE const* value;
 } KV_PAIR;
 
-PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
+DC_PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
-PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     SLOT* next_item = NS(NS(SLOT_VECTOR, iter), next)(&iter->iter);
     if (!next_item) {
         return (KV_PAIR){
@@ -646,7 +646,7 @@ PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     };
 }
 
-PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
     return (ITER){
         .iter = NS(SLOT_VECTOR, get_iter)(&self->slots),

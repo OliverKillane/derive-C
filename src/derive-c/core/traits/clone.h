@@ -16,12 +16,12 @@
     .MEMBER_NAME = NS(MEMBER_TYPE, clone)(&self->MEMBER_NAME),
 
 #define DC_DERIVE_CLONE(TYPE)                                                                      \
-    PUBLIC static TYPE NS(TYPE, clone)(TYPE const* self) {                                         \
+    DC_PUBLIC static TYPE NS(TYPE, clone)(TYPE const* self) {                                      \
         return (TYPE){NS(TYPE, REFLECT)(_DC_DERIVE_CLONE_MEMBER)};                                 \
     }
 
 #define _DC_DERIVE_STD_CLONE(TYPE, ...)                                                            \
-    PUBLIC static TYPE NS(TYPE, clone)(TYPE const* self) { return *self; }
+    DC_PUBLIC static TYPE NS(TYPE, clone)(TYPE const* self) { return *self; }
 
 DC_STD_REFLECT(_DC_DERIVE_STD_CLONE)
 DC_FLOAT_REFLECT(_DC_DERIVE_STD_CLONE)

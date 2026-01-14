@@ -35,8 +35,8 @@
 
     #define DC_MOCKABLE_ENABLED(name) (name != DC_MOCKABLE_REAL(name))
 #else
-    #define DC_MOCKABLE_DECLARE(ret, name, args) PUBLIC ret name args
-    #define DC_MOCKABLE_DEFINE(ret, name, args) PUBLIC ret name args
+    #define DC_MOCKABLE_DECLARE(ret, name, args) DC_PUBLIC ret name args
+    #define DC_MOCKABLE_DEFINE(ret, name, args) DC_PUBLIC ret name args
     #define DC_MOCKABLE_ENABLED(name) false
 #endif
 

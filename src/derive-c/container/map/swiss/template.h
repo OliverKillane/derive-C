@@ -125,17 +125,17 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, r
     };
 }
 
-PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(for_items > 0);
 
     return PRIV(NS(SELF, new_with_exact_capacity))(dc_swiss_capacity(for_items), alloc_ref);
 }
 
-PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return NS(SELF, new_with_capacity_for)(DC_SWISS_INITIAL_CAPACITY, alloc_ref);
 }
 
-PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     size_t ctrl_capacity = self->capacity + _DC_SWISS_SIMD_PROBE_SIZE;
@@ -255,7 +255,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     *self = new_map;
 }
 
-PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+DC_PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -265,7 +265,7 @@ PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_ite
     }
 }
 
-PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
 
     if (self->count >= NS(SELF, max_capacity)) {
@@ -286,13 +286,13 @@ PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     return PRIV(NS(SELF, try_insert_no_extend_capacity))(self, key, value);
 }
 
-PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
     DC_ASSERT(value_ptr);
     return value_ptr;
 }
 
-PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     const size_t mask = self->capacity - 1;
 
     const size_t hash = KEY_HASH(&key);
@@ -328,24 +328,24 @@ PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     }
 }
 
-PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
     INVARIANT_CHECK(self);
     return (VALUE*)NS(SELF, try_read)((SELF const*)self, key);
 }
 
-PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
+DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     INVARIANT_CHECK(self);
 
     const size_t mask = self->capacity - 1;
@@ -397,18 +397,18 @@ PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination)
     }
 }
 
-PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
     DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
-PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
+DC_PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
     VALUE value = NS(SELF, remove)(self, key);
     VALUE_DELETE(&value);
 }
 
-PUBLIC static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->count;
 }
@@ -422,7 +422,7 @@ static void PRIV(NS(SELF, next_populated_index))(SELF const* self,
     *index = (i == self->capacity) ? _DC_SWISS_NO_INDEX : i;
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     for (size_t i = 0; i < self->capacity; i++) {
         if (_dc_swiss_is_present(self->ctrl[i])) {
             KEY_DELETE(&self->slots[i].key);
@@ -449,11 +449,11 @@ typedef struct {
     VALUE const* value;
 } KV_PAIR_CONST;
 
-PUBLIC static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
-PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     mutation_version_check(&iter->version);
 
     _dc_swiss_optional_index index = iter->next_index;
@@ -472,7 +472,7 @@ PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     };
 }
 
-PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     _dc_swiss_optional_index index = 0;
@@ -485,7 +485,7 @@ PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
@@ -547,11 +547,11 @@ typedef struct {
     VALUE const* value;
 } KV_PAIR;
 
-PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
+DC_PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
-PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     mutation_version_check(&iter->version);
 
     _dc_swiss_optional_index index = iter->next_index;
@@ -570,7 +570,7 @@ PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     };
 }
 
-PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
 
     _dc_swiss_optional_index index = 0;

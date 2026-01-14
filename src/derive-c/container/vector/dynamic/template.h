@@ -55,7 +55,7 @@ typedef struct {
 
 DC_STATIC_CONSTANT size_t NS(SELF, max_size) = SIZE_MAX;
 
-PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     SELF self = (SELF){
         .size = 0,
         .capacity = 0,
@@ -67,7 +67,7 @@ PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return self;
 }
 
-PUBLIC static SELF NS(SELF, new_with_capacity)(size_t capacity, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_capacity)(size_t capacity, NS(ALLOC, ref) alloc_ref) {
     if (capacity == 0) {
         return NS(SELF, new)(alloc_ref);
     }
@@ -85,8 +85,8 @@ PUBLIC static SELF NS(SELF, new_with_capacity)(size_t capacity, NS(ALLOC, ref) a
     };
 }
 
-PUBLIC static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item,
-                                               NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item,
+                                                  NS(ALLOC, ref) alloc_ref) {
     ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(alloc_ref, size * sizeof(ITEM));
     if (size > 0) {
         // JUSTIFY: We only need to copy size-1 entries - can move the first as default.
@@ -105,7 +105,7 @@ PUBLIC static SELF NS(SELF, new_with_defaults)(size_t size, ITEM default_item,
     };
 }
 
-PUBLIC static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
+DC_PUBLIC static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
     INVARIANT_CHECK(self);
     if (new_capacity > self->capacity) {
         if (self->data == NULL) {
@@ -138,7 +138,7 @@ PUBLIC static void NS(SELF, reserve)(SELF* self, size_t new_capacity) {
     }
 }
 
-PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(self->alloc_ref, self->capacity * sizeof(ITEM));
 
@@ -157,7 +157,7 @@ PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     };
 }
 
-PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, size_t index) {
+DC_PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
     if (DC_LIKELY(index < self->size)) {
         return &self->data[index];
@@ -165,13 +165,13 @@ PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, size_t index) {
     return NULL;
 }
 
-PUBLIC static ITEM const* NS(SELF, read)(SELF const* self, size_t index) {
+DC_PUBLIC static ITEM const* NS(SELF, read)(SELF const* self, size_t index) {
     ITEM const* item = NS(SELF, try_read)(self, index);
     DC_ASSERT(item);
     return item;
 }
 
-PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, size_t index) {
+DC_PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, size_t index) {
     INVARIANT_CHECK(self);
     if (DC_LIKELY(index < self->size)) {
         return &self->data[index];
@@ -179,14 +179,14 @@ PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, size_t index) {
     return NULL;
 }
 
-PUBLIC static ITEM* NS(SELF, write)(SELF* self, size_t index) {
+DC_PUBLIC static ITEM* NS(SELF, write)(SELF* self, size_t index) {
     ITEM* item = NS(SELF, try_write)(self, index);
     DC_ASSERT(item);
     return item;
 }
 
-PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const* items,
-                                            size_t count) {
+DC_PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const* items,
+                                               size_t count) {
     INVARIANT_CHECK(self);
     DC_ASSUME(items);
     DC_ASSERT(at <= self->size);
@@ -205,7 +205,7 @@ PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const* i
     return &self->data[at];
 }
 
-PUBLIC static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
+DC_PUBLIC static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
     INVARIANT_CHECK(self);
     DC_ASSERT(at + count <= self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
@@ -224,7 +224,7 @@ PUBLIC static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
                           &self->data[self->size], count * sizeof(ITEM));
 }
 
-PUBLIC static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
+DC_PUBLIC static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -255,13 +255,13 @@ PUBLIC static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     return entry;
 }
 
-PUBLIC static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
+DC_PUBLIC static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     ITEM* entry = NS(SELF, try_push)(self, item);
     DC_ASSERT(entry != NULL);
     return entry;
 }
 
-PUBLIC static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
+DC_PUBLIC static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -275,18 +275,18 @@ PUBLIC static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     return false;
 }
 
-PUBLIC static ITEM* NS(SELF, data)(SELF* self) {
+DC_PUBLIC static ITEM* NS(SELF, data)(SELF* self) {
     INVARIANT_CHECK(self);
     return self->data;
 }
 
-PUBLIC static ITEM NS(SELF, pop)(SELF* self) {
+DC_PUBLIC static ITEM NS(SELF, pop)(SELF* self) {
     ITEM entry;
     DC_ASSERT(NS(SELF, try_pop)(self, &entry));
     return entry;
 }
 
-PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
+DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     DC_ASSERT(self->size > 0);
@@ -298,12 +298,12 @@ PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     return entry;
 }
 
-PUBLIC static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->size;
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     if (self->data) {
         for (size_t i = 0; i < self->size; i++) {
@@ -338,7 +338,7 @@ PUBLIC static void NS(SELF, delete)(SELF* self) {
 /// source: [3, 2, 1, 0]
 /// target: [4, 5, 6, 7, 8, 9]
 /// ```
-PUBLIC static void NS(SELF, transfer_reverse)(SELF* source, SELF* target, size_t to_move) {
+DC_PUBLIC static void NS(SELF, transfer_reverse)(SELF* source, SELF* target, size_t to_move) {
     INVARIANT_CHECK(source);
     INVARIANT_CHECK(target);
 
@@ -363,7 +363,7 @@ PUBLIC static void NS(SELF, transfer_reverse)(SELF* source, SELF* target, size_t
 #define ITER NS(SELF, iter)
 typedef ITEM* NS(ITER, item);
 
-PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
+DC_PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF* vec;
@@ -371,7 +371,7 @@ typedef struct {
     mutation_version version;
 } ITER;
 
-PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
@@ -383,19 +383,19 @@ PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
     return NULL;
 }
 
-PUBLIC static size_t NS(ITER, position)(ITER const* iter) {
+DC_PUBLIC static size_t NS(ITER, position)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
-PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
-PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     DC_ASSUME(self);
     return (ITER){
         .vec = self,
@@ -408,7 +408,7 @@ PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
 #define ITER_CONST NS(SELF, iter_const)
 typedef ITEM const* NS(ITER_CONST, item);
 
-PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF const* vec;
@@ -416,7 +416,7 @@ typedef struct {
     mutation_version vec_version;
 } ITER_CONST;
 
-PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->vec_version);
     if (iter->pos < iter->vec->size) {
@@ -427,19 +427,19 @@ PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NULL;
 }
 
-PUBLIC static size_t NS(ITER_CONST, position)(ITER_CONST const* iter) {
+DC_PUBLIC static size_t NS(ITER_CONST, position)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->vec_version);
     return iter->pos;
 }
 
-PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->vec_version);
     return iter->pos >= iter->vec->size;
 }
 
-PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     DC_ASSUME(self);
     return (ITER_CONST){
         .vec = self,
@@ -448,7 +448,7 @@ PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "size: %lu,\n", self->size);

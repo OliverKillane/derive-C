@@ -24,21 +24,21 @@
     &&NS(MEMBER_TYPE, eq)(&self_1->MEMBER_NAME, &self_2->MEMBER_NAME)
 
 #define DC_DERIVE_EQ(TYPE)                                                                         \
-    PUBLIC static bool NS(TYPE, eq)(TYPE const* self_1, TYPE const* self_2) {                      \
+    DC_PUBLIC static bool NS(TYPE, eq)(TYPE const* self_1, TYPE const* self_2) {                   \
         return true NS(TYPE, REFLECT)(_DC_DERIVE_EQ_MEMBER);                                       \
     }
 
 #define _DC_DERIVE_STD_EQ(TYPE, ...)                                                               \
-    PUBLIC static DC_UNUSED bool NS(TYPE, eq)(TYPE const* self_1, TYPE const* self_2) {            \
+    DC_PUBLIC static DC_UNUSED bool NS(TYPE, eq)(TYPE const* self_1, TYPE const* self_2) {         \
         return (*self_1 == *self_2);                                                               \
     }
 
 DC_STD_REFLECT(_DC_DERIVE_STD_EQ)
 
-PUBLIC static bool dc_str_eq(char* const* self_1, char* const* self_2) {
+DC_PUBLIC static bool dc_str_eq(char* const* self_1, char* const* self_2) {
     return strcmp(*self_1, *self_2) == 0;
 }
 
-PUBLIC static bool dc_str_const_eq(const char* const* self_1, const char* const* self_2) {
+DC_PUBLIC static bool dc_str_const_eq(const char* const* self_1, const char* const* self_2) {
     return strcmp(*self_1, *self_2) == 0;
 }

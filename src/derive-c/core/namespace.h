@@ -20,9 +20,9 @@
 // JUSTIFY: Marking public functions
 //  - When a template is expanded, not all of the methods are used by the user
 //  - Use of static means unused warnings occur
-#define PUBLIC [[maybe_unused]]
+#define DC_PUBLIC [[maybe_unused]]
 
 // JUSTIFY: Marking public functions
 //  - When a template is expanded, not all of the methods are used by the user
 //  - Use of static means unused warnings occur
-#define INTERNAL [[maybe_unused]]
+#define DC_INTERNAL [[maybe_unused]]

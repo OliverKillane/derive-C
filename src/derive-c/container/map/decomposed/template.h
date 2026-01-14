@@ -92,7 +92,7 @@ typedef struct {
 
 DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = SIZE_MAX;
 
-PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t capacity, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t capacity, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(capacity > 0);
     size_t const real_capacity = dc_apply_capacity_policy(capacity);
     DC_ASSERT(real_capacity > 0);
@@ -122,11 +122,11 @@ PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t capacity, NS(ALLOC, re
     };
 }
 
-PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return NS(SELF, new_with_capacity_for)(DC_INITIAL_CAPACITY, alloc_ref);
 }
 
-PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     // JUSTIFY: Naive copy
@@ -222,7 +222,7 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
     }
 }
 
-PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+DC_PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     INVARIANT_CHECK(self);
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
@@ -245,7 +245,7 @@ PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_ite
     }
 }
 
-PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -260,13 +260,13 @@ PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     return PRIV(NS(SELF, try_insert_no_extend_capacity))(self, key, value);
 }
 
-PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
     DC_ASSERT(value_ptr);
     return value_ptr;
 }
 
-PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
     INVARIANT_CHECK(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = dc_math_modulus_power_of_2_capacity(hash, self->capacity);
@@ -284,13 +284,13 @@ PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
     }
 }
 
-PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     INVARIANT_CHECK(self);
     size_t const hash = KEY_HASH(&key);
     size_t index = dc_math_modulus_power_of_2_capacity(hash, self->capacity);
@@ -308,13 +308,13 @@ PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     }
 }
 
-PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
+DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     size_t const hash = KEY_HASH(&key);
@@ -374,18 +374,18 @@ PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination)
     }
 }
 
-PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
     DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
-PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
+DC_PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
     VALUE value = NS(SELF, remove)(self, key);
     VALUE_DELETE(&value);
 }
 
-PUBLIC static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->items;
 }
@@ -400,7 +400,7 @@ typedef struct {
 #define ITER NS(SELF, iter)
 typedef KV_PAIR NS(ITER, item);
 
-PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
+DC_PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
@@ -411,7 +411,7 @@ typedef struct {
     mutation_version version;
 } ITER;
 
-PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
@@ -426,13 +426,13 @@ PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     return (KV_PAIR){.key = NULL, .value = NULL};
 }
 
-PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
-PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     DC_ASSUME(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
@@ -446,7 +446,7 @@ PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     };
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     DC_ASSUME(self);
 
     for (size_t i = 0; i < self->capacity; i++) {
@@ -473,7 +473,7 @@ typedef struct {
 #define ITER_CONST NS(SELF, iter_const)
 typedef KV_PAIR_CONST NS(ITER_CONST, item);
 
-PUBLIC static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
@@ -484,7 +484,7 @@ typedef struct {
     mutation_version version;
 } ITER_CONST;
 
-PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->index < iter->map->capacity) {
@@ -499,13 +499,13 @@ PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     return (KV_PAIR_CONST){.key = NULL, .value = NULL};
 }
 
-PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->index >= iter->map->capacity;
 }
 
-PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     DC_ASSUME(self);
     size_t first_index = 0;
     while (first_index < self->capacity && !self->keys[first_index].present) {
@@ -519,7 +519,7 @@ PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 

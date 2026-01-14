@@ -85,7 +85,7 @@ static SELF NS(SELF, new)() {
 
 DC_STATIC_CONSTANT size_t NS(SELF, max_size) = CAPACITY;
 
-PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = NS(SELF, new)();
     new_self.size = self->size;
 
@@ -96,7 +96,7 @@ PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     return new_self;
 }
 
-PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index) {
+DC_PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
     if (DC_LIKELY(index < self->size)) {
         return &self->data[index];
@@ -104,13 +104,13 @@ PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE index)
     return NULL;
 }
 
-PUBLIC static ITEM const* NS(SELF, read)(SELF const* self, INDEX_TYPE index) {
+DC_PUBLIC static ITEM const* NS(SELF, read)(SELF const* self, INDEX_TYPE index) {
     ITEM const* value = NS(SELF, try_read)(self, index);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
+DC_PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
     if (DC_LIKELY(index < self->size)) {
         return &self->data[index];
@@ -118,13 +118,13 @@ PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
     return NULL;
 }
 
-PUBLIC static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
+DC_PUBLIC static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
     ITEM* value = NS(SELF, try_write)(self, index);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
+DC_PUBLIC static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->size < CAPACITY) {
@@ -136,8 +136,8 @@ PUBLIC static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
     return NULL;
 }
 
-PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
-                                            INDEX_TYPE count) {
+DC_PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM const* items,
+                                               INDEX_TYPE count) {
     INVARIANT_CHECK(self);
     DC_ASSUME(items);
     DC_ASSERT(at <= self->size);
@@ -157,7 +157,7 @@ PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM cons
     return &self->data[at];
 }
 
-PUBLIC static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
+DC_PUBLIC static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
     INVARIANT_CHECK(self);
     DC_ASSERT(at + count <= self->size);
 
@@ -173,13 +173,13 @@ PUBLIC static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE cou
     self->size -= count;
 }
 
-PUBLIC static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
+DC_PUBLIC static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     ITEM* slot = NS(SELF, try_push)(self, item);
     DC_ASSERT(slot);
     return slot;
 }
 
-PUBLIC static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
+DC_PUBLIC static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (DC_LIKELY(self->size > 0)) {
@@ -190,18 +190,18 @@ PUBLIC static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
     return false;
 }
 
-PUBLIC static ITEM NS(SELF, pop)(SELF* self) {
+DC_PUBLIC static ITEM NS(SELF, pop)(SELF* self) {
     ITEM entry;
     DC_ASSERT(NS(SELF, try_pop)(self, &entry));
     return entry;
 }
 
-PUBLIC static INDEX_TYPE NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static INDEX_TYPE NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->size;
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     for (INDEX_TYPE i = 0; i < self->size; i++) {
         ITEM_DELETE(&self->data[i]);
@@ -211,7 +211,7 @@ PUBLIC static void NS(SELF, delete)(SELF* self) {
 #define ITER NS(SELF, iter)
 typedef ITEM* NS(ITER, item);
 
-PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
+DC_PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF* vec;
@@ -219,7 +219,7 @@ typedef struct {
     mutation_version version;
 } ITER;
 
-PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->pos < iter->vec->size) {
@@ -230,19 +230,19 @@ PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
     return NULL;
 }
 
-PUBLIC static INDEX_TYPE NS(ITER, position)(ITER const* iter) {
+DC_PUBLIC static INDEX_TYPE NS(ITER, position)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
-PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
-PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     DC_ASSUME(self);
     return (ITER){.vec = self,
                   .pos = 0,
@@ -254,7 +254,7 @@ PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
 #define ITER_CONST NS(SELF, iter_const)
 typedef ITEM const* NS(ITER_CONST, item);
 
-PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF const* vec;
@@ -262,7 +262,7 @@ typedef struct {
     mutation_version version;
 } ITER_CONST;
 
-PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     if (iter->pos < iter->vec->size) {
@@ -273,19 +273,19 @@ PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NULL;
 }
 
-PUBLIC static INDEX_TYPE NS(ITER_CONST, position)(ITER_CONST const* iter) {
+DC_PUBLIC static INDEX_TYPE NS(ITER_CONST, position)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
-PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >= iter->vec->size;
 }
 
-PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     DC_ASSUME(self);
     return (ITER_CONST){
         .vec = self,
@@ -294,7 +294,7 @@ PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", (size_t)CAPACITY);

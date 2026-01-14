@@ -12,24 +12,24 @@ typedef struct {
     size_t indent;
 } dc_debug_fmt;
 
-PUBLIC static dc_debug_fmt dc_debug_fmt_new() {
+DC_PUBLIC static dc_debug_fmt dc_debug_fmt_new() {
     dc_debug_fmt fmt = {.indent = 0};
     return fmt;
 }
 
-PUBLIC static void dc_debug_fmt_print_indents(dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void dc_debug_fmt_print_indents(dc_debug_fmt fmt, FILE* stream) {
     for (size_t i = 0; i < fmt.indent; i++) {
         fprintf(stream, "  ");
     }
 }
 
-PUBLIC static void dc_debug_fmt_print(dc_debug_fmt fmt, FILE* stream, const char* format, ...)
+DC_PUBLIC static void dc_debug_fmt_print(dc_debug_fmt fmt, FILE* stream, const char* format, ...)
 #if defined(__clang__) || defined(__GNUC__)
     __attribute__((format(printf, 3, 4)))
 #endif
     ;
 
-PUBLIC static void dc_debug_fmt_print(dc_debug_fmt fmt, FILE* stream, const char* format, ...) {
+DC_PUBLIC static void dc_debug_fmt_print(dc_debug_fmt fmt, FILE* stream, const char* format, ...) {
     dc_debug_fmt_print_indents(fmt, stream);
 
     va_list args;
@@ -47,14 +47,14 @@ PUBLIC static void dc_debug_fmt_print(dc_debug_fmt fmt, FILE* stream, const char
 
 /// Starts a scope `{ ... }`
 /// - Does not prepend with the indent
-PUBLIC static inline dc_debug_fmt dc_debug_fmt_scope_begin(dc_debug_fmt fmt) {
+DC_PUBLIC static inline dc_debug_fmt dc_debug_fmt_scope_begin(dc_debug_fmt fmt) {
     dc_debug_fmt next = {.indent = fmt.indent + 1};
     return next;
 }
 
 /// Ends a scope `{ ... }`
 /// - prepends with the fmt specified indent
-PUBLIC static inline dc_debug_fmt dc_debug_fmt_scope_end(dc_debug_fmt fmt) {
+DC_PUBLIC static inline dc_debug_fmt dc_debug_fmt_scope_end(dc_debug_fmt fmt) {
     DC_ASSERT(fmt.indent > 0);
     dc_debug_fmt next = {.indent = fmt.indent - 1};
     return next;

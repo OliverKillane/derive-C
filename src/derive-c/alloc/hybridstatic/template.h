@@ -35,19 +35,19 @@ TEMPLATE_ERROR("CAPACITY must be > 0")
 #endif
 
 #if defined UNALIGNED_VALID
-INTERNAL static USED PRIV(NS(SELF, read_used))(const void* ptr) { return *(const USED*)ptr; }
-INTERNAL static void PRIV(NS(SELF, write_used))(void* ptr, USED value) { *((USED*)ptr) = value; }
+DC_INTERNAL static USED PRIV(NS(SELF, read_used))(const void* ptr) { return *(const USED*)ptr; }
+DC_INTERNAL static void PRIV(NS(SELF, write_used))(void* ptr, USED value) { *((USED*)ptr) = value; }
     #undef UNALIGNED_VALID
 #else
 // JUSTIFY: Special functions for reading the used count
 //  - These values are misaligned, so would be UB to access directly.
-INTERNAL static USED PRIV(NS(SELF, read_used))(const void* ptr) {
+DC_INTERNAL static USED PRIV(NS(SELF, read_used))(const void* ptr) {
     USED value;
     memcpy(&value, ptr, sizeof(USED));
     return value;
 }
 
-INTERNAL static void PRIV(NS(SELF, write_used))(void* ptr, USED value) {
+DC_INTERNAL static void PRIV(NS(SELF, write_used))(void* ptr, USED value) {
     memcpy(ptr, &value, sizeof(USED));
 }
 #endif
@@ -61,13 +61,13 @@ typedef struct {
     dc_gdb_marker derive_c_hybridstaticalloc;
 } SELF;
 
-INTERNAL static bool PRIV(NS(SELF, contains_ptr))(SELF const* self, void* ptr) {
+DC_INTERNAL static bool PRIV(NS(SELF, contains_ptr))(SELF const* self, void* ptr) {
     void* buffer_start = &(*self->buffer)[0];
     void* buffer_end = &(*self->buffer)[CAPACITY];
     return buffer_start <= ptr && ptr < buffer_end;
 }
 
-PUBLIC static SELF NS(SELF, new)(NS(SELF, buffer) * buffer, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(NS(SELF, buffer) * buffer, NS(ALLOC, ref) alloc_ref) {
     SELF self = {
         .buffer = buffer,
         .alloc_ref = alloc_ref,
@@ -87,7 +87,7 @@ PUBLIC static SELF NS(SELF, new)(NS(SELF, buffer) * buffer, NS(ALLOC, ref) alloc
     return self;
 }
 
-PUBLIC static void* PRIV(NS(SELF, static_allocate_zeroed))(SELF* self, size_t size) {
+DC_PUBLIC static void* PRIV(NS(SELF, static_allocate_zeroed))(SELF* self, size_t size) {
     DC_ASSUME(self);
     DC_ASSERT(size > 0);
 
@@ -113,7 +113,7 @@ PUBLIC static void* PRIV(NS(SELF, static_allocate_zeroed))(SELF* self, size_t si
     return allocation_ptr;
 }
 
-PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
+DC_PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     void* allocation_ptr = PRIV(NS(SELF, static_allocate_zeroed))(self, size);
     if (allocation_ptr == NULL) {
         return NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
@@ -121,7 +121,7 @@ PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     return allocation_ptr;
 }
 
-PUBLIC static void* PRIV(NS(SELF, static_allocate_uninit))(SELF* self, size_t size) {
+DC_PUBLIC static void* PRIV(NS(SELF, static_allocate_uninit))(SELF* self, size_t size) {
     void* allocation_ptr = PRIV(NS(SELF, static_allocate_zeroed))(self, size);
 
     if (allocation_ptr) {
@@ -132,7 +132,7 @@ PUBLIC static void* PRIV(NS(SELF, static_allocate_uninit))(SELF* self, size_t si
     return allocation_ptr;
 }
 
-PUBLIC static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
+DC_PUBLIC static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
 
@@ -145,7 +145,7 @@ PUBLIC static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     return statically_allocated;
 }
 
-PUBLIC static void PRIV(NS(SELF, static_deallocate))(SELF* self, void* ptr, size_t size) {
+DC_PUBLIC static void PRIV(NS(SELF, static_deallocate))(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
 
@@ -163,7 +163,7 @@ PUBLIC static void PRIV(NS(SELF, static_deallocate))(SELF* self, void* ptr, size
                           sizeof(USED));
 }
 
-PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
+DC_PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     DC_ASSUME(ptr);
 
@@ -174,8 +174,8 @@ PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     }
 }
 
-PUBLIC static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, size_t old_size,
-                                                      size_t new_size) {
+DC_PUBLIC static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, size_t old_size,
+                                                         size_t new_size) {
     char* byte_ptr = (char*)ptr;
     char* old_size_ptr = byte_ptr - sizeof(USED);
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
@@ -238,7 +238,8 @@ PUBLIC static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, siz
     return new_buff;
 }
 
-PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
+DC_PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size,
+                                            size_t new_size) {
     DC_ASSUME(self);
     DC_ASSERT(new_size > 0, "Cannot allocate zero sized");
 
@@ -253,7 +254,7 @@ PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size,
     return PRIV(NS(SELF, static_reallocate))(self, ptr, old_size, new_size);
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     DC_ASSUME(self);
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
@@ -270,7 +271,7 @@ PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* str
 #undef USED
 #undef CAPACITY
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
                           &self->buffer[0], sizeof(NS(SELF, buffer)));
     DC_ASSUME(self);

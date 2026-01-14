@@ -73,7 +73,7 @@ typedef struct {
     } result;
 } SELF;
 
-PUBLIC static SELF NS(SELF, from_ok)(OK value) {
+DC_PUBLIC static SELF NS(SELF, from_ok)(OK value) {
     return (SELF){
         .success = true,
         .result =
@@ -83,7 +83,7 @@ PUBLIC static SELF NS(SELF, from_ok)(OK value) {
     };
 }
 
-PUBLIC static SELF NS(SELF, from_error)(ERROR value) {
+DC_PUBLIC static SELF NS(SELF, from_error)(ERROR value) {
     return (SELF){
         .success = false,
         .result =
@@ -93,9 +93,9 @@ PUBLIC static SELF NS(SELF, from_error)(ERROR value) {
     };
 }
 
-PUBLIC static bool NS(SELF, is_error)(SELF const* self) { return !self->success; }
+DC_PUBLIC static bool NS(SELF, is_error)(SELF const* self) { return !self->success; }
 
-PUBLIC static OK const* NS(SELF, strict_get_const)(SELF const* self) {
+DC_PUBLIC static OK const* NS(SELF, strict_get_const)(SELF const* self) {
     if (!self->success) {
         ERROR_THROW(&self->result.error);
         DC_UNREACHABLE("Error has already thrown");
@@ -103,21 +103,21 @@ PUBLIC static OK const* NS(SELF, strict_get_const)(SELF const* self) {
     return &self->result.ok;
 }
 
-PUBLIC static OK const* NS(SELF, get_okay)(SELF const* self) {
+DC_PUBLIC static OK const* NS(SELF, get_okay)(SELF const* self) {
     if (self->success) {
         return &self->result.ok;
     }
     return NULL;
 }
 
-PUBLIC static ERROR const* NS(SELF, get_error)(SELF const* self) {
+DC_PUBLIC static ERROR const* NS(SELF, get_error)(SELF const* self) {
     if (!self->success) {
         return &self->result.error;
     }
     return NULL;
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     if (self->success) {
@@ -133,7 +133,7 @@ PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* str
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     if (self->success) {
         OK_DELETE(&self->result.ok);
     } else {

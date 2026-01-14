@@ -21,7 +21,7 @@ DC_STATIC_ASSERT(DC_MATH_IS_POWER_OF_2(_DC_SWISS_SIMD_PROBE_SIZE));
 typedef uint8_t dc_swiss_id;
 typedef uint8_t dc_swiss_ctrl;
 
-INTERNAL DC_PURE static bool _dc_swiss_is_present(dc_swiss_ctrl ctrl) {
+DC_INTERNAL DC_PURE static bool _dc_swiss_is_present(dc_swiss_ctrl ctrl) {
     switch (ctrl) {
     case DC_SWISS_VAL_EMPTY:
     case DC_SWISS_VAL_DELETED:
@@ -32,24 +32,24 @@ INTERNAL DC_PURE static bool _dc_swiss_is_present(dc_swiss_ctrl ctrl) {
     }
 }
 
-INTERNAL static uint8_t _dc_swiss_ctrl_get_id(dc_swiss_ctrl ctrl) {
+DC_INTERNAL static uint8_t _dc_swiss_ctrl_get_id(dc_swiss_ctrl ctrl) {
     DC_ASSUME(_dc_swiss_is_present(ctrl));
     return ctrl & DC_SWISS_VAL_ID_MASK;
 }
 
-INTERNAL static dc_swiss_id _dc_swiss_id_from_hash(size_t hash) {
+DC_INTERNAL static dc_swiss_id _dc_swiss_id_from_hash(size_t hash) {
     return (uint8_t)(hash & DC_SWISS_VAL_ID_MASK);
 }
 
-INTERNAL static size_t dc_swiss_capacity(size_t for_items) {
+DC_INTERNAL static size_t dc_swiss_capacity(size_t for_items) {
     if (for_items < _DC_SWISS_SIMD_PROBE_SIZE) {
         return _DC_SWISS_SIMD_PROBE_SIZE;
     }
     return dc_math_next_power_of_2(for_items);
 }
 
-INTERNAL static void _dc_swiss_ctrl_set_at(dc_swiss_ctrl* self, size_t capacity, size_t index,
-                                           dc_swiss_ctrl val) {
+DC_INTERNAL static void _dc_swiss_ctrl_set_at(dc_swiss_ctrl* self, size_t capacity, size_t index,
+                                              dc_swiss_ctrl val) {
     self[index] = val;
     if (index < (_DC_SWISS_SIMD_PROBE_SIZE - 1)) {
         self[capacity + 1 + index] = val;
@@ -62,7 +62,7 @@ typedef enum {
     DC_SWISS_DO_NOTHING,
 } _dc_swiss_rehash_action;
 
-INTERNAL static _dc_swiss_rehash_action
+DC_INTERNAL static _dc_swiss_rehash_action
 _dc_swiss_heuristic_should_extend(size_t tombstones, size_t count, size_t capacity) {
     DC_ASSUME(capacity > 0);
 

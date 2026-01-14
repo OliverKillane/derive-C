@@ -10,7 +10,7 @@
 #define DC_FNV1A_64_PRIME 1099511628211ull
 
 /// Hashes a null terminated string
-PUBLIC static inline uint64_t dc_fnv1a_str_borrow(const char* s) {
+DC_PUBLIC static inline uint64_t dc_fnv1a_str_borrow(const char* s) {
     const unsigned char* p = (const unsigned char*)(s);
     uint64_t h = DC_FNV1A_64_OFFSET;
 
@@ -21,13 +21,13 @@ PUBLIC static inline uint64_t dc_fnv1a_str_borrow(const char* s) {
     return h;
 }
 
-PUBLIC static inline uint64_t dc_fnv1a_str(char* const* s) { return dc_fnv1a_str_borrow(*s); }
+DC_PUBLIC static inline uint64_t dc_fnv1a_str(char* const* s) { return dc_fnv1a_str_borrow(*s); }
 
-PUBLIC static inline uint64_t dc_fnv1a_str_const(const char* const* s) {
+DC_PUBLIC static inline uint64_t dc_fnv1a_str_const(const char* const* s) {
     return dc_fnv1a_str_borrow(*s);
 }
 
-PUBLIC static inline uint64_t dc_fnv1a_u64(uint64_t const* v) {
+DC_PUBLIC static inline uint64_t dc_fnv1a_u64(uint64_t const* v) {
     uint64_t h = DC_FNV1A_64_OFFSET;
     uint64_t x = *v;
 
@@ -39,7 +39,7 @@ PUBLIC static inline uint64_t dc_fnv1a_u64(uint64_t const* v) {
     return h;
 }
 
-PUBLIC static inline uint64_t dc_fnv1a_u32(uint32_t const* v) {
+DC_PUBLIC static inline uint64_t dc_fnv1a_u32(uint32_t const* v) {
     uint64_t h = DC_FNV1A_64_OFFSET;
     uint32_t x = *v;
 
@@ -53,7 +53,7 @@ PUBLIC static inline uint64_t dc_fnv1a_u32(uint32_t const* v) {
 
 /// Applying the fnv1a hash for the size of the integer
 #define FNV1A_INTEGER(type, ...)                                                                   \
-    PUBLIC static size_t type##_hash_fnv1a(type const* key) {                                      \
+    DC_PUBLIC static size_t type##_hash_fnv1a(type const* key) {                                   \
         DC_STATIC_ASSERT(sizeof(type) <= sizeof(uint64_t),                                         \
                          "fnv integer hashing only supports up to size_t integers");               \
         if (sizeof(type) <= sizeof(uint32_t)) {                                                    \

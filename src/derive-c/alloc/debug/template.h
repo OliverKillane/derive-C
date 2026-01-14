@@ -17,7 +17,7 @@ typedef struct {
     NS(ALLOC, ref) alloc_ref;
 } SELF;
 
-PUBLIC static SELF NS(SELF, new)(char const* name, FILE* stream, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(char const* name, FILE* stream, NS(ALLOC, ref) alloc_ref) {
     fprintf(stream, "[%s] %s(alloc=" DC_EXPAND_STRING(ALLOC) "@%p)\n", name, __func__,
             (void*)NS(NS(ALLOC, ref), deref)(alloc_ref));
     return (SELF){
@@ -27,21 +27,22 @@ PUBLIC static SELF NS(SELF, new)(char const* name, FILE* stream, NS(ALLOC, ref) 
     };
 }
 
-PUBLIC static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
+DC_PUBLIC static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_uninit)(self->alloc_ref, size);
     fprintf(self->stream, "[%s] %s(size=%zu) -> %p\n", self->name, __func__, size, ptr);
     return ptr;
 }
 
-PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
+DC_PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
     DC_ASSUME(self);
     void* ptr = NS(ALLOC, allocate_zeroed)(self->alloc_ref, size);
     fprintf(self->stream, "[%s] %s(size=%zu) -> %p\n", self->name, __func__, size, ptr);
     return ptr;
 }
 
-PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size, size_t new_size) {
+DC_PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size,
+                                            size_t new_size) {
     DC_ASSUME(self);
     void* new_ptr = NS(ALLOC, reallocate)(self->alloc_ref, ptr, old_size, new_size);
     // JUSTIFY: Ignoring ptr used after free for clang static analyser
@@ -53,13 +54,13 @@ PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size,
     return new_ptr;
 }
 
-PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
+DC_PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
     DC_ASSUME(self);
     fprintf(self->stream, "[%s] %s(ptr=%p, size=%zu)\n", self->name, __func__, ptr, size);
     NS(ALLOC, deallocate)(self->alloc_ref, ptr, size);
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "name: %s,\n", self->name);
@@ -70,7 +71,7 @@ PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* str
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     DC_ASSUME(self);
     fprintf(self->stream, "[%s]: %s\n", self->name, __func__);
 }

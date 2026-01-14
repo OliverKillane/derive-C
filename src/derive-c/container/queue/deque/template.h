@@ -49,7 +49,7 @@ typedef ALLOC NS(SELF, alloc_t);
 #pragma push_macro("ITEM_DELETE")
 
 // ITEM is already defined
-#define INTERNAL_NAME ITEM_VECTORS // [DERIVE-C] for template
+#define DC_INTERNAL_NAME ITEM_VECTORS // [DERIVE-C] for template
 #include <derive-c/container/vector/dynamic/template.h>
 
 #pragma pop_macro("ALLOC")
@@ -66,7 +66,7 @@ typedef struct {
 
 #define INVARIANT_CHECK(self) DC_ASSUME(self);
 
-PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .front = NS(ITEM_VECTORS, new)(alloc_ref),
         .back = NS(ITEM_VECTORS, new)(alloc_ref),
@@ -75,8 +75,8 @@ PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     };
 }
 
-PUBLIC static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity,
-                                               NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity,
+                                                  NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .front = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc_ref),
         .back = NS(ITEM_VECTORS, new_with_capacity)(front_and_back_capacity, alloc_ref),
@@ -85,7 +85,7 @@ PUBLIC static SELF NS(SELF, new_with_capacity)(size_t front_and_back_capacity,
     };
 }
 
-PUBLIC static SELF NS(SELF, clone)(SELF const* other) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* other) {
     INVARIANT_CHECK(other);
     return (SELF){
         .front = NS(ITEM_VECTORS, clone)(&other->front),
@@ -95,17 +95,17 @@ PUBLIC static SELF NS(SELF, clone)(SELF const* other) {
     };
 }
 
-PUBLIC static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return NS(ITEM_VECTORS, size)(&self->front) + NS(ITEM_VECTORS, size)(&self->back);
 }
 
-PUBLIC static bool NS(SELF, empty)(SELF const* self) {
+DC_PUBLIC static bool NS(SELF, empty)(SELF const* self) {
     INVARIANT_CHECK(self);
     return NS(ITEM_VECTORS, size)(&self->front) == 0 && NS(ITEM_VECTORS, size)(&self->back) == 0;
 }
 
-PUBLIC static void NS(SELF, rebalance)(SELF* self) {
+DC_PUBLIC static void NS(SELF, rebalance)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -139,7 +139,7 @@ PUBLIC static void NS(SELF, rebalance)(SELF* self) {
     NS(ITEM_VECTORS, transfer_reverse)(source, target, to_move);
 }
 
-PUBLIC static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
+DC_PUBLIC static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
 
     if (index < NS(ITEM_VECTORS, size)(&self->front)) {
@@ -151,33 +151,33 @@ PUBLIC static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t
     return NS(ITEM_VECTORS, try_read)(&self->back, back_index);
 }
 
-PUBLIC static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
+DC_PUBLIC static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
     return NS(SELF, try_read_from_front)(self, NS(SELF, size)(self) - 1 - index);
 }
 
-PUBLIC static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
+DC_PUBLIC static ITEM* NS(SELF, try_write_from_front)(SELF* self, size_t index) {
     return (ITEM*)NS(SELF, try_read_from_front)(self, index);
 }
 
-PUBLIC static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
+DC_PUBLIC static ITEM* NS(SELF, try_write_from_back)(SELF* self, size_t index) {
     return (ITEM*)NS(SELF, try_read_from_back)(self, index);
 }
 
-PUBLIC static void NS(SELF, push_front)(SELF* self, ITEM item) {
+DC_PUBLIC static void NS(SELF, push_front)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->front, item);
     NS(SELF, rebalance)(self);
 }
 
-PUBLIC static void NS(SELF, push_back)(SELF* self, ITEM item) {
+DC_PUBLIC static void NS(SELF, push_back)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->back, item);
     NS(SELF, rebalance)(self);
 }
 
-PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
+DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->front) > 0) {
@@ -191,7 +191,7 @@ PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     return result;
 }
 
-PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
+DC_PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->back) > 0) {
@@ -208,7 +208,7 @@ PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
 #define ITER NS(SELF, iter)
 typedef ITEM* NS(ITER, item);
 
-PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
+DC_PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF* deque;
@@ -216,7 +216,7 @@ typedef struct {
     mutation_version version;
 } ITER;
 
-PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
@@ -236,14 +236,14 @@ PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
     return NULL;
 }
 
-PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     mutation_version_check(&iter->version);
     DC_ASSUME(iter);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
 }
 
-PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     DC_ASSUME(self);
     return (ITER){.deque = self,
                   .pos = 0,
@@ -255,7 +255,7 @@ PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
 #define ITER_CONST NS(SELF, iter_const)
 typedef ITEM const* NS(ITER_CONST, item);
 
-PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
 
 typedef struct {
     SELF const* deque;
@@ -263,7 +263,7 @@ typedef struct {
     mutation_version version;
 } ITER_CONST;
 
-PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     size_t const front_size = NS(ITEM_VECTORS, size)(&iter->deque->front);
@@ -283,14 +283,14 @@ PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NULL;
 }
 
-PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos >=
            NS(ITEM_VECTORS, size)(&iter->deque->front) + NS(ITEM_VECTORS, size)(&iter->deque->back);
 }
 
-PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     DC_ASSUME(self);
     return (ITER_CONST){
         .deque = self,
@@ -301,13 +301,13 @@ PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 
 #undef ITER_CONST
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     NS(ITEM_VECTORS, delete)(&self->front);
     NS(ITEM_VECTORS, delete)(&self->back);
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));

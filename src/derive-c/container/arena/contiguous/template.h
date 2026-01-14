@@ -64,7 +64,7 @@ typedef ALLOC NS(SELF, alloc_t);
 #define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
 #define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
 #define SLOT_VALUE_DELETE VALUE_DELETE // [DERIVE-C] for template
-#define INTERNAL_NAME SLOT             // [DERIVE-C] for template
+#define DC_INTERNAL_NAME SLOT          // [DERIVE-C] for template
 #include <derive-c/utils/slot/template.h>
 
 typedef struct {
@@ -93,7 +93,7 @@ typedef struct {
     DC_ASSUME((self)->exclusive_end >= (self)->count);                                             \
     DC_ASSUME((self)->count <= MAX_INDEX);
 
-PUBLIC static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(items > 0);
     size_t capacity = dc_math_next_power_of_2(items);
     DC_ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
@@ -115,7 +115,7 @@ PUBLIC static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, NS(ALLOC, r
     };
 }
 
-PUBLIC static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
+DC_PUBLIC static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     INVARIANT_CHECK(self);
     DC_ASSERT(self->count < MAX_INDEX);
 
@@ -154,7 +154,7 @@ PUBLIC static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     return (INDEX){.index = new_index};
 }
 
-PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
+DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
     INVARIANT_CHECK(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
@@ -166,13 +166,13 @@ PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
     return &slot->value;
 }
 
-PUBLIC static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
+DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
     VALUE* value = NS(SELF, try_write)(self, index);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
+DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     INVARIANT_CHECK(self);
     if (!CHECK_ACCESS_INDEX(self, index)) {
         return NULL;
@@ -184,13 +184,13 @@ PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) {
     return &slot->value;
 }
 
-PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
+DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
     VALUE const* value = NS(SELF, try_read)(self, index);
     DC_ASSERT(value);
     return value;
 }
 
-PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     SLOT* slots = (SLOT*)NS(ALLOC, allocate_zeroed)(self->alloc_ref, self->capacity * sizeof(SLOT));
 
@@ -210,12 +210,12 @@ PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     };
 }
 
-PUBLIC static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->count;
 }
 
-PUBLIC static bool NS(SELF, full)(SELF const* self) {
+DC_PUBLIC static bool NS(SELF, full)(SELF const* self) {
     INVARIANT_CHECK(self);
     if (self->capacity == CAPACITY_EXCLUSIVE_UPPER) {
         if (self->free_list == INDEX_NONE) {
@@ -225,9 +225,9 @@ PUBLIC static bool NS(SELF, full)(SELF const* self) {
     return false;
 }
 
-PUBLIC static const size_t NS(SELF, max_entries) = MAX_INDEX;
+DC_PUBLIC static const size_t NS(SELF, max_entries) = MAX_INDEX;
 
-PUBLIC static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
+DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destination) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -248,7 +248,7 @@ PUBLIC static bool NS(SELF, try_remove)(SELF* self, INDEX index, VALUE* destinat
     return false;
 }
 
-PUBLIC static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
+DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -264,14 +264,14 @@ typedef struct {
 } IV_PAIR;
 
 // Provide an empty IV_PAIR sentinel
-PUBLIC static IV_PAIR NS(SELF, iv_empty)() {
+DC_PUBLIC static IV_PAIR NS(SELF, iv_empty)() {
     return (IV_PAIR){.index = (INDEX){.index = INDEX_NONE}, .value = NULL};
 }
 
 #define ITER NS(SELF, iter)
 typedef IV_PAIR NS(ITER, item);
 
-PUBLIC static bool NS(ITER, empty_item)(IV_PAIR const* item) { return item->value == NULL; }
+DC_PUBLIC static bool NS(ITER, empty_item)(IV_PAIR const* item) { return item->value == NULL; }
 
 typedef struct {
     SELF* arena;
@@ -279,7 +279,7 @@ typedef struct {
     mutation_version version;
 } ITER;
 
-PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     // JUSTIFY: If no entries are left, then the previous '.._next' call moved
@@ -288,7 +288,7 @@ PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-PUBLIC static IV_PAIR NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static IV_PAIR NS(ITER, next)(ITER* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
@@ -314,7 +314,7 @@ PUBLIC static IV_PAIR NS(ITER, next)(ITER* iter) {
     return NS(SELF, iv_empty)();
 }
 
-PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
@@ -328,7 +328,7 @@ PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     };
 }
 
-PUBLIC static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
     ITER iter = NS(SELF, get_iter)(self);
 
@@ -350,7 +350,7 @@ typedef struct {
 } IV_PAIR_CONST;
 
 // Provide an empty IV_PAIR_CONST sentinel
-PUBLIC static IV_PAIR_CONST NS(SELF, iv_const_empty)() {
+DC_PUBLIC static IV_PAIR_CONST NS(SELF, iv_const_empty)() {
     return (IV_PAIR_CONST){.index = (INDEX){.index = INDEX_NONE}, .value = NULL};
 }
 
@@ -359,7 +359,7 @@ PUBLIC static IV_PAIR_CONST NS(SELF, iv_const_empty)() {
 typedef IV_PAIR_CONST NS(ITER_CONST, item);
 
 // Empty-item predicate takes a pointer-to-value
-PUBLIC static bool NS(ITER_CONST, empty_item)(IV_PAIR_CONST const* item) {
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(IV_PAIR_CONST const* item) {
     return item->value == NULL;
 }
 
@@ -370,13 +370,13 @@ typedef struct {
     mutation_version version;
 } ITER_CONST;
 
-PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->next_index == INDEX_NONE || iter->next_index >= iter->arena->exclusive_end;
 }
 
-PUBLIC static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
@@ -399,7 +399,7 @@ PUBLIC static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NS(SELF, iv_const_empty)();
 }
 
-PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
     INDEX_TYPE index = 0;
     while (index < INDEX_NONE && index < self->exclusive_end && !self->slots[index].present) {
@@ -413,7 +413,7 @@ PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);

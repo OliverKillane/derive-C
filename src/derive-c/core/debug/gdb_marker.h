@@ -5,4 +5,4 @@
 
 DC_ZERO_SIZED(dc_gdb_marker);
 
-PUBLIC static dc_gdb_marker dc_gdb_marker_new() { return (dc_gdb_marker){}; }
+DC_PUBLIC static dc_gdb_marker dc_gdb_marker_new() { return (dc_gdb_marker){}; }

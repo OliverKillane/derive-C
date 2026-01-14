@@ -9,7 +9,7 @@
     #error "gnu source  must be defined (is in the src/derive-c CMakeLists.txt) to use cookie io"
 #endif
 
-PUBLIC static FILE* dc_null_stream(void) {
+DC_PUBLIC static FILE* dc_null_stream(void) {
     cookie_io_functions_t io = {
         .read = NULL,
         .write = NULL,

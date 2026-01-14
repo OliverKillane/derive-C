@@ -5,7 +5,7 @@
 
 /// The worst possible hash, for testing purposes.
 #define WORST(type, ...)                                                                           \
-    PUBLIC static size_t type##_hash_worst(type const* key) {                                      \
+    DC_PUBLIC static size_t type##_hash_worst(type const* key) {                                   \
         (void)key;                                                                                 \
         return 0;                                                                                  \
     }
