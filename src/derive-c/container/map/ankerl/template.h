@@ -228,7 +228,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
 
 static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
-    DC_ASSUME(NS(SLOT_VECTOR, size)(&self->slots) < self->buckets_capacity);
+    DC_DEBUG_ASSERT(NS(SLOT_VECTOR, size)(&self->slots) < self->buckets_capacity);
     const size_t mask = self->buckets_capacity - 1;
 
     const size_t hash = KEY_HASH(&key);

@@ -326,7 +326,7 @@ typedef struct {
 
 #define ITER_INVARIANT_CHECK(iter)                                                                 \
     DC_ASSUME(iter);                                                                               \
-    DC_ASSUME(                                                                                     \
+    DC_DEBUG_ASSERT(                                                                               \
         DC_WHEN((iter)->next_index != INDEX_NONE,                                                  \
                 NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
         "The next index is either valid, or the iterator is empty");
@@ -405,7 +405,7 @@ typedef struct {
 
 #define ITER_CONST_INVARIANT_CHECK(iter)                                                           \
     DC_ASSUME(iter);                                                                               \
-    DC_ASSUME(                                                                                     \
+    DC_DEBUG_ASSERT(                                                                               \
         DC_WHEN((iter)->next_index != INDEX_NONE,                                                  \
                 NS(SELF, try_read)(iter->arena, (INDEX){.index = (iter)->next_index}) != NULL),    \
         "The next index is either valid, or the iterator is empty");
