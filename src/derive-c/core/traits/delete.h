@@ -14,10 +14,13 @@
     NS(MEMBER_TYPE, delete)(&self->MEMBER_NAME),
 
 #define DC_DERIVE_DELETE(TYPE)                                                                     \
-    static void NS(TYPE, delete)(TYPE * self) { NS(TYPE, REFLECT)(_DC_DERIVE_DELETE_MEMBER); }
+    DC_PUBLIC static void NS(TYPE, delete)(TYPE * self) {                                          \
+        NS(TYPE, REFLECT)(_DC_DERIVE_DELETE_MEMBER);                                               \
+    }
 
 #define _DC_DERIVE_STD_DELETE(TYPE, ...)                                                           \
-    static void NS(TYPE, delete)(TYPE * self /* NOLINT(readability-non-const-parameter) */) {      \
+    DC_PUBLIC static void NS(TYPE,                                                                 \
+                             delete)(TYPE * self /* NOLINT(readability-non-const-parameter) */) {  \
         (void)self;                                                                                \
     }
 

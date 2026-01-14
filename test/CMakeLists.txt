@@ -176,7 +176,8 @@ foreach(FUZZ_FILE IN LISTS FUZZ_CPP_FILES)
     TEST_PREFIX "fuzz/${fuzz_hierarchy}/"
     DISCOVERY_TIMEOUT 30
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    PROPERTIES LABELS "fuzz"
+    PROPERTIES
+      LABELS "fuzz"
     ENVIRONMENT
       "RC_PARAMS=max_success=2000"
   )
@@ -256,7 +257,7 @@ if(COVERAGE)
         -E env
           LLVM_PROFILE_FILE=${COVERAGE_DIR}/coverage_%p_%m.profraw
         ${CMAKE_CTEST_COMMAND}
-          -L "fuzz|unit"
+          -L "unit|fuzz"
           -j
           --output-on-failure
 

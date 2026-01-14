@@ -51,12 +51,14 @@ target_compile_options(dc_warnings_c INTERFACE
   $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-prototypes>
   $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wmissing-declarations>
 
-  # We expect to have unused functions when analysing the library without user code.
-  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-unused-function>
+  # JUSTIFY: Allowing zero sized types
+  #  - See `zerosized.h`
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-zero-length-array>
 
-  # We allow for empty structs (required to keep the release overhead of debug 
-  # only memory tracking, invalidation tracking zero)
-  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-gnu-empty-struct>
+  # JUSTIFY: Allow constexpr
+  #  For non-clang builds `_Generic` is not supported in C++, hence we use 
+  #  constexpr and type traits instead.
+  $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wno-c++17-extensions>
 )
 
 # Sanitizers

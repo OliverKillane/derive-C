@@ -24,16 +24,20 @@
     || NS(MEMBER_TYPE, lt)(&self_1->MEMBER_NAME, &self_2->MEMBER_NAME)
 
 #define DC_DERIVE_ORD(TYPE)                                                                        \
-    static bool NS(TYPE, gt)(TYPE const* self_1, TYPE const* self_2) {                             \
+    DC_PUBLIC static bool NS(TYPE, gt)(TYPE const* self_1, TYPE const* self_2) {                   \
         return false NS(TYPE, REFLECT)(_DC_DERIVE_ORD_MEMBER_GT);                                  \
     }                                                                                              \
-    static bool NS(TYPE, lt)(TYPE const* self_1, TYPE const* self_2) {                             \
+    DC_PUBLIC static bool NS(TYPE, lt)(TYPE const* self_1, TYPE const* self_2) {                   \
         return false NS(TYPE, REFLECT)(_DC_DERIVE_ORD_MEMBER_LT);                                  \
     }
 
 #define _DC_DERIVE_STD_ORD(TYPE, ...)                                                              \
-    static bool NS(TYPE, gt)(TYPE const* self_1, TYPE const* self_2) { return *self_1 > *self_2; } \
-    static bool NS(TYPE, lt)(TYPE const* self_1, TYPE const* self_2) { return *self_1 < *self_2; }
+    DC_PUBLIC static bool NS(TYPE, gt)(TYPE const* self_1, TYPE const* self_2) {                   \
+        return *self_1 > *self_2;                                                                  \
+    }                                                                                              \
+    DC_PUBLIC static bool NS(TYPE, lt)(TYPE const* self_1, TYPE const* self_2) {                   \
+        return *self_1 < *self_2;                                                                  \
+    }
 
 DC_STD_REFLECT(_DC_DERIVE_STD_ORD)
 DC_FLOAT_REFLECT(_DC_DERIVE_STD_ORD)

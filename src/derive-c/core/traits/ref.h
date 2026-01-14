@@ -18,11 +18,11 @@
 
 #define DC_TRAIT_REFERENCABLE_BY_PTR(SELF)                                                         \
     typedef SELF* NS(SELF, ref);                                                                   \
-    static SELF* NS(NS(SELF, ref), deref)(NS(SELF, ref) ref) { return ref; }                       \
+    DC_PUBLIC static SELF* NS(NS(SELF, ref), deref)(NS(SELF, ref) ref) { return ref; }             \
     DC_TRAIT_REFERENCABLE(SELF)
 
 #define DC_TRAIT_REFERENCABLE_SINGLETON(SELF, INSTANCE)                                            \
     DC_ZERO_SIZED(NS(SELF, ref));                                                                  \
-    static NS(SELF, ref) NS(SELF, get_ref)() { return (NS(SELF, ref)){}; }                         \
-    static SELF* NS(NS(SELF, ref), deref)(NS(SELF, ref) /*ref*/) { return &INSTANCE; }             \
+    DC_PUBLIC static NS(SELF, ref) NS(SELF, get_ref)() { return (NS(SELF, ref)){}; }               \
+    DC_PUBLIC static SELF* NS(NS(SELF, ref), deref)(NS(SELF, ref) /*ref*/) { return &INSTANCE; }   \
     DC_TRAIT_REFERENCABLE(SELF)

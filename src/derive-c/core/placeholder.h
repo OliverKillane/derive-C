@@ -4,6 +4,6 @@
     #define DC_PLACEHOLDERS
 #endif
 
-#if defined __clang_daemon__
+#if defined __derive_c_placeholders__
     #define DC_PLACEHOLDERS
 #endif

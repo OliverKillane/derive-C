@@ -10,4 +10,19 @@
 //    conflict with others
 //  - Same rationale for PRIV
 #define NS(pre, post) _DC_NS_EXPANDED(pre, post)
+
+// JUSTIFY: private by namespacing
+//  - There is no easy way to mark private in C
+//  - This makes it obvious, and furthermore prefix keeps it at the bottom of intellisense
+//  suggestions
 #define PRIV(name) NS(__private, name)
+
+// JUSTIFY: Marking public functions
+//  - When a template is expanded, not all of the methods are used by the user
+//  - Use of static means unused warnings occur
+#define DC_PUBLIC [[maybe_unused]]
+
+// JUSTIFY: Marking public functions
+//  - When a template is expanded, not all of the methods are used by the user
+//  - Use of static means unused warnings occur
+#define DC_INTERNAL [[maybe_unused]]

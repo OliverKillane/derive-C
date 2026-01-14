@@ -1,6 +1,7 @@
 /// @brief A simple result type, using the (already) optional pointer type
 // for access  to errors or successes
 
+#include "derive-c/core/panic.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -72,7 +73,7 @@ typedef struct {
     } result;
 } SELF;
 
-static SELF NS(SELF, from_ok)(OK value) {
+DC_PUBLIC static SELF NS(SELF, from_ok)(OK value) {
     return (SELF){
         .success = true,
         .result =
@@ -82,7 +83,7 @@ static SELF NS(SELF, from_ok)(OK value) {
     };
 }
 
-static SELF NS(SELF, from_error)(ERROR value) {
+DC_PUBLIC static SELF NS(SELF, from_error)(ERROR value) {
     return (SELF){
         .success = false,
         .result =
@@ -92,31 +93,32 @@ static SELF NS(SELF, from_error)(ERROR value) {
     };
 }
 
-static bool NS(SELF, is_error)(SELF const* self) { return !self->success; }
+DC_PUBLIC static bool NS(SELF, is_error)(SELF const* self) { return !self->success; }
 
-static OK const* NS(SELF, strict_get_const)(SELF const* self) {
+DC_PUBLIC static OK const* NS(SELF, strict_get_const)(SELF const* self) {
     if (!self->success) {
         ERROR_THROW(&self->result.error);
+        DC_UNREACHABLE("Error has already thrown");
     }
     return &self->result.ok;
 }
 
-static OK const* NS(SELF, get_okay)(SELF const* self) {
+DC_PUBLIC static OK const* NS(SELF, get_okay)(SELF const* self) {
     if (self->success) {
         return &self->result.ok;
     }
     return NULL;
 }
 
-static ERROR const* NS(SELF, get_error)(SELF const* self) {
+DC_PUBLIC static ERROR const* NS(SELF, get_error)(SELF const* self) {
     if (!self->success) {
         return &self->result.error;
     }
     return NULL;
 }
 
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     if (self->success) {
         dc_debug_fmt_print(fmt, stream, "ok: ");
@@ -131,7 +133,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     if (self->success) {
         OK_DELETE(&self->result.ok);
     } else {

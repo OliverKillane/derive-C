@@ -85,9 +85,14 @@ jobs:
         run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ninja -C build'
 
       - name: Test
+        if: matrix.coverage == false
         run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j --output-on-failure'
 
-      - name: Test Coverage
+      - name: Non-Coverage Tests
+        if: matrix.coverage == true
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j -LE "unit|fuzz" --output-on-failure'
+
+      - name: Coverage
         if: matrix.coverage == true
         run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ninja -C build coverage'
 
@@ -96,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ matrix.name }}
-          path: build/coverage_html/
+          path: build/coverage/coverage_html/
   check_renovate:
     name: Run Renovate
     runs-on: ubuntu-latest

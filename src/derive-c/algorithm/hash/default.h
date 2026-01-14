@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include <derive-c/core/compiler.h>
+#include <derive-c/core/attributes.h>
 
 #include "id.h"
 #include "fnv1a.h"

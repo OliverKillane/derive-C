@@ -14,7 +14,7 @@ DC_ZERO_SIZED(stdalloc);
 static stdalloc stdalloc_instance = {};
 DC_TRAIT_REFERENCABLE_SINGLETON(stdalloc, stdalloc_instance);
 
-static void* NS(stdalloc, allocate_uninit)(stdalloc_ref /* ref */, size_t size) {
+DC_PUBLIC static void* NS(stdalloc, allocate_uninit)(stdalloc_ref /* ref */, size_t size) {
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
     void* alloc = malloc(size);
 
@@ -25,7 +25,7 @@ static void* NS(stdalloc, allocate_uninit)(stdalloc_ref /* ref */, size_t size) 
     return alloc;
 }
 
-static void* NS(stdalloc, allocate_zeroed)(stdalloc_ref /* ref */, size_t size) {
+DC_PUBLIC static void* NS(stdalloc, allocate_zeroed)(stdalloc_ref /* ref */, size_t size) {
     DC_ASSERT(size > 0, "Cannot allocate zero sized");
     void* alloc = calloc(size, 1);
 
@@ -38,8 +38,8 @@ static void* NS(stdalloc, allocate_zeroed)(stdalloc_ref /* ref */, size_t size) 
     return alloc;
 }
 
-static void* NS(stdalloc, reallocate)(stdalloc_ref /* ref */, void* ptr, size_t old_size,
-                                      size_t new_size) {
+DC_PUBLIC static void* NS(stdalloc, reallocate)(stdalloc_ref /* ref */, void* ptr, size_t old_size,
+                                                size_t new_size) {
     DC_ASSERT(new_size > 0, "Cannot allocate zero sized");
     DC_ASSERT(ptr, "Cannot reallocate a null pointer");
     DC_ASSUME(old_size > 0, "Could never have allocated zero sized");
@@ -65,7 +65,7 @@ static void* NS(stdalloc, reallocate)(stdalloc_ref /* ref */, void* ptr, size_t 
     return new_ptr;
 }
 
-static void NS(stdalloc, deallocate)(stdalloc_ref /* ref */, void* ptr, size_t size) {
+DC_PUBLIC static void NS(stdalloc, deallocate)(stdalloc_ref /* ref */, void* ptr, size_t size) {
     DC_ASSUME(ptr);
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, ptr, size);
@@ -84,12 +84,12 @@ static void NS(stdalloc, deallocate)(stdalloc_ref /* ref */, void* ptr, size_t s
     free(ptr); // NOLINT(clang-analyzer-unix.Malloc)
 }
 
-static void NS(stdalloc, debug)(stdalloc const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(stdalloc, debug)(stdalloc const* self, dc_debug_fmt fmt, FILE* stream) {
     DC_ASSUME(self);
     (void)fmt;
-    fprintf(stream, "stdalloc@%p { }", self);
+    fprintf(stream, "stdalloc@%p { }", (void*)self);
 }
 
-static void NS(stdalloc, delete)(stdalloc* self) { DC_ASSUME(self); }
+DC_PUBLIC static void NS(stdalloc, delete)(stdalloc* self) { DC_ASSUME(self); }
 
 DC_TRAIT_ALLOC(stdalloc);

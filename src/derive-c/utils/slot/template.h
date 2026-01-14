@@ -61,7 +61,7 @@ typedef struct {
     bool present;
 } SELF;
 
-static void NS(SELF, memory_tracker_empty)(SELF const* slot) {
+DC_INTERNAL static void NS(SELF, memory_tracker_empty)(SELF const* slot) {
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, &slot->value,
                           sizeof(SLOT_VALUE));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
@@ -70,13 +70,13 @@ static void NS(SELF, memory_tracker_empty)(SELF const* slot) {
                           &slot->present, sizeof(bool));
 }
 
-static void NS(SELF, set_empty)(SELF* slot, SLOT_INDEX_TYPE next_free) {
+DC_INTERNAL static void NS(SELF, set_empty)(SELF* slot, SLOT_INDEX_TYPE next_free) {
     NS(SELF, memory_tracker_empty)(slot);
     slot->present = false;
     slot->next_free = next_free;
 }
 
-static void NS(SELF, memory_tracker_present)(SELF const* slot) {
+DC_INTERNAL static void NS(SELF, memory_tracker_present)(SELF const* slot) {
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
                           &slot->next_free, sizeof(SLOT_INDEX_TYPE));
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
@@ -85,13 +85,13 @@ static void NS(SELF, memory_tracker_present)(SELF const* slot) {
                           &slot->present, sizeof(bool));
 }
 
-static void NS(SELF, fill)(SELF* slot, SLOT_VALUE value) {
+DC_INTERNAL static void NS(SELF, fill)(SELF* slot, SLOT_VALUE value) {
     NS(SELF, memory_tracker_present)(slot);
     slot->present = true;
     slot->value = value;
 }
 
-static void NS(SELF, clone_from)(SELF const* from_slot, SELF* to_slot) {
+DC_INTERNAL static void NS(SELF, clone_from)(SELF const* from_slot, SELF* to_slot) {
     to_slot->present = from_slot->present;
     if (from_slot->present) {
         NS(SELF, fill)(to_slot, SLOT_VALUE_CLONE(&from_slot->value));
@@ -100,7 +100,7 @@ static void NS(SELF, clone_from)(SELF const* from_slot, SELF* to_slot) {
     }
 }
 
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_INTERNAL static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     if (self->present) {
         fprintf(stream, "[empty] { next_free: %lu}", (size_t)self->next_free);
     } else {
@@ -109,7 +109,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     }
 }
 
-static void NS(SELF, delete)(SELF* self) {
+DC_INTERNAL static void NS(SELF, delete)(SELF* self) {
     if (self->present) {
         SLOT_VALUE_DELETE(&self->value);
     }

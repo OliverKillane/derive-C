@@ -87,7 +87,7 @@ typedef struct {
     mutation_tracker iterator_invalidation_tracker;
 } SELF;
 
-DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = dc_swiss_index_capacity;
+DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = _dc_swiss_index_capacity;
 
 #define INVARIANT_CHECK(self)                                                                      \
     DC_ASSUME(self);                                                                               \
@@ -97,9 +97,9 @@ DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = dc_swiss_index_capacity;
     DC_ASSUME((self)->count + (self)->tombstones <= (self)->capacity);
 
 static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, ref) alloc_ref) {
-    DC_ASSUME(capacity > DC_SWISS_SIMD_PROBE_SIZE);
+    DC_ASSUME(capacity > _DC_SWISS_SIMD_PROBE_SIZE);
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
-    size_t ctrl_capacity = capacity + DC_SWISS_SIMD_PROBE_SIZE;
+    size_t ctrl_capacity = capacity + _DC_SWISS_SIMD_PROBE_SIZE;
 
     dc_swiss_ctrl* ctrl = (dc_swiss_ctrl*)NS(ALLOC, allocate_zeroed)(
         alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
@@ -109,7 +109,7 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, r
         ctrl[i] = DC_SWISS_VAL_EMPTY;
     }
     ctrl[capacity] = DC_SWISS_VAL_SENTINEL;
-    for (size_t i = 1; i < DC_SWISS_SIMD_PROBE_SIZE; i++) {
+    for (size_t i = 1; i < _DC_SWISS_SIMD_PROBE_SIZE; i++) {
         ctrl[capacity + i] = ctrl[i - 1]; // currently empty
     }
 
@@ -125,20 +125,20 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, r
     };
 }
 
-static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
     DC_ASSERT(for_items > 0);
 
     return PRIV(NS(SELF, new_with_exact_capacity))(dc_swiss_capacity(for_items), alloc_ref);
 }
 
-static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
+DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return NS(SELF, new_with_capacity_for)(DC_SWISS_INITIAL_CAPACITY, alloc_ref);
 }
 
-static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
-    size_t ctrl_capacity = self->capacity + DC_SWISS_SIMD_PROBE_SIZE;
+    size_t ctrl_capacity = self->capacity + _DC_SWISS_SIMD_PROBE_SIZE;
 
     dc_swiss_ctrl* ctrl = (dc_swiss_ctrl*)NS(ALLOC, allocate_uninit)(
         self->alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
@@ -147,7 +147,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     memcpy(ctrl, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
 
     for (size_t i = 0; i < self->capacity; i++) {
-        if (dc_swiss_is_present(self->ctrl[i])) {
+        if (_dc_swiss_is_present(self->ctrl[i])) {
             slots[i].key = KEY_CLONE(&self->slots[i].key);
             slots[i].value = VALUE_CLONE(&self->slots[i].value);
         }
@@ -173,32 +173,32 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
     const size_t mask = self->capacity - 1;
 
     const size_t hash = KEY_HASH(&key);
-    const dc_swiss_id id = dc_swiss_id_from_hash(hash);
+    const dc_swiss_id id = _dc_swiss_id_from_hash(hash);
 
-    dc_swiss_optional_index first_deleted = DC_SWISS_NO_INDEX;
+    _dc_swiss_optional_index first_deleted = _DC_SWISS_NO_INDEX;
 
     const size_t start = hash & mask;
 
-    for (size_t step = 0;; step += DC_SWISS_SIMD_PROBE_SIZE) {
+    for (size_t step = 0;; step += _DC_SWISS_SIMD_PROBE_SIZE) {
         const size_t group = (start + step) & mask;
 
         // Scan the group once:
         //  - detect duplicates
         //  - remember first DELETED
         //  - stop at first EMPTY and insert (EMPTY terminates the probe)
-        for (size_t j = 0; j < DC_SWISS_SIMD_PROBE_SIZE; j++) {
+        for (size_t j = 0; j < _DC_SWISS_SIMD_PROBE_SIZE; j++) {
             const size_t i = (group + j) & mask;
             const dc_swiss_ctrl c = self->ctrl[i];
 
             switch (c) {
             case DC_SWISS_VAL_DELETED:
-                if (first_deleted == DC_SWISS_NO_INDEX) {
+                if (first_deleted == _DC_SWISS_NO_INDEX) {
                     first_deleted = i;
                 }
                 break;
 
             case DC_SWISS_VAL_EMPTY: {
-                bool const has_deleted = first_deleted != DC_SWISS_NO_INDEX;
+                bool const has_deleted = first_deleted != _DC_SWISS_NO_INDEX;
                 const size_t ins = has_deleted ? first_deleted : i;
                 if (has_deleted) {
                     self->tombstones--;
@@ -207,7 +207,7 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
                 self->slots[ins].key = key;
                 self->slots[ins].value = value;
 
-                dc_swiss_ctrl_set_at(self->ctrl, self->capacity, ins, (dc_swiss_ctrl)id);
+                _dc_swiss_ctrl_set_at(self->ctrl, self->capacity, ins, (dc_swiss_ctrl)id);
 
                 self->count++;
                 return &self->slots[ins].value;
@@ -219,7 +219,7 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
 
             default:
                 // Present slot: only a possible duplicate if the 7-bit id matches.
-                if (dc_swiss_ctrl_get_id(c) == id && KEY_EQ(&self->slots[i].key, &key)) {
+                if (_dc_swiss_ctrl_get_id(c) == id && KEY_EQ(&self->slots[i].key, &key)) {
                     return NULL; // duplicate exists
                 }
                 break;
@@ -240,7 +240,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     SELF new_map = PRIV(NS(SELF, new_with_exact_capacity))(new_capacity, self->alloc_ref);
 
     for (size_t i = 0; i < self->capacity; i++) {
-        if (dc_swiss_is_present(self->ctrl[i])) {
+        if (_dc_swiss_is_present(self->ctrl[i])) {
             (void)PRIV(NS(SELF, try_insert_no_extend_capacity))(&new_map, self->slots[i].key,
                                                                 self->slots[i].value);
         }
@@ -248,14 +248,14 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
 
     new_map.iterator_invalidation_tracker = self->iterator_invalidation_tracker;
 
-    size_t ctrl_capacity = self->capacity + DC_SWISS_SIMD_PROBE_SIZE;
+    size_t ctrl_capacity = self->capacity + _DC_SWISS_SIMD_PROBE_SIZE;
     NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
     NS(ALLOC, deallocate)(self->alloc_ref, self->slots, sizeof(SLOT) * self->capacity);
 
     *self = new_map;
 }
 
-static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
+DC_PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -265,14 +265,14 @@ static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_items) {
     }
 }
 
-static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
 
     if (self->count >= NS(SELF, max_capacity)) {
         return NULL;
     }
 
-    switch (dc_swiss_heuristic_should_extend(self->tombstones, self->count, self->capacity)) {
+    switch (_dc_swiss_heuristic_should_extend(self->tombstones, self->count, self->capacity)) {
     case DC_SWISS_DOUBLE_CAPACITY:
         PRIV(NS(SELF, rehash))(self, self->capacity * 2);
         break;
@@ -286,24 +286,24 @@ static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     return PRIV(NS(SELF, try_insert_no_extend_capacity))(self, key, value);
 }
 
-static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
+DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
     DC_ASSERT(value_ptr);
     return value_ptr;
 }
 
-static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     const size_t mask = self->capacity - 1;
 
     const size_t hash = KEY_HASH(&key);
-    const dc_swiss_id id = dc_swiss_id_from_hash(hash);
+    const dc_swiss_id id = _dc_swiss_id_from_hash(hash);
 
     const size_t start = hash & mask;
 
-    for (size_t step = 0;; step += DC_SWISS_SIMD_PROBE_SIZE) {
+    for (size_t step = 0;; step += _DC_SWISS_SIMD_PROBE_SIZE) {
         const size_t group = (start + step) & mask;
 
-        for (size_t j = 0; j < DC_SWISS_SIMD_PROBE_SIZE; j++) {
+        for (size_t j = 0; j < _DC_SWISS_SIMD_PROBE_SIZE; j++) {
             const size_t i = (group + j) & mask;
             const dc_swiss_ctrl c = self->ctrl[i];
 
@@ -319,7 +319,7 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
             default:
                 // Present slot: check fingerprint, then full key
-                if (dc_swiss_ctrl_get_id(c) == id && KEY_EQ(&self->slots[i].key, &key)) {
+                if (_dc_swiss_ctrl_get_id(c) == id && KEY_EQ(&self->slots[i].key, &key)) {
                     return &self->slots[i].value;
                 }
                 break;
@@ -328,37 +328,37 @@ static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     }
 }
 
-static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
+DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
     INVARIANT_CHECK(self);
     return (VALUE*)NS(SELF, try_read)((SELF const*)self, key);
 }
 
-static VALUE* NS(SELF, write)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
     DC_ASSERT(value);
     return value;
 }
 
-static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
+DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     INVARIANT_CHECK(self);
 
     const size_t mask = self->capacity - 1;
 
     const size_t hash = KEY_HASH(&key);
-    const dc_swiss_id id = dc_swiss_id_from_hash(hash);
+    const dc_swiss_id id = _dc_swiss_id_from_hash(hash);
 
     const size_t start = hash & mask;
 
-    for (size_t step = 0;; step += DC_SWISS_SIMD_PROBE_SIZE) {
+    for (size_t step = 0;; step += _DC_SWISS_SIMD_PROBE_SIZE) {
         const size_t group = (start + step) & mask;
 
-        for (size_t j = 0; j < DC_SWISS_SIMD_PROBE_SIZE; j++) {
+        for (size_t j = 0; j < _DC_SWISS_SIMD_PROBE_SIZE; j++) {
             const size_t i = (group + j) & mask;
             const dc_swiss_ctrl c = self->ctrl[i];
 
@@ -374,7 +374,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
 
             default:
                 // Present slot: check fingerprint, then full key
-                if (dc_swiss_ctrl_get_id(c) != id) {
+                if (_dc_swiss_ctrl_get_id(c) != id) {
                     break;
                 }
                 if (!KEY_EQ(&self->slots[i].key, &key)) {
@@ -387,7 +387,7 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
                 }
 
                 // Mark tombstone (must NOT become EMPTY)
-                dc_swiss_ctrl_set_at(self->ctrl, self->capacity, i, DC_SWISS_VAL_DELETED);
+                _dc_swiss_ctrl_set_at(self->ctrl, self->capacity, i, DC_SWISS_VAL_DELETED);
 
                 self->count--;
                 self->tombstones++;
@@ -397,39 +397,40 @@ static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     }
 }
 
-static VALUE NS(SELF, remove)(SELF* self, KEY key) {
+DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
     DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
     return value;
 }
 
-static void NS(SELF, delete_entry)(SELF* self, KEY key) {
+DC_PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
     VALUE value = NS(SELF, remove)(self, key);
     VALUE_DELETE(&value);
 }
 
-static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     INVARIANT_CHECK(self);
     return self->count;
 }
 
-static void PRIV(NS(SELF, next_populated_index))(SELF const* self, dc_swiss_optional_index* index) {
+static void PRIV(NS(SELF, next_populated_index))(SELF const* self,
+                                                 _dc_swiss_optional_index* index) {
     size_t i = *index;
-    while (i < self->capacity && !dc_swiss_is_present(self->ctrl[i])) {
+    while (i < self->capacity && !_dc_swiss_is_present(self->ctrl[i])) {
         ++i;
     }
-    *index = (i == self->capacity) ? DC_SWISS_NO_INDEX : i;
+    *index = (i == self->capacity) ? _DC_SWISS_NO_INDEX : i;
 }
 
-static void NS(SELF, delete)(SELF* self) {
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     for (size_t i = 0; i < self->capacity; i++) {
-        if (dc_swiss_is_present(self->ctrl[i])) {
+        if (_dc_swiss_is_present(self->ctrl[i])) {
             KEY_DELETE(&self->slots[i].key);
             VALUE_DELETE(&self->slots[i].value);
         }
     }
 
-    size_t ctrl_capacity = self->capacity + DC_SWISS_SIMD_PROBE_SIZE;
+    size_t ctrl_capacity = self->capacity + _DC_SWISS_SIMD_PROBE_SIZE;
     NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
     NS(ALLOC, deallocate)(self->alloc_ref, self->slots, sizeof(SLOT) * self->capacity);
 }
@@ -439,7 +440,7 @@ static void NS(SELF, delete)(SELF* self) {
 
 typedef struct {
     SELF const* map;
-    dc_swiss_optional_index next_index;
+    _dc_swiss_optional_index next_index;
     mutation_version version;
 } ITER_CONST;
 
@@ -448,15 +449,15 @@ typedef struct {
     VALUE const* value;
 } KV_PAIR_CONST;
 
-static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(KV_PAIR_CONST const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
-static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     mutation_version_check(&iter->version);
 
-    dc_swiss_optional_index index = iter->next_index;
-    if (index == DC_SWISS_NO_INDEX) {
+    _dc_swiss_optional_index index = iter->next_index;
+    if (index == _DC_SWISS_NO_INDEX) {
         return (KV_PAIR_CONST){
             .key = NULL,
             .value = NULL,
@@ -471,10 +472,10 @@ static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     };
 }
 
-static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
-    dc_swiss_optional_index index = 0;
+    _dc_swiss_optional_index index = 0;
     PRIV(NS(SELF, next_populated_index))(self, &index);
 
     return (ITER_CONST){
@@ -484,7 +485,7 @@ static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     };
 }
 
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
@@ -493,7 +494,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
 
     dc_debug_fmt_print(fmt, stream, "ctrl: @%p[%lu + simd probe size additional %lu],\n",
-                       (void*)self->ctrl, self->capacity, (size_t)DC_SWISS_SIMD_PROBE_SIZE);
+                       (void*)self->ctrl, self->capacity, (size_t)_DC_SWISS_SIMD_PROBE_SIZE);
     dc_debug_fmt_print(fmt, stream, "slots: @%p[%lu],\n", (void*)self->slots, self->capacity);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
@@ -537,7 +538,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
 
 typedef struct {
     SELF const* map;
-    dc_swiss_optional_index next_index;
+    _dc_swiss_optional_index next_index;
     mutation_version version;
 } ITER;
 
@@ -546,15 +547,15 @@ typedef struct {
     VALUE const* value;
 } KV_PAIR;
 
-static bool NS(ITER, empty_item)(KV_PAIR const* item) {
+DC_PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
     return item->key == NULL && item->value == NULL;
 }
 
-static KV_PAIR NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     mutation_version_check(&iter->version);
 
-    dc_swiss_optional_index index = iter->next_index;
-    if (index == DC_SWISS_NO_INDEX) {
+    _dc_swiss_optional_index index = iter->next_index;
+    if (index == _DC_SWISS_NO_INDEX) {
         return (KV_PAIR){
             .key = NULL,
             .value = NULL,
@@ -569,10 +570,10 @@ static KV_PAIR NS(ITER, next)(ITER* iter) {
     };
 }
 
-static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
 
-    dc_swiss_optional_index index = 0;
+    _dc_swiss_optional_index index = 0;
     PRIV(NS(SELF, next_populated_index))(self, &index);
 
     return (ITER){

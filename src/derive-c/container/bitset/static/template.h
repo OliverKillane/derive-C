@@ -36,7 +36,7 @@ typedef struct {
 
 #define INVARIANT_CHECK(self) DC_ASSUME(self);
 
-static SELF NS(SELF, new)() {
+DC_PUBLIC static SELF NS(SELF, new)() {
     return (SELF){
         .bits = {},
         .derive_c_bitset_static = dc_gdb_marker_new(),
@@ -44,7 +44,7 @@ static SELF NS(SELF, new)() {
     };
 }
 
-static bool NS(SELF, try_set)(SELF* self, INDEX_TYPE index, bool value) {
+DC_PUBLIC static bool NS(SELF, try_set)(SELF* self, INDEX_TYPE index, bool value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -70,12 +70,12 @@ static bool NS(SELF, try_set)(SELF* self, INDEX_TYPE index, bool value) {
     return true;
 }
 
-static void NS(SELF, set)(SELF* self, INDEX_TYPE index, bool value) {
+DC_PUBLIC static void NS(SELF, set)(SELF* self, INDEX_TYPE index, bool value) {
     INVARIANT_CHECK(self);
     DC_ASSERT(NS(SELF, try_set)(self, index, value));
 }
 
-static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
+DC_PUBLIC static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
 
 #if EXCLUSIVE_END_INDEX <= MAX_INDEX
@@ -88,7 +88,7 @@ static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
     return (self->bits[byte] & mask) != 0;
 }
 
-static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
+DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
@@ -108,7 +108,7 @@ static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-static SELF NS(SELF, clone)(SELF const* self) {
+DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
     SELF new_self = (SELF){
         .derive_c_bitset_static = dc_gdb_marker_new(),
@@ -118,7 +118,7 @@ static SELF NS(SELF, clone)(SELF const* self) {
     return new_self;
 }
 
-static size_t NS(SELF, size)(SELF const* self) {
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     size_t size = 0;
 
     for (INDEX_TYPE byte = 0;
@@ -129,7 +129,7 @@ static size_t NS(SELF, size)(SELF const* self) {
     return size;
 }
 
-static void NS(SELF, delete)(SELF* self) { INVARIANT_CHECK(self); }
+DC_PUBLIC static void NS(SELF, delete)(SELF* self) { INVARIANT_CHECK(self); }
 
 // JUSTIFY: Larger iter index type if the exclusive end is larger than the max representable index.
 //  - We need to represent the none index.
@@ -148,11 +148,11 @@ typedef struct {
 } ITER_CONST;
 typedef ITER_INDEX_TYPE NS(ITER_CONST, item);
 
-static bool NS(ITER_CONST, empty_item)(ITER_INDEX_TYPE const* item) {
+DC_PUBLIC static bool NS(ITER_CONST, empty_item)(ITER_INDEX_TYPE const* item) {
     return *item == EXCLUSIVE_END_INDEX;
 }
 
-static ITER_INDEX_TYPE NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static ITER_INDEX_TYPE NS(ITER_CONST, next)(ITER_CONST* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
@@ -169,7 +169,7 @@ static ITER_INDEX_TYPE NS(ITER_CONST, next)(ITER_CONST* iter) {
     return next_index;
 }
 
-static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     ITER_INDEX_TYPE next_index = 0;
@@ -194,11 +194,11 @@ typedef struct {
 } ITER;
 typedef ITER_INDEX_TYPE NS(ITER, item);
 
-static bool NS(ITER, empty_item)(ITER_INDEX_TYPE const* item) {
+DC_PUBLIC static bool NS(ITER, empty_item)(ITER_INDEX_TYPE const* item) {
     return *item == EXCLUSIVE_END_INDEX;
 }
 
-static ITER_INDEX_TYPE NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static ITER_INDEX_TYPE NS(ITER, next)(ITER* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
@@ -215,7 +215,7 @@ static ITER_INDEX_TYPE NS(ITER, next)(ITER* iter) {
     return next_index;
 }
 
-static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
 
     ITER_INDEX_TYPE next_index = 0;

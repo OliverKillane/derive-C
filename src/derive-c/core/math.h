@@ -7,6 +7,7 @@
 #include <derive-c/core/attributes.h>
 #include <derive-c/core/panic.h>
 #include <derive-c/core/compiler.h>
+#include <derive-c/core/namespace.h>
 
 // JUSTIFY: Macro rather than function
 // - So this can be used in static asserts
@@ -57,13 +58,14 @@ static DC_INLINE DC_CONST size_t dc_math_next_power_of_2(size_t x) {
     return x + 1;
 }
 
-static size_t DC_INLINE DC_CONST dc_math_modulus_power_of_2_capacity(size_t index,
-                                                                     size_t capacity) {
+DC_PUBLIC static size_t DC_INLINE DC_CONST dc_math_modulus_power_of_2_capacity(size_t index,
+                                                                               size_t capacity) {
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
     return index & (capacity - 1);
 }
 
-static bool DC_INLINE DC_CONST dc_math_is_aligned_pow2(const void* ptr, unsigned alignment) {
+DC_PUBLIC static bool DC_INLINE DC_CONST dc_math_is_aligned_pow2(const void* ptr,
+                                                                 unsigned alignment) {
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(alignment));
     return ((uintptr_t)ptr & (alignment - 1)) == 0;
 }

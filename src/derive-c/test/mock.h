@@ -1,6 +1,8 @@
 /// @brief Free function mocking support.
 #pragma once
 
+#include <derive-c/core/namespace.h>
+
 // JUSTIFY: No macro parens
 //  - So we can take a single argument `args` that is bracketed.
 // NOLINTBEGIN(bugprone-macro-parentheses)
@@ -33,8 +35,8 @@
 
     #define DC_MOCKABLE_ENABLED(name) (name != DC_MOCKABLE_REAL(name))
 #else
-    #define DC_MOCKABLE_DECLARE(ret, name, args) ret name args
-    #define DC_MOCKABLE_DEFINE(ret, name, args) ret name args
+    #define DC_MOCKABLE_DECLARE(ret, name, args) DC_PUBLIC ret name args
+    #define DC_MOCKABLE_DEFINE(ret, name, args) DC_PUBLIC ret name args
     #define DC_MOCKABLE_ENABLED(name) false
 #endif
 
