@@ -21,7 +21,7 @@ static void ITEM_DELETE(item_t* self) {}
     #define ITEM_CLONE item_clone
 static item_t ITEM_CLONE(item_t const* self) { return *self; }
     #define ITEM_EQ item_eq
-static bool ITEM_EQ(item_t const* a, item_t const* b) { return *a.x == *b.x; }
+static bool ITEM_EQ(item_t const* a, item_t const* b) { return a->x == b->x; }
     #define ITEM_DEBUG item_debug
 static void ITEM_DEBUG(ITEM const* /* self */, dc_debug_fmt /* fmt */, FILE* /* stream */) {}
 #endif
