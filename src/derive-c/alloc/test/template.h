@@ -33,7 +33,7 @@
     #define KEY_HASH(ptr) ((size_t)(*(ptr))) // [DERIVE-C] for template
     #define KEY_DEBUG dc_void_ptr_debug      // [DERIVE-C] for template
     #define VALUE size_t                     // [DERIVE-C] for template
-    #define DC_INTERNAL_NAME ALLOCATIONS_MAP // [DERIVE-C] for template
+    #define INTERNAL_NAME ALLOCATIONS_MAP    // [DERIVE-C] for template
     #include <derive-c/container/map/swiss/template.h>
 
     #pragma pop_macro("ALLOC")

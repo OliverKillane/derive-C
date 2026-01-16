@@ -19,6 +19,7 @@
     DC_REQUIRE_METHOD(void, SELF, delete_entry, (SELF*, NS(SELF, key_t)));                         \
     DC_REQUIRE_METHOD(size_t, SELF, size, (SELF const*));                                          \
     DC_TRAIT_ITERABLE(SELF);                                                                       \
+    DC_TRAIT_CONST_ITERABLE(SELF);                                                                 \
     DC_TRAIT_CLONEABLE(SELF);                                                                      \
     DC_TRAIT_DELETABLE(SELF);                                                                      \
     DC_TRAIT_DEBUGABLE(SELF)

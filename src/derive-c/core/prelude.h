@@ -11,6 +11,7 @@
 #include <derive-c/core/require.h>     // IWYU pragma: export
 #include <derive-c/core/scope.h>       // IWYU pragma: export
 #include <derive-c/core/zerosized.h>   // IWYU pragma: export
+#include <derive-c/core/unit.h>        // IWYU pragma: export
 
 // Traits
 #include <derive-c/core/traits/clone.h>  // IWYU pragma: export
