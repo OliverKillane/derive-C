@@ -13,6 +13,7 @@
     DC_REQUIRE_METHOD(bool, SELF, try_remove, (SELF*, NS(SELF, index_t), NS(SELF, value_t)*));     \
     DC_REQUIRE_METHOD(NS(SELF, value_t), SELF, remove, (SELF*, NS(SELF, index_t)));                \
     DC_TRAIT_ITERABLE(SELF);                                                                       \
+    DC_TRAIT_CONST_ITERABLE(SELF);                                                                 \
     DC_TRAIT_CLONEABLE(SELF);                                                                      \
     DC_TRAIT_DELETABLE(SELF);                                                                      \
     DC_TRAIT_DEBUGABLE(SELF)

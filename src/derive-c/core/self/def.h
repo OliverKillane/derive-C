@@ -29,15 +29,15 @@
 /// 3. Namespace all macro paramaters (e.g. `VECTOR_SELF`, `HASHMAP_SELF` etc)
 ///
 /// To keep code simple, but allow definitions to uniformly use `SELF`:
-///  - We restrict to 1 layer deep - `NAME` (from user), and `DC_INTERNAL_NAME` (usage inside a
+///  - We restrict to 1 layer deep - `NAME` (from user), and `INTERNAL_NAME` (usage inside a
 ///  template file, one layer deep).
 
-#if defined DC_INTERNAL_NAME
+#if defined INTERNAL_NAME
     #if defined SELF
         #pragma push_macro("SELF")
         #define SELF_PUSHED
         #undef SELF
-        #define SELF DC_EXPAND(DC_INTERNAL_NAME)
+        #define SELF DC_EXPAND(INTERNAL_NAME)
     #endif
 #elif defined NAME
     #if defined SELF
@@ -46,8 +46,7 @@
     #define SELF DC_EXPAND(NAME)
 #else
     #if !defined DC_PLACEHOLDERS
-        #error                                                                                     \
-            "The `SELF` type for a data structure must be defined (by `NAME` or `DC_INTERNAL_NAME`)"
+        #error "The `SELF` type for a data structure must be defined (by `NAME` or `INTERNAL_NAME`)"
     #endif
     #define NAME self_t
     #define SELF NAME

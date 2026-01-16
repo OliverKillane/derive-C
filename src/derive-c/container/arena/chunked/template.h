@@ -69,7 +69,7 @@ typedef ALLOC NS(SELF, alloc_t);
 #define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
 #define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
 #define SLOT_VALUE_DELETE VALUE_DELETE // [DERIVE-C] for template
-#define DC_INTERNAL_NAME SLOT          // [DERIVE-C] for template
+#define INTERNAL_NAME SLOT             // [DERIVE-C] for template
 #include <derive-c/utils/slot/template.h>
 
 typedef SLOT PRIV(NS(SELF, block))[DC_ARENA_CHUNKED_BLOCK_SIZE(BLOCK_INDEX_BITS)];

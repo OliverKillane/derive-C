@@ -12,6 +12,7 @@
     DC_REQUIRE_METHOD(bool, SELF, get, (SELF const*, NS(SELF, index_t)));                          \
     DC_REQUIRE_METHOD(size_t, SELF, size, (SELF const*));                                          \
     DC_TRAIT_ITERABLE(SELF);                                                                       \
+    DC_TRAIT_CONST_ITERABLE(SELF);                                                                 \
     DC_TRAIT_CLONEABLE(SELF);                                                                      \
     DC_TRAIT_DELETABLE(SELF);                                                                      \
     DC_TRAIT_DEBUGABLE(SELF)
