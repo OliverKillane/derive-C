@@ -1,6 +1,8 @@
 /// @brief A simple swiss table implementation.
 /// See the abseil docs for swss table [here](https://abseil.io/about/design/swisstables)
 
+#include "derive-c/container/map/swiss/utils.h"
+#include "derive-c/core/panic.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -79,7 +81,7 @@ typedef struct {
     size_t count;
     size_t tombstones;
 
-    dc_swiss_ctrl* ctrl;
+    _dc_swiss_ctrl* ctrl;
     SLOT* slots;
 
     NS(ALLOC, ref) alloc_ref;
@@ -101,8 +103,8 @@ static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity, NS(ALLOC, r
     DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
     size_t ctrl_capacity = capacity + _DC_SWISS_SIMD_PROBE_SIZE;
 
-    dc_swiss_ctrl* ctrl = (dc_swiss_ctrl*)NS(ALLOC, allocate_zeroed)(
-        alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    _dc_swiss_ctrl* ctrl = (_dc_swiss_ctrl*)NS(ALLOC, allocate_zeroed)(
+        alloc_ref, sizeof(_dc_swiss_ctrl) * ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, allocate_uninit)(alloc_ref, sizeof(SLOT) * capacity);
 
     for (size_t i = 0; i < capacity; i++) {
@@ -140,11 +142,11 @@ DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
 
     size_t ctrl_capacity = self->capacity + _DC_SWISS_SIMD_PROBE_SIZE;
 
-    dc_swiss_ctrl* ctrl = (dc_swiss_ctrl*)NS(ALLOC, allocate_uninit)(
-        self->alloc_ref, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    _dc_swiss_ctrl* ctrl = (_dc_swiss_ctrl*)NS(ALLOC, allocate_uninit)(
+        self->alloc_ref, sizeof(_dc_swiss_ctrl) * ctrl_capacity);
     SLOT* slots = (SLOT*)NS(ALLOC, allocate_uninit)(self->alloc_ref, sizeof(SLOT) * self->capacity);
 
-    memcpy(ctrl, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    memcpy(ctrl, self->ctrl, sizeof(_dc_swiss_ctrl) * ctrl_capacity);
 
     for (size_t i = 0; i < self->capacity; i++) {
         if (_dc_swiss_is_present(self->ctrl[i])) {
@@ -173,57 +175,65 @@ static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* self, KEY key,
     const size_t mask = self->capacity - 1;
 
     const size_t hash = KEY_HASH(&key);
-    const dc_swiss_id id = _dc_swiss_id_from_hash(hash);
+    const _dc_swiss_ctrl id = _dc_swiss_ctrl_from_hash(hash);
 
     _dc_swiss_optional_index first_deleted = _DC_SWISS_NO_INDEX;
 
-    const size_t start = hash & mask;
+    // `H1` - the bucket starting position
+    size_t const start = hash & mask;
 
     for (size_t step = 0;; step += _DC_SWISS_SIMD_PROBE_SIZE) {
-        const size_t group = (start + step) & mask;
+        const size_t group_start = (start + step) & mask;
 
-        // Scan the group once:
-        //  - detect duplicates
-        //  - remember first DELETED
-        //  - stop at first EMPTY and insert (EMPTY terminates the probe)
-        for (size_t j = 0; j < _DC_SWISS_SIMD_PROBE_SIZE; j++) {
-            const size_t i = (group + j) & mask;
-            const dc_swiss_ctrl c = self->ctrl[i];
+        _dc_swiss_ctrl_group const group = _dc_swiss_group_load(&self->ctrl[group_start]);
+        _dc_swiss_ctrl_group_bitmask const matches = _dc_swiss_group_match(group, id);
 
-            switch (c) {
-            case DC_SWISS_VAL_DELETED:
-                if (first_deleted == _DC_SWISS_NO_INDEX) {
-                    first_deleted = i;
+        _DC_SWISS_BITMASK_FOR_EACH(matches, group_offset) {
+            size_t const index =
+                _dc_swiss_group_index_to_slot(group_start, group_offset, self->capacity);
+
+            // Sentinel value, skip over it.
+            if (index == _DC_SWISS_NO_INDEX)
+                continue;
+
+            if (KEY_EQ(&self->slots[index].key, &key)) {
+                return NULL;
+            }
+        }
+
+        if (first_deleted == _DC_SWISS_NO_INDEX) {
+            _dc_swiss_ctrl_group_bitmask const deleted =
+                _dc_swiss_group_match(group, DC_SWISS_VAL_DELETED);
+            if (deleted != 0) {
+                size_t const slot = _dc_swiss_group_index_to_slot(
+                    group_start, _dc_swiss_ctrl_group_bitmask_lowest(deleted), self->capacity);
+                if (slot != _DC_SWISS_NO_INDEX) {
+                    first_deleted = slot;
                 }
-                break;
+            }
+        }
 
-            case DC_SWISS_VAL_EMPTY: {
-                bool const has_deleted = first_deleted != _DC_SWISS_NO_INDEX;
-                const size_t ins = has_deleted ? first_deleted : i;
-                if (has_deleted) {
-                    self->tombstones--;
-                }
+        _dc_swiss_ctrl_group_bitmask const empty = _dc_swiss_group_match(group, DC_SWISS_VAL_EMPTY);
+        if (empty != 0) {
+            size_t const empty_idx = _dc_swiss_group_index_to_slot(
+                group_start, _dc_swiss_ctrl_group_bitmask_lowest(empty), self->capacity);
+            DC_ASSUME(empty_idx != _DC_SWISS_NO_INDEX, "Empty value cannot match the sentinel");
 
-                self->slots[ins].key = key;
-                self->slots[ins].value = value;
+            bool const has_deleted = first_deleted != _DC_SWISS_NO_INDEX;
+            size_t const insert_index = has_deleted ? first_deleted : empty_idx;
 
-                _dc_swiss_ctrl_set_at(self->ctrl, self->capacity, ins, (dc_swiss_ctrl)id);
-
-                self->count++;
-                return &self->slots[ins].value;
+            if (has_deleted) {
+                self->tombstones--;
             }
 
-            case DC_SWISS_VAL_SENTINEL:
-                // Treat as not usable; keep scanning.
-                break;
+            self->slots[insert_index] = (SLOT){
+                .value = value,
+                .key = key,
+            };
+            _dc_swiss_ctrl_set_at(self->ctrl, self->capacity, insert_index, id);
 
-            default:
-                // Present slot: only a possible duplicate if the 7-bit id matches.
-                if (_dc_swiss_ctrl_get_id(c) == id && KEY_EQ(&self->slots[i].key, &key)) {
-                    return NULL; // duplicate exists
-                }
-                break;
-            }
+            self->count++;
+            return &self->slots[insert_index].value;
         }
     }
 }
@@ -249,7 +259,7 @@ static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) {
     new_map.iterator_invalidation_tracker = self->iterator_invalidation_tracker;
 
     size_t ctrl_capacity = self->capacity + _DC_SWISS_SIMD_PROBE_SIZE;
-    NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(_dc_swiss_ctrl) * ctrl_capacity);
     NS(ALLOC, deallocate)(self->alloc_ref, self->slots, sizeof(SLOT) * self->capacity);
 
     *self = new_map;
@@ -296,34 +306,31 @@ DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     const size_t mask = self->capacity - 1;
 
     const size_t hash = KEY_HASH(&key);
-    const dc_swiss_id id = _dc_swiss_id_from_hash(hash);
+    const _dc_swiss_ctrl id = _dc_swiss_ctrl_from_hash(hash);
 
     const size_t start = hash & mask;
 
     for (size_t step = 0;; step += _DC_SWISS_SIMD_PROBE_SIZE) {
-        const size_t group = (start + step) & mask;
+        size_t const group_start = (start + step) & mask;
+        _dc_swiss_ctrl_group const group = _dc_swiss_group_load(&self->ctrl[group_start]);
+        _dc_swiss_ctrl_group_bitmask const matches = _dc_swiss_group_match(group, id);
 
-        for (size_t j = 0; j < _DC_SWISS_SIMD_PROBE_SIZE; j++) {
-            const size_t i = (group + j) & mask;
-            const dc_swiss_ctrl c = self->ctrl[i];
+        _DC_SWISS_BITMASK_FOR_EACH(matches, group_offset) {
+            size_t const i =
+                _dc_swiss_group_index_to_slot(group_start, group_offset, self->capacity);
 
-            switch (c) {
-            case DC_SWISS_VAL_EMPTY:
-                // EMPTY terminates the probe: key does not exist
-                return NULL;
+            // Sentinel
+            if (i == _DC_SWISS_NO_INDEX)
+                continue;
 
-            case DC_SWISS_VAL_DELETED:
-            case DC_SWISS_VAL_SENTINEL:
-                // Keep probing
-                break;
-
-            default:
-                // Present slot: check fingerprint, then full key
-                if (_dc_swiss_ctrl_get_id(c) == id && KEY_EQ(&self->slots[i].key, &key)) {
-                    return &self->slots[i].value;
-                }
-                break;
+            if (KEY_EQ(&self->slots[i].key, &key)) {
+                return &self->slots[i].value;
             }
+        }
+
+        _dc_swiss_ctrl_group_bitmask const empty = _dc_swiss_group_match(group, DC_SWISS_VAL_EMPTY);
+        if (empty != 0) {
+            return NULL;
         }
     }
 }
@@ -347,52 +354,39 @@ DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
 
 DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destination) {
     INVARIANT_CHECK(self);
+    DC_ASSERT(destination != NULL);
 
     const size_t mask = self->capacity - 1;
-
     const size_t hash = KEY_HASH(&key);
-    const dc_swiss_id id = _dc_swiss_id_from_hash(hash);
+    const _dc_swiss_ctrl id = _dc_swiss_ctrl_from_hash(hash);
 
     const size_t start = hash & mask;
 
     for (size_t step = 0;; step += _DC_SWISS_SIMD_PROBE_SIZE) {
-        const size_t group = (start + step) & mask;
+        const size_t group_start = (start + step) & mask;
 
-        for (size_t j = 0; j < _DC_SWISS_SIMD_PROBE_SIZE; j++) {
-            const size_t i = (group + j) & mask;
-            const dc_swiss_ctrl c = self->ctrl[i];
+        _dc_swiss_ctrl_group const group = _dc_swiss_group_load(&self->ctrl[group_start]);
+        _dc_swiss_ctrl_group_bitmask const matches = _dc_swiss_group_match(group, id);
 
-            switch (c) {
-            case DC_SWISS_VAL_EMPTY:
-                // EMPTY terminates probe: key not present
-                return false;
+        _DC_SWISS_BITMASK_FOR_EACH(matches, group_offset) {
+            size_t const index =
+                _dc_swiss_group_index_to_slot(group_start, group_offset, self->capacity);
 
-            case DC_SWISS_VAL_DELETED:
-            case DC_SWISS_VAL_SENTINEL:
-                // keep probing
-                break;
+            if (index == _DC_SWISS_NO_INDEX)
+                continue;
 
-            default:
-                // Present slot: check fingerprint, then full key
-                if (_dc_swiss_ctrl_get_id(c) != id) {
-                    break;
-                }
-                if (!KEY_EQ(&self->slots[i].key, &key)) {
-                    break;
-                }
-
-                // Found
-                if (destination != NULL) {
-                    *destination = self->slots[i].value;
-                }
-
-                // Mark tombstone (must NOT become EMPTY)
-                _dc_swiss_ctrl_set_at(self->ctrl, self->capacity, i, DC_SWISS_VAL_DELETED);
-
+            if (KEY_EQ(&self->slots[index].key, &key)) {
+                *destination = self->slots[index].value;
+                _dc_swiss_ctrl_set_at(self->ctrl, self->capacity, index, DC_SWISS_VAL_DELETED);
                 self->count--;
                 self->tombstones++;
                 return true;
             }
+        }
+
+        _dc_swiss_ctrl_group_bitmask const empty = _dc_swiss_group_match(group, DC_SWISS_VAL_EMPTY);
+        if (empty != 0) {
+            return false;
         }
     }
 }
@@ -431,7 +425,7 @@ DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     }
 
     size_t ctrl_capacity = self->capacity + _DC_SWISS_SIMD_PROBE_SIZE;
-    NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(dc_swiss_ctrl) * ctrl_capacity);
+    NS(ALLOC, deallocate)(self->alloc_ref, self->ctrl, sizeof(_dc_swiss_ctrl) * ctrl_capacity);
     NS(ALLOC, deallocate)(self->alloc_ref, self->slots, sizeof(SLOT) * self->capacity);
 }
 
