@@ -6,6 +6,8 @@
 
 #include <derive-c/container/set/swiss/includes.h>
 
+#include <boost/unordered/unordered_flat_set.hpp>
+
 template <typename Item, size_t(*item_hash)(Item const*)> struct Swiss {
     LABEL_ADD(derive_c_swiss);
 #define EXPAND_IN_STRUCT
@@ -33,4 +35,17 @@ template <typename Item> struct StdSet {
 
     using Self_item_t = Item;
     using Self = std::set<Item>;
+};
+
+template <typename Item, size_t(*item_hash)(Item const*)> struct BoostFlat {
+    LABEL_ADD(boost_flat);
+
+    struct ItemHasher {
+        size_t operator()(Item const& item) const {
+            return item_hash(&item);
+        }
+    };
+
+    using Self_item_t = Item;
+    using Self = boost::unordered_flat_set<Item, ItemHasher>;
 };

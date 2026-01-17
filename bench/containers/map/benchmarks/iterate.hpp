@@ -158,6 +158,63 @@ void iterate_case_stl_map(benchmark::State& /* state */, size_t max_n, Gen& gen)
     }
 }
 
+template <typename Ext, typename Gen>
+void iterate_case_ankerl_unordered_dense(benchmark::State& /* state */, size_t max_n, Gen& gen) {
+    typename Ext::Self m;
+
+    for (size_t i = 0; i < max_n; i++) {
+        auto key = gen.next();
+        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
+            m.insert({key, key});
+        } else {
+            typename Ext::Self_value_t value{};
+            m.insert({key, value});
+        }
+    }
+
+    for (const auto& entry : m) {
+        benchmark::DoNotOptimize(&entry);
+    }
+}
+
+template <typename Ext, typename Gen>
+void iterate_case_abseil_swiss(benchmark::State& /* state */, size_t max_n, Gen& gen) {
+    typename Ext::Self m;
+
+    for (size_t i = 0; i < max_n; i++) {
+        auto key = gen.next();
+        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
+            m.insert({key, key});
+        } else {
+            typename Ext::Self_value_t value{};
+            m.insert({key, value});
+        }
+    }
+
+    for (const auto& entry : m) {
+        benchmark::DoNotOptimize(&entry);
+    }
+}
+
+template <typename Ext, typename Gen>
+void iterate_case_boost_flat(benchmark::State& /* state */, size_t max_n, Gen& gen) {
+    typename Ext::Self m;
+
+    for (size_t i = 0; i < max_n; i++) {
+        auto key = gen.next();
+        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
+            m.insert({key, key});
+        } else {
+            typename Ext::Self_value_t value{};
+            m.insert({key, value});
+        }
+    }
+
+    for (const auto& entry : m) {
+        benchmark::DoNotOptimize(&entry);
+    }
+}
+
 template <typename Impl> void iterate(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
 
@@ -177,6 +234,12 @@ template <typename Impl> void iterate(benchmark::State& state) {
                 iterate_case_stl_unordered_map<Impl>(state, max_n, gen);
             } else if constexpr (LABEL_CHECK(Impl, stl_map)) {
                 iterate_case_stl_map<Impl>(state, max_n, gen);
+            } else if constexpr (LABEL_CHECK(Impl, ankerl_unordered_dense)) {
+                iterate_case_ankerl_unordered_dense<Impl>(state, max_n, gen);
+            } else if constexpr (LABEL_CHECK(Impl, abseil_swiss)) {
+                iterate_case_abseil_swiss<Impl>(state, max_n, gen);
+            } else if constexpr (LABEL_CHECK(Impl, boost_flat)) {
+                iterate_case_boost_flat<Impl>(state, max_n, gen);
             } else {
                 throw std::runtime_error("Unknown implementation type");
             }
@@ -196,6 +259,12 @@ template <typename Impl> void iterate(benchmark::State& state) {
                 iterate_case_stl_unordered_map<Impl>(state, max_n, gen);
             } else if constexpr (LABEL_CHECK(Impl, stl_map)) {
                 iterate_case_stl_map<Impl>(state, max_n, gen);
+            } else if constexpr (LABEL_CHECK(Impl, ankerl_unordered_dense)) {
+                iterate_case_ankerl_unordered_dense<Impl>(state, max_n, gen);
+            } else if constexpr (LABEL_CHECK(Impl, abseil_swiss)) {
+                iterate_case_abseil_swiss<Impl>(state, max_n, gen);
+            } else if constexpr (LABEL_CHECK(Impl, boost_flat)) {
+                iterate_case_boost_flat<Impl>(state, max_n, gen);
             } else {
                 throw std::runtime_error("Unknown implementation type");
             }
@@ -216,6 +285,10 @@ using StaticLinearU32 = StaticLinear<std::uint32_t, std::uint32_t>;
 using StdUnorderedMapU32 = StdUnorderedMap<std::uint32_t, std::uint32_t, uint32_t_hash>;
 using StdMapU32 = StdMap<std::uint32_t, std::uint32_t>;
 
+using AnkerlUnorderedDenseU32 = AnkerlUnorderedDense<std::uint32_t, std::uint32_t, uint32_t_hash>;
+using AbseilSwissU32 = AbseilSwiss<std::uint32_t, std::uint32_t, uint32_t_hash>;
+using BoostFlatU32 = BoostFlat<std::uint32_t, std::uint32_t, uint32_t_hash>;
+
 using SwissU8 = Swiss<std::uint8_t, std::uint8_t, uint8_t_hash>;
 using AnkerlU8 = Ankerl<std::uint8_t, std::uint8_t, uint8_t_hash>;
 using DecomposedU8 = Decomposed<std::uint8_t, std::uint8_t, uint8_t_hash>;
@@ -223,12 +296,20 @@ using StaticLinearU8 = StaticLinear<std::uint8_t, std::uint8_t>;
 using StdUnorderedMapU8 = StdUnorderedMap<std::uint8_t, std::uint8_t, uint8_t_hash>;
 using StdMapU8 = StdMap<std::uint8_t, std::uint8_t>;
 
+using AnkerlUnorderedDenseU8 = AnkerlUnorderedDense<std::uint8_t, std::uint8_t, uint8_t_hash>;
+using AbseilSwissU8 = AbseilSwiss<std::uint8_t, std::uint8_t, uint8_t_hash>;
+using BoostFlatU8 = BoostFlat<std::uint8_t, std::uint8_t, uint8_t_hash>;
+
 using SwissU32Bytes32 = Swiss<std::uint32_t, Bytes<32>, uint32_t_hash>;
 using AnkerlU32Bytes32 = Ankerl<std::uint32_t, Bytes<32>, uint32_t_hash>;
 using DecomposedU32Bytes32 = Decomposed<std::uint32_t, Bytes<32>, uint32_t_hash>;
 using StaticLinearU32Bytes32 = StaticLinear<std::uint32_t, Bytes<32>>;
 using StdUnorderedMapU32Bytes32 = StdUnorderedMap<std::uint32_t, Bytes<32>, uint32_t_hash>;
 using StdMapU32Bytes32 = StdMap<std::uint32_t, Bytes<32>>;
+
+using AnkerlUnorderedDenseU32Bytes32 = AnkerlUnorderedDense<std::uint32_t, Bytes<32>, uint32_t_hash>;
+using AbseilSwissU32Bytes32 = AbseilSwiss<std::uint32_t, Bytes<32>, uint32_t_hash>;
+using BoostFlatU32Bytes32 = BoostFlat<std::uint32_t, Bytes<32>, uint32_t_hash>;
 
 // Small sizes for all implementations (including StaticLinear with CAPACITY 1024)
 #define BENCH_SMALL(IMPL)                                                                          \
@@ -259,6 +340,15 @@ BENCH_LARGE(StdUnorderedMapU32);
 BENCH_SMALL(StdMapU32);
 BENCH_LARGE(StdMapU32);
 
+BENCH_SMALL(AnkerlUnorderedDenseU32);
+BENCH_LARGE(AnkerlUnorderedDenseU32);
+
+BENCH_SMALL(AbseilSwissU32);
+BENCH_LARGE(AbseilSwissU32);
+
+BENCH_SMALL(BoostFlatU32);
+BENCH_LARGE(BoostFlatU32);
+
 BENCH_U8(SwissU8);
 
 BENCH_U8(AnkerlU8);
@@ -270,6 +360,12 @@ BENCH_U8(StaticLinearU8);
 BENCH_U8(StdUnorderedMapU8);
 
 BENCH_U8(StdMapU8);
+
+BENCH_U8(AnkerlUnorderedDenseU8);
+
+BENCH_U8(AbseilSwissU8);
+
+BENCH_U8(BoostFlatU8);
 
 BENCH_SMALL(SwissU32Bytes32);
 BENCH_LARGE(SwissU32Bytes32);
@@ -287,6 +383,15 @@ BENCH_LARGE(StdUnorderedMapU32Bytes32);
 
 BENCH_SMALL(StdMapU32Bytes32);
 BENCH_LARGE(StdMapU32Bytes32);
+
+BENCH_SMALL(AnkerlUnorderedDenseU32Bytes32);
+BENCH_LARGE(AnkerlUnorderedDenseU32Bytes32);
+
+BENCH_SMALL(AbseilSwissU32Bytes32);
+BENCH_LARGE(AbseilSwissU32Bytes32);
+
+BENCH_SMALL(BoostFlatU32Bytes32);
+BENCH_LARGE(BoostFlatU32Bytes32);
 
 #undef BENCH_SMALL
 #undef BENCH_LARGE

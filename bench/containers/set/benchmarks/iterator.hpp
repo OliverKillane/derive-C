@@ -65,6 +65,19 @@ void iterator_case_stl_set(benchmark::State& /* state */, size_t max_n, Gen& gen
     }
 }
 
+template <typename Ext, typename Gen>
+void iterator_case_boost_flat(benchmark::State& /* state */, size_t max_n, Gen& gen) {
+    typename Ext::Self s;
+
+    for (size_t i = 0; i < max_n; i++) {
+        s.insert(gen.next());
+    }
+
+    for (const auto& entry : s) {
+        benchmark::DoNotOptimize(&entry);
+    }
+}
+
 template <typename Impl> void iterator(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
 
@@ -77,6 +90,8 @@ template <typename Impl> void iterator(benchmark::State& state) {
             iterator_case_stl_unordered_set<Impl>(state, max_n, gen);
         } else if constexpr (LABEL_CHECK(Impl, stl_set)) {
             iterator_case_stl_set<Impl>(state, max_n, gen);
+        } else if constexpr (LABEL_CHECK(Impl, boost_flat)) {
+            iterator_case_boost_flat<Impl>(state, max_n, gen);
         } else {
             throw std::runtime_error("Unknown implementation type");
         }
@@ -90,6 +105,7 @@ template <typename Impl> void iterator(benchmark::State& state) {
 using SwissU32 = Swiss<std::uint32_t, uint32_t_hash>;
 using StdUnorderedSetU32 = StdUnorderedSet<std::uint32_t, uint32_t_hash>;
 using StdSetU32 = StdSet<std::uint32_t>;
+using BoostFlatU32 = BoostFlat<std::uint32_t, uint32_t_hash>;
 
 #define BENCH(IMPL)                                                                                \
     BENCHMARK_TEMPLATE(iterator, IMPL)->Range(1 << 8, 1 << 16);                                   \
@@ -99,5 +115,6 @@ using StdSetU32 = StdSet<std::uint32_t>;
 BENCH(SwissU32);
 BENCH(StdUnorderedSetU32);
 BENCH(StdSetU32);
+BENCH(BoostFlatU32);
 
 #undef BENCH

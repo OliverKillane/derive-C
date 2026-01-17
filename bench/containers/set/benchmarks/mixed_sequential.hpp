@@ -85,22 +85,43 @@ void mixed_sequential_case_stl_set(benchmark::State& /* state */, size_t max_n) 
     typename Std::Self s;
 
     for (size_t i = 0; i < max_n; i++) {
-        // Insert odd numbers
         if (i % 2 == 1) {
             s.insert(i);
         }
         
-        // Check contains for previous numbers
         if (i > 0) {
             benchmark::DoNotOptimize(s.find(i - 1) != s.end());
         }
         
-        // Remove multiples of 3 (that were inserted)
-        if (i % 6 == 3) {  // Odd multiples of 3
+        if (i % 6 == 3) {
             s.erase(i);
         }
         
-        // Check contains for a range
+        if (i % 10 == 0 && i > 10) {
+            for (size_t j = i - 10; j < i; j++) {
+                benchmark::DoNotOptimize(s.find(j) != s.end());
+            }
+        }
+    }
+}
+
+template <typename Ext>
+void mixed_sequential_case_boost_flat(benchmark::State& /* state */, size_t max_n) {
+    typename Ext::Self s;
+
+    for (size_t i = 0; i < max_n; i++) {
+        if (i % 2 == 1) {
+            s.insert(i);
+        }
+        
+        if (i > 0) {
+            benchmark::DoNotOptimize(s.find(i - 1) != s.end());
+        }
+        
+        if (i % 6 == 3) {
+            s.erase(i);
+        }
+        
         if (i % 10 == 0 && i > 10) {
             for (size_t j = i - 10; j < i; j++) {
                 benchmark::DoNotOptimize(s.find(j) != s.end());
@@ -119,6 +140,8 @@ template <typename Impl> void mixed_sequential(benchmark::State& state) {
             mixed_sequential_case_stl_unordered_set<Impl>(state, max_n);
         } else if constexpr (LABEL_CHECK(Impl, stl_set)) {
             mixed_sequential_case_stl_set<Impl>(state, max_n);
+        } else if constexpr (LABEL_CHECK(Impl, boost_flat)) {
+            mixed_sequential_case_boost_flat<Impl>(state, max_n);
         } else {
             throw std::runtime_error("Unknown implementation type");
         }
@@ -134,6 +157,7 @@ template <typename Impl> void mixed_sequential(benchmark::State& state) {
 using SwissSizeT = Swiss<size_t, size_t_hash>;
 using StdUnorderedSetSizeT = StdUnorderedSet<size_t, size_t_hash>;
 using StdSetSizeT = StdSet<size_t>;
+using BoostFlatSizeT = BoostFlat<size_t, size_t_hash>;
 
 #define BENCH(IMPL)                                                                                \
     BENCHMARK_TEMPLATE(mixed_sequential, IMPL)->Range(1 << 8, 1 << 16);                           \
@@ -143,5 +167,6 @@ using StdSetSizeT = StdSet<size_t>;
 BENCH(SwissSizeT);
 BENCH(StdUnorderedSetSizeT);
 BENCH(StdSetSizeT);
+BENCH(BoostFlatSizeT);
 
 #undef BENCH
