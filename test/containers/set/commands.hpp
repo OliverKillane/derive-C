@@ -36,14 +36,16 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
         Wrapper wrapperCopy = w;
 
         typename SutNS::Sut_iter_const iter_const = SutNS::Sut_get_iter_const(w.getConst());
-        typename SutNS::Sut_iter_const_item item_const = SutNS::Sut_iter_const_next(&iter_const);
 
-        while (!SutNS::Sut_iter_const_empty_item(&item_const)) {
+        while (!SutNS::Sut_iter_const_empty(&iter_const)) {
+            typename SutNS::Sut_iter_const_item item_const =
+                SutNS::Sut_iter_const_next(&iter_const);
+            RC_ASSERT(!SutNS::Sut_iter_const_empty_item(&item_const));
             RC_ASSERT(item_const != nullptr);
-            item_const = SutNS::Sut_iter_const_next(&iter_const);
         }
 
-        item_const = SutNS::Sut_iter_const_next(&iter_const);
+        RC_ASSERT(SutNS::Sut_iter_const_empty(&iter_const));
+        typename SutNS::Sut_iter_const_item item_const = SutNS::Sut_iter_const_next(&iter_const);
         RC_ASSERT(SutNS::Sut_iter_const_empty_item(&item_const));
     }
 

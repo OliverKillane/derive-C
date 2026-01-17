@@ -383,6 +383,12 @@ DC_PUBLIC static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NS(SELF, iv_const_empty)();
 }
 
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index >= MAX_INDEX;
+}
+
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
@@ -514,6 +520,12 @@ DC_PUBLIC static IV_PAIR NS(ITER, next)(ITER* iter) {
     }
 
     return NS(SELF, iv_empty)();
+}
+
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index >= MAX_INDEX;
 }
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {

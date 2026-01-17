@@ -588,6 +588,11 @@ DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     };
 }
 
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    return NS(NS(SLOT_VECTOR, iter_const), empty)(&iter->iter);
+}
+
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
     return (ITER_CONST){
@@ -644,6 +649,11 @@ DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
         .key = &next_item->key,
         .value = &next_item->value,
     };
+}
+
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+    DC_ASSUME(iter);
+    return NS(NS(SLOT_VECTOR, iter), empty)(&iter->iter);
 }
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {

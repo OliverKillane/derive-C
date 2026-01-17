@@ -65,18 +65,15 @@ typedef struct {
 typedef KEY NS(SELF, key_t);
 typedef VALUE NS(SELF, value_t);
 
-#define BITSET NS(NAME, bitset)
-
-#define EXCLUSIVE_END_INDEX CAPACITY // [DERIVE-C] for template
-#define INTERNAL_NAME BITSET         // [DERIVE-C] for template
-#include <derive-c/container/bitset/static/template.h>
-
-#define BITSET_INDEX_TYPE NS(BITSET, index_t)
+#define ENTRY NS(SELF, entry_t)
+typedef struct {
+    KEY key;
+    VALUE value;
+} ENTRY;
 
 typedef struct {
-    BITSET presence;
-    KEY keys[CAPACITY];
-    VALUE values[CAPACITY];
+    size_t size;
+    ENTRY entries[CAPACITY];
 
     dc_gdb_marker derive_c_map_staticlinear;
     mutation_tracker iterator_invalidation_tracker;
@@ -84,13 +81,14 @@ typedef struct {
 
 DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = (size_t)CAPACITY;
 
-#define INVARIANT_CHECK(self) DC_ASSUME(self);
+#define INVARIANT_CHECK(self)                                                                      \
+    DC_ASSUME(self);                                                                               \
+    DC_ASSUME((self)->size <= CAPACITY);
 
 DC_PUBLIC static SELF NS(SELF, new)() {
     return (SELF){
-        .presence = NS(BITSET, new)(),
-        .keys = {},
-        .values = {},
+        .size = 0,
+        .entries = {},
         .derive_c_map_staticlinear = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
@@ -98,10 +96,9 @@ DC_PUBLIC static SELF NS(SELF, new)() {
 
 DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
     INVARIANT_CHECK(self);
-    for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index) &&
-            KEY_EQ(&self->keys[index], &key)) {
-            return &self->values[index];
+    for (size_t index = 0; index < self->size; index++) {
+        if (KEY_EQ(&self->entries[index].key, &key)) {
+            return &self->entries[index].value;
         }
     }
     return NULL;
@@ -127,7 +124,7 @@ DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
-    if (NS(BITSET, size)(&self->presence) >= CAPACITY) {
+    if (self->size >= CAPACITY) {
         return NULL;
     }
 
@@ -136,16 +133,10 @@ DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
         return NULL;
     }
 
-    for (size_t index = 0; index < CAPACITY; index++) {
-        if (!NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
-            NS(BITSET, set)(&self->presence, (BITSET_INDEX_TYPE)index, true);
-            self->keys[index] = key;
-            self->values[index] = value;
-            return &self->values[index];
-        }
-    }
-
-    DC_UNREACHABLE("A space must exist for insert");
+    self->entries[self->size].key = key;
+    self->entries[self->size].value = value;
+    self->size++;
+    return &self->entries[self->size - 1].value;
 }
 
 DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
@@ -158,12 +149,15 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* dest) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
-    for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index) &&
-            KEY_EQ(&self->keys[index], &key)) {
-            NS(BITSET, set)(&self->presence, (BITSET_INDEX_TYPE)index, false);
-            KEY_DELETE(&self->keys[index]);
-            *dest = self->values[index];
+    for (size_t index = 0; index < self->size; index++) {
+        if (KEY_EQ(&self->entries[index].key, &key)) {
+            KEY_DELETE(&self->entries[index].key);
+            *dest = self->entries[index].value;
+            // Shift remaining entries down
+            for (size_t i = index; i < self->size - 1; i++) {
+                self->entries[i] = self->entries[i + 1];
+            }
+            self->size--;
             return true;
         }
     }
@@ -181,23 +175,19 @@ DC_PUBLIC static void NS(SELF, delete_entry)(SELF* self, KEY key) {
     VALUE_DELETE(&val);
 }
 
-DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
-    return NS(BITSET, size)(&self->presence);
-}
+DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) { return self->size; }
 
 DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     INVARIANT_CHECK(self);
 
     SELF new_self = (SELF){
-        .presence = NS(BITSET, clone)(&self->presence),
+        .size = self->size,
         .derive_c_map_staticlinear = dc_gdb_marker_new(),
         .iterator_invalidation_tracker = mutation_tracker_new(),
     };
-    for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
-            new_self.keys[index] = KEY_CLONE(&self->keys[index]);
-            new_self.values[index] = VALUE_CLONE(&self->values[index]);
-        }
+    for (size_t index = 0; index < self->size; index++) {
+        new_self.entries[index].key = KEY_CLONE(&self->entries[index].key);
+        new_self.entries[index].value = VALUE_CLONE(&self->entries[index].value);
     }
     return new_self;
 }
@@ -205,29 +195,25 @@ DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
 DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
     INVARIANT_CHECK(self);
 
-    for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
-            KEY_DELETE(&self->keys[index]);
-            VALUE_DELETE(&self->values[index]);
-        }
+    for (size_t index = 0; index < self->size; index++) {
+        KEY_DELETE(&self->entries[index].key);
+        VALUE_DELETE(&self->entries[index].value);
     }
-    NS(BITSET, delete)(&self->presence);
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %zu,\n", (size_t)CAPACITY);
+    dc_debug_fmt_print(fmt, stream, "size: %zu,\n", self->size);
     dc_debug_fmt_print(fmt, stream, "entries: [\n");
     fmt = dc_debug_fmt_scope_begin(fmt);
-    for (size_t index = 0; index < CAPACITY; index++) {
-        if (NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)index)) {
-            dc_debug_fmt_print(fmt, stream, "{index: %lu, key: ", index);
-            KEY_DEBUG(&self->keys[index], fmt, stream);
-            fprintf(stream, ", value: ");
-            VALUE_DEBUG(&self->values[index], fmt, stream);
-            fprintf(stream, "},\n");
-        }
+    for (size_t index = 0; index < self->size; index++) {
+        dc_debug_fmt_print(fmt, stream, "{index: %lu, key: ", index);
+        KEY_DEBUG(&self->entries[index].key, fmt, stream);
+        fprintf(stream, ", value: ");
+        VALUE_DEBUG(&self->entries[index].value, fmt, stream);
+        fprintf(stream, "},\n");
     }
     fmt = dc_debug_fmt_scope_end(fmt);
     dc_debug_fmt_print(fmt, stream, "],\n");
@@ -241,7 +227,7 @@ DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* 
 
 typedef struct {
     SELF const* map;
-    NS(BITSET, NS(iter_const, item)) next_index;
+    size_t next_index;
     mutation_version version;
 } ITER_CONST;
 
@@ -258,37 +244,30 @@ DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     mutation_version_check(&iter->version);
     size_t const next_index = iter->next_index;
 
-    if (next_index == CAPACITY) {
+    if (next_index >= iter->map->size) {
         return (KV_PAIR_CONST){.key = NULL, .value = NULL};
     }
 
     iter->next_index++;
-    while (iter->next_index < CAPACITY &&
-           !NS(BITSET, get)(&iter->map->presence, (BITSET_INDEX_TYPE)iter->next_index)) {
-        iter->next_index++;
-    }
 
-    if (next_index == CAPACITY) {
-        return (KV_PAIR_CONST){.key = NULL, .value = NULL};
-    }
     return (KV_PAIR_CONST){
-        .key = &iter->map->keys[next_index],
-        .value = &iter->map->values[next_index],
+        .key = &iter->map->entries[next_index].key,
+        .value = &iter->map->entries[next_index].value,
     };
+}
+
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index >= iter->map->size;
 }
 
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
-    NS(BITSET, NS(iter_const, item)) next_index = 0;
-    while (next_index < CAPACITY &&
-           !NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)next_index)) {
-        next_index++;
-    }
-
     return (ITER_CONST){
         .map = self,
-        .next_index = next_index,
+        .next_index = 0,
         .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
@@ -301,7 +280,7 @@ DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 
 typedef struct {
     SELF* map;
-    NS(BITSET, NS(iter, item)) next_index;
+    size_t next_index;
     mutation_version version;
 } ITER;
 
@@ -316,39 +295,32 @@ DC_PUBLIC static bool NS(ITER, empty_item)(KV_PAIR const* item) {
 
 DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
     mutation_version_check(&iter->version);
-    NS(BITSET, NS(iter, item)) const next_index = iter->next_index;
+    size_t const next_index = iter->next_index;
 
-    if (next_index == CAPACITY) {
+    if (next_index >= iter->map->size) {
         return (KV_PAIR){.key = NULL, .value = NULL};
     }
 
     iter->next_index++;
-    while (iter->next_index < CAPACITY &&
-           !NS(BITSET, get)(&iter->map->presence, (BITSET_INDEX_TYPE)iter->next_index)) {
-        iter->next_index++;
-    }
 
-    if (next_index == CAPACITY) {
-        return (KV_PAIR){.key = NULL, .value = NULL};
-    }
     return (KV_PAIR){
-        .key = &iter->map->keys[next_index],
-        .value = &iter->map->values[next_index],
+        .key = &iter->map->entries[next_index].key,
+        .value = &iter->map->entries[next_index].value,
     };
+}
+
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index >= iter->map->size;
 }
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
 
-    NS(BITSET, NS(iter, item)) next_index = 0;
-    while (next_index < CAPACITY &&
-           !NS(BITSET, get)(&self->presence, (BITSET_INDEX_TYPE)next_index)) {
-        next_index++;
-    }
-
     return (ITER){
         .map = self,
-        .next_index = next_index,
+        .next_index = 0,
         .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
@@ -357,8 +329,7 @@ DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #undef INVARIANT_CHECK
-#undef BITSET_INDEX_TYPE
-#undef BITSET
+#undef ENTRY
 
 #undef VALUE_DEBUG
 #undef VALUE_CLONE

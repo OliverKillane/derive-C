@@ -129,6 +129,11 @@ DC_PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NS(MAP, NS(iter_const, next))(&iter->map_iter).key;
 }
 
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    return NS(MAP, NS(iter_const, empty))(&iter->map_iter);
+}
+
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     return (ITER_CONST){
         .map_iter = NS(MAP, get_iter_const)(&self->map),
