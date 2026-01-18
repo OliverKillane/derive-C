@@ -10,6 +10,7 @@
 
 template <typename Item, size_t(*item_hash)(Item const*)> struct Swiss {
     LABEL_ADD(derive_c_swiss);
+    static constexpr const char* impl_name = "derive-c/swiss";
 #define EXPAND_IN_STRUCT
 #define ITEM Item
 #define ITEM_HASH item_hash
@@ -19,6 +20,7 @@ template <typename Item, size_t(*item_hash)(Item const*)> struct Swiss {
 
 template <typename Item, size_t(*item_hash)(Item const*)> struct StdUnorderedSet {
     LABEL_ADD(stl_unordered_set);
+    static constexpr const char* impl_name = "std/unordered_set";
 
     struct ItemHasher {
         size_t operator()(Item const& item) const {
@@ -32,6 +34,7 @@ template <typename Item, size_t(*item_hash)(Item const*)> struct StdUnorderedSet
 
 template <typename Item> struct StdSet {
     LABEL_ADD(stl_set);
+    static constexpr const char* impl_name = "std/set";
 
     using Self_item_t = Item;
     using Self = std::set<Item>;
@@ -39,6 +42,7 @@ template <typename Item> struct StdSet {
 
 template <typename Item, size_t(*item_hash)(Item const*)> struct BoostFlat {
     LABEL_ADD(boost_flat);
+    static constexpr const char* impl_name = "boost/unordered_flat_set";
 
     struct ItemHasher {
         size_t operator()(Item const& item) const {

@@ -167,42 +167,46 @@ DC_PUBLIC static void NS(SELF, push_front)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->front, item);
-    NS(SELF, rebalance)(self);
 }
 
 DC_PUBLIC static void NS(SELF, push_back)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     NS(ITEM_VECTORS, push)(&self->back, item);
-    NS(SELF, rebalance)(self);
 }
 
 DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->front) > 0) {
-        ITEM result = NS(ITEM_VECTORS, pop)(&self->front);
-        NS(SELF, rebalance)(self);
-        return result;
+        return NS(ITEM_VECTORS, pop)(&self->front);
     }
 
-    ITEM result = NS(ITEM_VECTORS, pop_front)(&self->back);
-    NS(SELF, rebalance)(self);
-    return result;
+    // Front is empty, need to pop from back
+    // Rebalance first to maintain good distribution
+    if (NS(ITEM_VECTORS, size)(&self->back) > 1) {
+        NS(SELF, rebalance)(self);
+        return NS(ITEM_VECTORS, pop)(&self->front);
+    }
+
+    return NS(ITEM_VECTORS, pop_front)(&self->back);
 }
 
 DC_PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (NS(ITEM_VECTORS, size)(&self->back) > 0) {
-        ITEM result = NS(ITEM_VECTORS, pop)(&self->back);
-        NS(SELF, rebalance)(self);
-        return result;
+        return NS(ITEM_VECTORS, pop)(&self->back);
     }
 
-    ITEM result = NS(ITEM_VECTORS, pop_front)(&self->front);
-    NS(SELF, rebalance)(self);
-    return result;
+    // Back is empty, need to pop from front
+    // Rebalance first to maintain good distribution
+    if (NS(ITEM_VECTORS, size)(&self->front) > 1) {
+        NS(SELF, rebalance)(self);
+        return NS(ITEM_VECTORS, pop)(&self->back);
+    }
+
+    return NS(ITEM_VECTORS, pop_front)(&self->front);
 }
 
 #define ITER NS(SELF, iter)

@@ -1,5 +1,16 @@
-/// @brief Demonstrating vectorizability by the compiler.
-///  - Comparing against a fully iter_mut implementation.
+/// @file iter_mut.hpp
+/// @brief Vector mutable iteration and vectorization
+///
+/// Checking Regressions For:
+/// - Mutable iteration performance (read-modify-write)
+/// - Compiler auto-vectorization effectiveness
+/// - Iterator overhead vs direct indexing
+/// - Element packing and alignment for small types
+/// - Cache hierarchy effects on large vectors
+///
+/// Representative:
+/// Not production representative. Trivial increment in tight loop isolates
+/// iterator overhead and vectorization for simple transformations.
 
 #pragma once
 
@@ -15,9 +26,15 @@
 #include "../../../utils/seed.hpp"
 #include "../../../utils/generator.hpp"
 
-// Reference implementation using the size and indexing directly on data
+#include <derive-c/alloc/std.h>
+#include <derive-c/prelude.h>
+
+#include <derive-cpp/meta/labels.hpp>
+#include <derive-cpp/meta/unreachable.hpp>
+
 struct IndexedReference {
     LABEL_ADD(indexed_reference);
+    static constexpr const char* impl_name = "reference/indexed";
 #define EXPAND_IN_STRUCT
 #define ITEM uint8_t
 #define NAME Self
@@ -27,6 +44,7 @@ struct IndexedReference {
 // A reference implementation (using a loop with vector ops, rather than the iterator)
 struct VectorizedReference {
     LABEL_ADD(iter_mut_reference);
+    static constexpr const char* impl_name = "reference/vectorized";
 #define EXPAND_IN_STRUCT
 #define ITEM uint8_t
 #define NAME Self
@@ -139,7 +157,7 @@ template <typename Impl> void iter_mut(benchmark::State& state) {
         } else if constexpr (LABEL_CHECK(Impl, iter_mut_reference)) {
             iter_mut_case_iter_mut_reference(state, max_n, gen);
         } else {
-            throw std::runtime_error("foo");
+            static_assert_unreachable<Impl>();
         }
     }
     
@@ -148,10 +166,16 @@ template <typename Impl> void iter_mut(benchmark::State& state) {
     state.SetLabel("mutations");
 }
 
-#define BENCH(IMPL)                                                                                \
-    BENCHMARK_TEMPLATE(iter_mut, IMPL)->Range(1 << 8, 1 << 16);                                  \
-    BENCHMARK_TEMPLATE(iter_mut, IMPL)->Range(1 << 8, 1 << 8);                                   \
-    BENCHMARK_TEMPLATE(iter_mut, IMPL)->Range(1 << 8, 1 << 8)
+#define BENCH(...)                                                                                \
+    BENCHMARK_TEMPLATE(iter_mut, __VA_ARGS__)                                                 \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(1 << 10, 1 << 24)                                                             \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(3 << 10, 1 << 24)                                                             \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(5 << 10, 1 << 24)                                                             \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(7 << 10, 1 << 24)
 
 BENCH(Std<uint8_t>);
 BENCH(Dynamic<uint8_t>);

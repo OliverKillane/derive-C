@@ -6,6 +6,7 @@
 
 template <typename Item> struct Dynamic {
     LABEL_ADD(derive_c_dynamic);
+    static constexpr const char* impl_name = "derive-c/dynamic";
 #define EXPAND_IN_STRUCT
 #define ITEM Item
 #define NAME Self
@@ -14,6 +15,7 @@ template <typename Item> struct Dynamic {
 
 template <typename Item> struct Hybrid {
     LABEL_ADD(derive_c_hybrid);
+    static constexpr const char* impl_name = "derive-c/hybrid";
 #define EXPAND_IN_STRUCT
 #define CAPACITY 1024
 #define NAME HybridAlloc
@@ -28,6 +30,7 @@ template <typename Item> struct Hybrid {
 
 template <typename Item> struct Static {
     LABEL_ADD(derive_c_static_1024);
+    static constexpr const char* impl_name = "derive-c/static";
 #define EXPAND_IN_STRUCT
 #define ITEM Item
 #define CAPACITY 8096
@@ -37,6 +40,7 @@ template <typename Item> struct Static {
 
 template <typename Item> struct Std {
     LABEL_ADD(stl_vector);
+    static constexpr const char* impl_name = "std/vector";
     using Self_item_t = Item;
     using Self = std::vector<Item>;
 };

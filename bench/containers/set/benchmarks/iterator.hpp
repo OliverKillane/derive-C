@@ -1,5 +1,16 @@
-/// @brief Benchmarking iterator performance after insertion
-///  - Insert values up to a given size, then iterate over the entire set
+/// @file iterator.hpp
+/// @brief Set iteration after insertion
+///
+/// Checking Regressions For:
+/// - Hash table traversal performance
+/// - Iterator correctness with pseudo-random keys (XORShift)
+/// - Open-addressing vs chaining iterator logic
+/// - Cache effects at different set sizes
+/// - Iteration over potentially fragmented hash tables
+///
+/// Representative:
+/// Not production representative. Full iteration without interleaved
+/// modifications isolates iterator overhead after bulk insertion.
 
 #pragma once
 
@@ -11,13 +22,14 @@
 #include "../instances.hpp"
 #include "../../../utils/seed.hpp"
 #include "../../../utils/generator.hpp"
+#include "../../../utils/label.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
 
 #include <derive-cpp/meta/labels.hpp>
+#include <derive-cpp/meta/unreachable.hpp>
 
-// Hash function for uint32_t
 static size_t uint32_t_hash(uint32_t const* item) {
     return *item;
 }
@@ -81,6 +93,8 @@ void iterator_case_boost_flat(benchmark::State& /* state */, size_t max_n, Gen& 
 template <typename Impl> void iterator(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
 
+    set_impl_label_with_item<Impl>(state);
+
     U32XORShiftGen gen(SEED);
 
     for (auto _ : state) {
@@ -93,28 +107,28 @@ template <typename Impl> void iterator(benchmark::State& state) {
         } else if constexpr (LABEL_CHECK(Impl, boost_flat)) {
             iterator_case_boost_flat<Impl>(state, max_n, gen);
         } else {
-            throw std::runtime_error("Unknown implementation type");
+            static_assert_unreachable<Impl>();
         }
     }
     
     // Report items iterated
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(max_n));
-    state.SetLabel("iterations");
 }
 
-using SwissU32 = Swiss<std::uint32_t, uint32_t_hash>;
-using StdUnorderedSetU32 = StdUnorderedSet<std::uint32_t, uint32_t_hash>;
-using StdSetU32 = StdSet<std::uint32_t>;
-using BoostFlatU32 = BoostFlat<std::uint32_t, uint32_t_hash>;
+#define BENCH(...)                                                                                \
+    BENCHMARK_TEMPLATE(iterator, __VA_ARGS__)                                                 \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(1, 1 << 16)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(3, 1 << 16)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(5, 1 << 16)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(7, 1 << 16)
 
-#define BENCH(IMPL)                                                                                \
-    BENCHMARK_TEMPLATE(iterator, IMPL)->Range(1 << 8, 1 << 16);                                   \
-    BENCHMARK_TEMPLATE(iterator, IMPL)->Range(1 << 8, 1 << 8);                                    \
-    BENCHMARK_TEMPLATE(iterator, IMPL)->Range(1 << 8, 1 << 8)
-
-BENCH(SwissU32);
-BENCH(StdUnorderedSetU32);
-BENCH(StdSetU32);
-BENCH(BoostFlatU32);
+BENCH(Swiss<std::uint32_t, uint32_t_hash>);
+BENCH(StdUnorderedSet<std::uint32_t, uint32_t_hash>);
+BENCH(StdSet<std::uint32_t>);
+BENCH(BoostFlat<std::uint32_t, uint32_t_hash>);
 
 #undef BENCH

@@ -1,10 +1,15 @@
 include(FetchContent)
 include(CTest)
 
+set(GOOGLE_BENCHMARK_VERSION v1.9.4)
+set(UNORDERED_DENSE_VERSION v4.8.1)
+set(ABSEIL_VERSION 20240722.0)
+set(BOOST_VERSION 1.86.0)
+
 FetchContent_Declare(
   googlebenchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
-  GIT_TAG v1.9.4
+  GIT_TAG "${GOOGLE_BENCHMARK_VERSION}"
 )
 
 # We only consume the library; disable googlebenchmark's own tests (incl asm tests)
@@ -16,21 +21,21 @@ FetchContent_MakeAvailable(googlebenchmark)
 FetchContent_Declare(
   unordered_dense
   GIT_REPOSITORY https://github.com/martinus/unordered_dense.git
-  GIT_TAG v4.8.1
+  GIT_TAG "${UNORDERED_DENSE_VERSION}"
 )
 FetchContent_MakeAvailable(unordered_dense)
 
 FetchContent_Declare(
   abseil
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
-  GIT_TAG 20240722.0
+  GIT_TAG "${ABSEIL_VERSION}"
 )
 set(ABSL_PROPAGATE_CXX_STD ON)
 FetchContent_MakeAvailable(abseil)
 
 FetchContent_Declare(
   boost
-  URL https://github.com/boostorg/boost/releases/download/boost-1.86.0/boost-1.86.0-cmake.tar.xz
+  URL https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.xz
   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 set(BOOST_INCLUDE_LIBRARIES unordered)
@@ -88,5 +93,38 @@ foreach(BENCH_FILE ${BENCH_SOURCES})
   set_tests_properties(${BENCH_TARGET} PROPERTIES
     LABELS "${TEST_LABELS}"
     TIMEOUT 120
+  )
+
+  # Track all benchmark targets for the 'run-benchmarks' target
+  list(APPEND ALL_BENCH_TARGETS ${BENCH_TARGET})
+endforeach()
+
+# Create a target to run all benchmarks and collect JSON output
+set(BENCHMARK_OUTPUT_DIR ${CMAKE_BINARY_DIR}/benchmark_results)
+
+add_custom_target(run-benchmarks
+  DEPENDS ${ALL_BENCH_TARGETS}
+  COMMENT "📊 Running all benchmarks and collecting JSON output"
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+
+  COMMAND ${CMAKE_COMMAND} -E remove_directory ${BENCHMARK_OUTPUT_DIR}
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${BENCHMARK_OUTPUT_DIR}
+
+  VERBATIM
+  USES_TERMINAL
+)
+
+# Add individual benchmark execution commands
+foreach(BENCH_TARGET ${ALL_BENCH_TARGETS})
+  add_custom_command(
+    TARGET run-benchmarks
+    POST_BUILD
+    COMMAND ${CMAKE_BINARY_DIR}/bench/${BENCH_TARGET}
+            --benchmark_format=json
+            --benchmark_out=${BENCHMARK_OUTPUT_DIR}/${BENCH_TARGET}.json
+            --benchmark_min_time=0.1s
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Running ${BENCH_TARGET}..."
+    VERBATIM
   )
 endforeach()

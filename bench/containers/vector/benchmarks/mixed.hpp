@@ -1,11 +1,21 @@
-/// @brief Benchmarking basic operations for push and iterate
-///  - Additionally comparing when using the hybrid allocator
+/// @file mixed.hpp
+/// @brief Vector push and iteration interleaving
+///
+/// Checking Regressions For:
+/// - Reallocation correctness during growth
+/// - Quadratic behavior (push one, iterate all)
+/// - Dynamic vs hybrid allocator overhead
+/// - Internal state validity after reallocation
+/// - Copy overhead for different object sizes
+///
+/// Representative:
+/// Not production representative. Iterating after every push is pathological,
+/// while real code batches insertions or uses incremental updates.
 
 #pragma once
 
 #include <benchmark/benchmark.h>
 #include <cstddef>
-#include <stdexcept>
 
 #include "../instances.hpp"
 #include "../../../utils/seed.hpp"
@@ -15,8 +25,8 @@
 #include <derive-c/prelude.h>
 
 #include <derive-cpp/meta/labels.hpp>
+#include <derive-cpp/meta/unreachable.hpp>
 
-// TODO(cursor): Can we add reporting for iters/s, push/s for these benchmarks? 
 template <typename NS, typename Gen>
 void mixed_case_derive_c_dynamic(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename NS::Self v = NS::Self_new(stdalloc_get_ref());
@@ -80,7 +90,7 @@ template <typename Impl> void mixed(benchmark::State& state) {
         } else if constexpr (LABEL_CHECK(Impl, stl_vector)) {
             mixed_case_stl<Impl>(state, max_n, gen);
         } else {
-            throw std::runtime_error("foo");
+            static_assert_unreachable<Impl>();
         }
     }
     
@@ -89,13 +99,19 @@ template <typename Impl> void mixed(benchmark::State& state) {
     state.SetLabel("pushes+iters");
 }
 
-#define BENCH(IMPL)                                                                                \
-    BENCHMARK_TEMPLATE(mixed, IMPL<Bytes<1>>)->Range(1 << 8, 1 << 16);                             \
-    BENCHMARK_TEMPLATE(mixed, IMPL<Bytes<8>>)->Range(1 << 8, 1 << 8);                              \
-    BENCHMARK_TEMPLATE(mixed, IMPL<Bytes<64>>)->Range(1 << 8, 1 << 8)
+#define BENCH(...)                                                                                \
+    BENCHMARK_TEMPLATE(mixed, __VA_ARGS__)                                                    \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(1, 1 << 18)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(3, 1 << 18)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(5, 1 << 18)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(7, 1 << 18)
 
-BENCH(Std);
-BENCH(Dynamic);
-BENCH(Hybrid);
+BENCH(Std<Bytes<1>>);
+BENCH(Dynamic<Bytes<1>>);
+BENCH(Hybrid<Bytes<1>>);
 
 #undef BENCH

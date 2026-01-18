@@ -225,6 +225,19 @@ DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* 
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
+DC_PUBLIC static void NS(SELF, reset)(SELF* self) {
+    DC_ASSUME(self);
+
+    size_t used = (size_t)(self->head_ptr - &(*self->buffer)[0]);
+    if (used > 0) {
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
+                              &(*self->buffer)[0], used);
+    }
+
+    self->head_ptr = &(*self->buffer)[0];
+    self->last_alloc_ptr = NULL;
+}
+
 #undef CAPACITY
 
 DC_PUBLIC static void NS(SELF, delete)(SELF* self) {

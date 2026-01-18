@@ -1,5 +1,16 @@
-/// @brief Benchmarking mixed insert, contains, and remove operations
-///  - Interleaves insert, contains, and remove operations for realistic workload
+/// @file mixed_sequential.hpp
+/// @brief Interleaved set operations
+///
+/// Checking Regressions For:
+/// - Mixed insert/remove/contains workloads
+/// - Tombstone handling in open addressing
+/// - Size tracking during insert/remove cycles
+/// - Rehashing correctness with concurrent queries
+/// - Correctness of contains for removed elements
+///
+/// Representative:
+/// Not production representative. Deterministic odd/even pattern exercises
+/// tombstone management edge cases not typically seen in profiling.
 
 #pragma once
 
@@ -9,13 +20,14 @@
 
 #include "../instances.hpp"
 #include "../../../utils/seed.hpp"
+#include "../../../utils/label.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
 
 #include <derive-cpp/meta/labels.hpp>
+#include <derive-cpp/meta/unreachable.hpp>
 
-// Hash function for size_t
 static size_t size_t_hash(size_t const* item) {
     return *item;
 }
@@ -133,6 +145,8 @@ void mixed_sequential_case_boost_flat(benchmark::State& /* state */, size_t max_
 template <typename Impl> void mixed_sequential(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
 
+    set_impl_label_with_item<Impl>(state);
+
     for (auto _ : state) {
         if constexpr (LABEL_CHECK(Impl, derive_c_swiss)) {
             mixed_sequential_case_derive_c_swiss<Impl>(state, max_n);
@@ -143,30 +157,28 @@ template <typename Impl> void mixed_sequential(benchmark::State& state) {
         } else if constexpr (LABEL_CHECK(Impl, boost_flat)) {
             mixed_sequential_case_boost_flat<Impl>(state, max_n);
         } else {
-            throw std::runtime_error("Unknown implementation type");
+            static_assert_unreachable<Impl>();
         }
     }
     
-    // Report total operations: inserts (~max_n/2) + contains checks + removes
-    // Approximate: max_n/2 inserts, max_n contains, max_n/6 removes
-    int64_t ops_per_iter = static_cast<int64_t>(max_n) * 2; // Approximate total ops
+    int64_t ops_per_iter = static_cast<int64_t>(max_n) * 2;
     state.SetItemsProcessed(state.iterations() * ops_per_iter);
-    state.SetLabel("mixed_ops");
 }
 
-using SwissSizeT = Swiss<size_t, size_t_hash>;
-using StdUnorderedSetSizeT = StdUnorderedSet<size_t, size_t_hash>;
-using StdSetSizeT = StdSet<size_t>;
-using BoostFlatSizeT = BoostFlat<size_t, size_t_hash>;
+#define BENCH(...)                                                                                \
+    BENCHMARK_TEMPLATE(mixed_sequential, __VA_ARGS__)                                         \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(1, 1 << 16)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(3, 1 << 16)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(5, 1 << 16)                                                                   \
+        ->RangeMultiplier(2)                                                                  \
+        ->Range(7, 1 << 16)
 
-#define BENCH(IMPL)                                                                                \
-    BENCHMARK_TEMPLATE(mixed_sequential, IMPL)->Range(1 << 8, 1 << 16);                           \
-    BENCHMARK_TEMPLATE(mixed_sequential, IMPL)->Range(1 << 8, 1 << 8);                            \
-    BENCHMARK_TEMPLATE(mixed_sequential, IMPL)->Range(1 << 8, 1 << 8)
-
-BENCH(SwissSizeT);
-BENCH(StdUnorderedSetSizeT);
-BENCH(StdSetSizeT);
-BENCH(BoostFlatSizeT);
+BENCH(Swiss<size_t, size_t_hash>);
+BENCH(StdUnorderedSet<size_t, size_t_hash>);
+BENCH(StdSet<size_t>);
+BENCH(BoostFlat<size_t, size_t_hash>);
 
 #undef BENCH

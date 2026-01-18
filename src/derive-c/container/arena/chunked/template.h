@@ -459,7 +459,7 @@ DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "count: %lu,\n", self->count);
     dc_debug_fmt_print(fmt, stream, "free_list: %lu,\n", (size_t)self->free_list);

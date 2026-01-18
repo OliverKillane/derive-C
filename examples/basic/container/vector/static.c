@@ -1,66 +1,100 @@
 /// @file
 /// @example container/vector/static.c
-/// @brief Examples for using static vectors (in-place storage, up to a fixed size).
+/// @brief Static vectors as fixed-capacity containers.
 
-#include <stdint.h>
 #include <stdio.h>
 
 #include <derive-c/prelude.h>
+#include <derive-c/utils/for.h>
 
-#define MAX_CAPACITY 8
-
-#define ITEM unsigned char
-#define CAPACITY MAX_CAPACITY
-#define NAME staticvec_chars
+#define ITEM char
+#define CAPACITY 16
+#define NAME vec
 #include <derive-c/container/vector/static/template.h>
 
-static void push_example() {
-    staticvec_chars vec = staticvec_chars_new();
+static void basic_usage() {
+    printf("=== Basic Static Vector ===\n");
+    DC_SCOPED(vec) v = vec_new();
 
-    // Push characters into the static vector
-    for (unsigned char i = 0; i < MAX_CAPACITY; i++) {
-        staticvec_chars_push(&vec, i);
+    for (char c = 'A'; c <= 'J'; c++) {
+        vec_push(&v, c);
     }
 
-    // Cannot push past the in-place capacity
-    DC_ASSERT(!staticvec_chars_try_push(&vec, 8));
+    printf("Size: %u/%u\n", vec_size(&v), (uint8_t)16);
 
-    // Check that the first 8 characters are in place
-    for (unsigned char i = 0; i < MAX_CAPACITY; i++) {
-        DC_ASSERT(*staticvec_chars_read(&vec, i) == i);
-    }
-
-    // The next two should be NULL since they exceed the in-place capacity
-    DC_ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY) == NULL);
-    DC_ASSERT(staticvec_chars_try_read(&vec, MAX_CAPACITY + 1) == NULL);
-
-    staticvec_chars_debug(&vec, dc_debug_fmt_new(), stdout);
-
-    staticvec_chars_delete(&vec);
-}
-
-static void iter_example() {
-    staticvec_chars vec = staticvec_chars_new();
-
-    // Push characters into the static vector
-    for (unsigned char i = 0; i < MAX_CAPACITY; i++) {
-        staticvec_chars_push(&vec, 'a' + i);
-    }
-
-    // Iterate over the vector and print the items
-    staticvec_chars_iter_const iter = staticvec_chars_get_iter_const(&vec);
-    unsigned char const* item = NULL;
-    while (item = staticvec_chars_iter_const_next(&iter), item != NULL) {
-        printf("%u ", *item);
+    printf("Contents: ");
+    for (uint8_t i = 0; i < vec_size(&v); i++) {
+        printf("%c", *vec_read(&v, i));
     }
     printf("\n");
 
-    staticvec_chars_debug(&vec, dc_debug_fmt_new(), stdout);
+    char popped = vec_pop(&v);
+    printf("Popped: '%c'\n", popped);
 
-    staticvec_chars_delete(&vec);
+    vec_debug(&v, dc_debug_fmt_new(), stdout);
+}
+
+#define ITEM int
+#define CAPACITY 8
+#define NAME stack
+#include <derive-c/container/vector/static/template.h>
+
+static void stack_operations() {
+    printf("\n=== Stack (LIFO) ===\n");
+    DC_SCOPED(stack) stk = stack_new();
+
+    for (int i = 1; i <= 5; i++) {
+        stack_push(&stk, i * 10);
+    }
+
+    printf("Top: %d\n", *stack_read(&stk, stack_size(&stk) - 1));
+
+    printf("Popping:");
+    while (stack_size(&stk) > 0) {
+        printf(" %d", stack_pop(&stk));
+    }
+    printf("\n");
+}
+
+#define ITEM double
+#define CAPACITY 4
+#define NAME ring
+#include <derive-c/container/vector/static/template.h>
+
+static void ring_buffer() {
+    printf("\n=== Ring Buffer ===\n");
+    DC_SCOPED(ring) buf = ring_new();
+
+    double readings[] = {23.5, 24.1, 23.8, 25.0, 24.5};
+
+    for (size_t i = 0; i < sizeof(readings) / sizeof(readings[0]); i++) {
+        if (ring_size(&buf) >= 4) {
+            double discarded = *ring_read(&buf, 0);
+            for (uint8_t j = 0; j < ring_size(&buf) - 1; j++) {
+                *ring_write(&buf, j) = *ring_read(&buf, j + 1);
+            }
+            ring_remove_at(&buf, ring_size(&buf) - 1, 1);
+            printf("Discarded %.1f, ", discarded);
+        }
+
+        ring_push(&buf, readings[i]);
+        printf("buffer:");
+        for (uint8_t j = 0; j < ring_size(&buf); j++) {
+            printf(" %.1f", *ring_read(&buf, j));
+        }
+        printf("\n");
+    }
+
+    double sum = 0.0;
+    for (uint8_t i = 0; i < ring_size(&buf); i++) {
+        sum += *ring_read(&buf, i);
+    }
+    printf("Average: %.2f\n", sum / ring_size(&buf));
 }
 
 int main() {
-    push_example();
-    iter_example();
+    basic_usage();
+    stack_operations();
+    ring_buffer();
+    return 0;
 }

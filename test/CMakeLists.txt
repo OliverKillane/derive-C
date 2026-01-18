@@ -131,6 +131,13 @@ foreach(TEST_FILE IN LISTS TEST_CPP_FILES)
       gtest_main
   )
 
+  # JUSTIFY: Suppress GCC false-positive for hybridstatic allocator tests
+  # GCC's interprocedural analysis warns that free() might be called on
+  # stack-allocated memory, but the runtime contains_ptr() check prevents this.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND REL_PATH MATCHES "allocs/hybridstatic")
+    target_compile_options(${TEST_TARGET} PRIVATE -Wno-free-nonheap-object)
+  endif()
+
   gtest_discover_tests(${TEST_TARGET}
     TEST_PREFIX "tests/${test_hierarchy}/"
     DISCOVERY_TIMEOUT 30
