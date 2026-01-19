@@ -1,17 +1,16 @@
-find_program(UV_EXECUTABLE uv REQUIRED)
-
-# Target to format Python code and notebooks
-add_custom_target(py-format
-    COMMAND ${UV_EXECUTABLE} run ruff format .
-    COMMAND ${UV_EXECUTABLE} run ruff check --fix .
-    COMMAND ${UV_EXECUTABLE} run jupyter nbconvert --clear-output --inplace --to notebook notebooks/benchmark/*.ipynb
-    COMMAND ${UV_EXECUTABLE} run ruff format notebooks/benchmark/
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Formatting Python code and notebooks"
-    VERBATIM
-)
-
 if(LINTING)
+    find_program(UV_EXECUTABLE uv REQUIRED)
+
+    # Target to format Python code and notebooks
+    add_custom_target(py-format
+        COMMAND ${UV_EXECUTABLE} run ruff format .
+        COMMAND ${UV_EXECUTABLE} run ruff check --fix .
+        COMMAND ${UV_EXECUTABLE} run jupyter nbconvert --clear-output --inplace --to notebook notebooks/benchmark/*.ipynb
+        COMMAND ${UV_EXECUTABLE} run ruff format notebooks/benchmark/
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Formatting Python code and notebooks"
+        VERBATIM
+    )
 
     add_test(
         NAME lint/derive-c-custom-lints
