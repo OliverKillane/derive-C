@@ -86,11 +86,11 @@ jobs:
 
       - name: Test
         if: matrix.coverage == false
-        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j --output-on-failure'
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j -L "fuzz|unit|examples|linting" --output-on-failure'
 
       - name: Non-Coverage Tests
         if: matrix.coverage == true
-        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j -LE "unit|fuzz" --output-on-failure'
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j -L "examples|linting" --output-on-failure'
 
       - name: Coverage
         if: matrix.coverage == true

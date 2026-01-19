@@ -206,34 +206,34 @@ def load_benchmark(
     benchmark_name: str,
 ) -> pl.DataFrame:
     """Load a specific benchmark from the repo.
-    
+
     Automatically searches for benchmark results in build directories.
-    
+
     Args:
         repo_path: Path to the repository root
         benchmark_name: Name of the benchmark (e.g., "allocs", "containers_vector")
-    
+
     Returns:
         DataFrame with benchmark results from all found builds
-        
+
     Example:
         >>> df = load_benchmark("/path/to/derive-C", "allocs")
     """
     repo_path = Path(repo_path)
-    
+
     # Find all build directories and their benchmark_results
     all_dfs: list[pl.DataFrame] = []
-    
+
     # Search for any build* directories
     for build_dir in repo_path.glob("build*"):
         if not build_dir.is_dir():
             continue
-            
+
         # Look for benchmark_results directory
         results_dir = build_dir / "benchmark_results"
         if not results_dir.exists():
             continue
-            
+
         # Load from all compiler/build-type subdirectories
         for result_path in results_dir.glob(f"*/{benchmark_name}.json"):
             config = parse_result_path(result_path)

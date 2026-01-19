@@ -34,8 +34,6 @@ static void integer_sets() {
 
 static bool str_eq(char const* const* a, char const* const* b) { return strcmp(*a, *b) == 0; }
 
-static void str_delete(char const** s) { free((void*)*s); }
-
 static size_t str_hash(char const* const* s) {
     size_t hash = 0;
     const char* str = *s;
@@ -49,7 +47,6 @@ static size_t str_hash(char const* const* s) {
 #define ITEM char const*
 #define ITEM_EQ str_eq
 #define ITEM_HASH str_hash
-#define ITEM_DELETE str_delete
 #define NAME str_set
 #include <derive-c/container/set/swiss/template.h>
 
@@ -57,9 +54,9 @@ static void string_sets() {
     printf("\n=== String Sets ===\n");
     DC_SCOPED(str_set) s = str_set_new(stdalloc_get_ref());
 
-    str_set_add(&s, strdup("apple"));
-    str_set_add(&s, strdup("banana"));
-    str_set_add(&s, strdup("cherry"));
+    str_set_add(&s, "apple");
+    str_set_add(&s, "banana");
+    str_set_add(&s, "cherry");
 
     printf("Size: %zu\n", str_set_size(&s));
     DC_ASSERT(str_set_size(&s) == 3);
@@ -108,7 +105,7 @@ static bool point_eq(struct point const* a, struct point const* b) {
     return a->x == b->x && a->y == b->y;
 }
 
-static size_t point_hash(struct point const* p) { return (size_t)p->x * 31 + (size_t)p->y; }
+static size_t point_hash(struct point const* p) { return ((size_t)p->x * 31) + (size_t)p->y; }
 
 static void point_debug(struct point const* p, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;

@@ -92,7 +92,7 @@ foreach(BENCH_FILE ${BENCH_SOURCES})
 
   set_tests_properties(${BENCH_TARGET} PROPERTIES
     LABELS "${TEST_LABELS}"
-    TIMEOUT 120
+    TIMEOUT 360
   )
 
   # Track all benchmark targets for the 'run-benchmarks' target

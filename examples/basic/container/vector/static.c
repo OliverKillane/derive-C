@@ -16,8 +16,8 @@ static void basic_usage() {
     printf("=== Basic Static Vector ===\n");
     DC_SCOPED(vec) v = vec_new();
 
-    for (char c = 'A'; c <= 'J'; c++) {
-        vec_push(&v, c);
+    for (int c = 'A'; c <= 'J'; c++) {
+        vec_push(&v, (char)c);
     }
 
     printf("Size: %u/%u\n", vec_size(&v), (uint8_t)16);

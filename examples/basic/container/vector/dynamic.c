@@ -168,7 +168,7 @@ static void iterate_example() {
         char* c = NULL;
         while ((c = char_vec_iter_next(&iter))) {
             if (*c >= 'a' && *c <= 'z') {
-                *c = *c - 'a' + 'A';
+                *c = (char)((*c - 'a') + 'A');
             }
         }
     }

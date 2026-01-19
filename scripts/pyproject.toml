@@ -33,3 +33,4 @@ bench = "src.benchmarks.cli:main"
 mypy_path = "src"
 namespace_packages = true
 explicit_package_bases = true
+exclude = ["^build/"]

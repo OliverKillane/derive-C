@@ -386,24 +386,21 @@ DC_PUBLIC static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
 DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
-    
+
     // Check if we've exhausted the iterator
     if (iter->next_index >= MAX_INDEX) {
         return true;
     }
-    
+
     // Check if we're past the valid range
     uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
     if (block > iter->arena->block_current) {
         return true;
     }
-    
+
     size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
-    if (block == iter->arena->block_current && offset >= iter->arena->block_current_exclusive_end) {
-        return true;
-    }
-    
-    return false;
+    return block == iter->arena->block_current &&
+           offset >= iter->arena->block_current_exclusive_end;
 }
 
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
@@ -542,24 +539,21 @@ DC_PUBLIC static IV_PAIR NS(ITER, next)(ITER* iter) {
 DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
-    
+
     // Check if we've exhausted the iterator
     if (iter->next_index >= MAX_INDEX) {
         return true;
     }
-    
+
     // Check if we're past the valid range
     uint8_t block = DC_ARENA_GEO_INDEX_TO_BLOCK(iter->next_index, INITIAL_BLOCK_INDEX_BITS);
     if (block > iter->arena->block_current) {
         return true;
     }
-    
+
     size_t offset = DC_ARENA_GEO_INDEX_TO_OFFSET(iter->next_index, block, INITIAL_BLOCK_INDEX_BITS);
-    if (block == iter->arena->block_current && offset >= iter->arena->block_current_exclusive_end) {
-        return true;
-    }
-    
-    return false;
+    return block == iter->arena->block_current &&
+           offset >= iter->arena->block_current_exclusive_end;
 }
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {

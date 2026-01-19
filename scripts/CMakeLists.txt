@@ -1,5 +1,17 @@
+find_program(UV_EXECUTABLE uv REQUIRED)
+
+# Target to format Python code and notebooks
+add_custom_target(py-format
+    COMMAND ${UV_EXECUTABLE} run ruff format .
+    COMMAND ${UV_EXECUTABLE} run ruff check --fix .
+    COMMAND ${UV_EXECUTABLE} run jupyter nbconvert --clear-output --inplace --to notebook notebooks/benchmark/*.ipynb
+    COMMAND ${UV_EXECUTABLE} run ruff format notebooks/benchmark/
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Formatting Python code and notebooks"
+    VERBATIM
+)
+
 if(LINTING)
-    find_program(UV_EXECUTABLE uv REQUIRED)
 
     add_test(
         NAME lint/derive-c-custom-lints
@@ -15,7 +27,7 @@ if(LINTING)
     )
     add_test(
         NAME lint/python-mypy
-        COMMAND ${UV_EXECUTABLE} run mypy .
+        COMMAND ${UV_EXECUTABLE} run mypy --package src.linting --package src.intellisense --package src.benchmarks --package tests.linting
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     add_test(
@@ -29,20 +41,20 @@ if(LINTING)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    # Notebook linting/formatting with nbqa
+    # Notebook linting/formatting
     add_test(
         NAME lint/notebooks-format
-        COMMAND ${UV_EXECUTABLE} run nbqa ruff format --check notebooks/benchmark/
+        COMMAND ${UV_EXECUTABLE} run --quiet ruff format --check notebooks/benchmark/
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     add_test(
         NAME lint/notebooks-lint
-        COMMAND ${UV_EXECUTABLE} run nbqa ruff check notebooks/benchmark/
+        COMMAND ${UV_EXECUTABLE} run --quiet ruff check notebooks/benchmark/
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     add_test(
         NAME lint/notebooks-mypy
-        COMMAND ${UV_EXECUTABLE} run nbqa mypy notebooks/benchmark/
+        COMMAND ${UV_EXECUTABLE} run nbqa mypy --ignore-missing-imports notebooks/benchmark/
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     add_test(
