@@ -45,6 +45,7 @@ TEST(StaticLinearMap, Debug) {
             // clang-format off
             "test_map@" DC_PTR_REPLACE " {\n"
             "  capacity: 256,\n"
+            "  size: 0,\n"
             "  entries: [\n"
             "  ],\n"
             "}"
@@ -66,6 +67,7 @@ TEST(StaticLinearMap, Debug) {
             // clang-format off
             "test_map@" DC_PTR_REPLACE " {\n"
             "  capacity: 256,\n"
+            "  size: 4,\n"
             "  entries: [\n"
             "    {index: 0, key: 3, value: char*@" DC_PTR_REPLACE " \"foo\"},\n"
             "    {index: 1, key: 4, value: char*@" DC_PTR_REPLACE " \"bar\"},\n"

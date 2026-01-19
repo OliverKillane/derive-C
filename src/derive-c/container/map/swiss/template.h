@@ -466,6 +466,12 @@ DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     };
 }
 
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index == _DC_SWISS_NO_INDEX;
+}
+
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
@@ -480,7 +486,7 @@ DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
@@ -562,6 +568,12 @@ DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
         .key = &iter->map->slots[index].key,
         .value = &iter->map->slots[index].value,
     };
+}
+
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index == _DC_SWISS_NO_INDEX;
 }
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {

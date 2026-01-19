@@ -37,6 +37,29 @@ nix-shell toolchain/renovate.nix
 LOG_LEVEL=debug renovate --platform=local --dry-run=full
 ```
 
+## Verifying Changes
+All tests, linting & benchmarks are checked under ctest:
+```bash
+ctest --test-dir build -N # List the test names
+ctest --test-dir build -R 'derive-c-custom-lint' -V # See results for custom derive-c lints
+ctest --test-dir build -j --output-on-failure # To test all
+ctest --test-dir build -L bench -R allocs -V # To just run the alloc benchmarks 
+```
+Individual test binaries are presenting in the:
+```bash
+ls build/bench # all benchmarking binaries
+ls build/test # all test binaries
+```
+
+We also verify for both clang and gcc, in release and with sanitizers.
+```bash
+# Used for normal development (include intellisense)
+nix-shell toolschain/clang_dev
+
+# Verifying code works (e.g. cutsom poisoning under msan)
+nix-shell toolschain/clang_msan --run 'cmake -S . -B build_msan -DUSE_ASAN=Off _DUSE_UBSAN=Off -DUSE_MSAN=On -DDOCS=Off && ninja -C build_msan && ctest --test-dir build_msan -j --output-on-failure'
+```
+
 ## Design Principles
 This library should focus on maintaining _yeetability_.
 

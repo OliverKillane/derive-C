@@ -56,6 +56,7 @@ Containers also take an allocator as a parameter.
 Many implementations of map, vector (and custom allocators) with a focus on performance.
  - Containers use smaller integers for indexes where possible
  - Containers parameterisable for performance features (e.g. small buckets for the ankerl map)
+ - Benchmarks compare against external high-performance libraries (ankerl::unordered_dense, Abseil SwissTable, Boost unordered_flat_map)
 
 ### Debugability
 For finding bugs:

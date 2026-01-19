@@ -60,9 +60,11 @@ DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
 }
 
 DC_PUBLIC static void NS(SELF, unleak)(SELF* self) {
+    // NOLINTBEGIN(clang-analyzer-unix.Malloc)
     DC_FOR(ALLOCATIONS_MAP, &self->allocations, iter, entry) {
         NS(ALLOC, deallocate)(self->alloc_ref, *entry.key, *entry.value);
     }
+    // NOLINTEND(clang-analyzer-unix.Malloc)
 }
 
 DC_PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
@@ -124,7 +126,7 @@ DC_PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) " @%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) " @%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "base: " DC_EXPAND_STRING(ALLOC) "@%p,\n",
                        (void*)NS(NS(ALLOC, ref), deref)(self->alloc_ref));

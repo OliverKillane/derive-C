@@ -80,6 +80,11 @@ DC_PUBLIC static void NS(stdalloc, deallocate)(stdalloc_ref /* ref */, void* ptr
     //    complexity, and makes the returned ptr-types less easy to use
     //  - can also use special headers on allocations, but this adds complexity
     // So we settle for ignoring here:
+    //
+    // GCC's -Wfree-nonheap-object can also trigger false positives with wrapper
+    // allocators like hybridstatic that conditionally use heap vs stack storage.
+    // The runtime check (contains_ptr) prevents actual issues, but GCC's
+    // interprocedural analysis doesn't understand this.
 
     free(ptr); // NOLINT(clang-analyzer-unix.Malloc)
 }

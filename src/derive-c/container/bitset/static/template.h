@@ -89,7 +89,7 @@ DC_PUBLIC static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "blocks: [\n");
@@ -169,6 +169,12 @@ DC_PUBLIC static ITER_INDEX_TYPE NS(ITER_CONST, next)(ITER_CONST* iter) {
     return next_index;
 }
 
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index >= EXCLUSIVE_END_INDEX;
+}
+
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
 
@@ -213,6 +219,12 @@ DC_PUBLIC static ITER_INDEX_TYPE NS(ITER, next)(ITER* iter) {
         iter->next_index++;
     }
     return next_index;
+}
+
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+    DC_ASSUME(iter);
+    mutation_version_check(&iter->version);
+    return iter->next_index >= EXCLUSIVE_END_INDEX;
 }
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {

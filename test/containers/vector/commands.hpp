@@ -45,10 +45,13 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel<SutNS>, S
             size_t pos = SutNS::Sut_iter_position(&iter);
             typename SutNS::Sut_item_t const* item_const = SutNS::Sut_iter_const_next(&iter_const);
             typename SutNS::Sut_item_t* item = SutNS::Sut_iter_next(&iter);
+            RC_ASSERT(!SutNS::Sut_iter_const_empty_item(&item_const));
+            RC_ASSERT(!SutNS::Sut_iter_empty_item(&item));
             RC_ASSERT(m[pos] == *item_const);
             RC_ASSERT(m[pos] == *item);
         }
         RC_ASSERT(SutNS::Sut_iter_empty(&iter));
+        RC_ASSERT(SutNS::Sut_iter_const_empty(&iter_const));
         RC_ASSERT(SutNS::Sut_iter_next(&iter) == nullptr);
         RC_ASSERT(SutNS::Sut_iter_const_next(&iter_const) == nullptr);
     }

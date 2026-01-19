@@ -91,7 +91,7 @@ DC_PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_
 }
 
 DC_PUBLIC static bool NS(SELF, try_add)(SELF* self, ITEM item) {
-    return NS(MAP, try_insert(&self->map, item, dc_unit_new())) != NULL;
+    return NS(MAP, try_insert)(&self->map, item, dc_unit_new()) != NULL;
 }
 
 DC_PUBLIC static void NS(SELF, add)(SELF* self, ITEM item) {
@@ -127,6 +127,11 @@ DC_PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { retu
 
 DC_PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
     return NS(MAP, NS(iter_const, next))(&iter->map_iter).key;
+}
+
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    return NS(MAP, NS(iter_const, empty))(&iter->map_iter);
 }
 
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {

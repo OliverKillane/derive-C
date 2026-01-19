@@ -329,3 +329,26 @@ template <typename SutNS> struct ReallocateSmaller : Command<SutNS> {
         os << "ReallocateSmaller(index=" << mIndex.value() << ", size=" << mNewSize << ")";
     }
 };
+
+template <typename SutNS> struct Reset : Command<SutNS> {
+    using Base = Command<SutNS>;
+    using typename Base::Model;
+    using typename Base::Wrapper;
+
+    void checkPreconditions(const Model& /* m */) const override {}
+
+    void apply(Model& m) const override { m.mAllocations.clear(); }
+
+    void runCommand(const Model& /* m */, Wrapper& w) const override {
+        SutNS::Sut_reset(w.get());
+
+        for (const auto& [index, alloc] : w.mAllocations) {
+            dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
+                                    alloc.mPtr, alloc.mSize);
+        }
+
+        w.mAllocations.clear();
+    }
+
+    void show(std::ostream& os) const override { os << "Reset()"; }
+};

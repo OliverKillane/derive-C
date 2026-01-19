@@ -43,7 +43,7 @@ static bool age_eq(age const* age_1, age const* age_2) { return age_1->value == 
 static size_t age_hash(age const* age) { return age->value; }
 static void age_debug(age const* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
-    fprintf(stream, "%d years", self->value);
+    fprintf(stream, "%zu years", self->value);
 }
 
 typedef struct {

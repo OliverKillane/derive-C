@@ -102,6 +102,47 @@ jobs:
         with:
           name: coverage-report-${{ matrix.name }}
           path: build/coverage/coverage_html/
+
+  build_and_bench:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: clang_release_bench
+            toolchain: clang_dev.nix
+          - name: gcc_release_bench
+            toolchain: gcc.nix
+
+    name: Benchmark ${{ matrix.name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: CMake
+        run: |
+          nix-shell toolchain/${{ matrix.toolchain }} --run \
+            "cmake -S . -B build -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLINTING=Off \
+            -DCOVERAGE=Off \
+            -DUSE_ASAN=Off \
+            -DUSE_UBSAN=Off \
+            -DUSE_MSAN=Off \
+            -DDOCS=Off"
+
+      - name: Build
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ninja -C build'
+
+      - name: Run Benchmarks
+        run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j -L bench --output-on-failure'
+
   check_renovate:
     name: Run Renovate
     runs-on: ubuntu-latest
