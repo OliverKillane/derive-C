@@ -369,9 +369,18 @@ DC_PUBLIC static IV_PAIR NS(ITER, next)(ITER* iter) {
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
     INVARIANT_CHECK(self);
+    
+    // Check if index 0 is present, otherwise find the next valid index
+    INDEX_TYPE first_index;
+    if (self->block_current_exclusive_end > 0 && (*self->blocks[0])[0].present) {
+        first_index = 0;
+    } else {
+        first_index = PRIV(NS(SELF, next_index_value))(self, 0);
+    }
+    
     return (ITER){
         .arena = self,
-        .next_index = PRIV(NS(SELF, next_index_value))(self, 0),
+        .next_index = first_index,
         .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
@@ -451,9 +460,18 @@ DC_PUBLIC static IV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
 
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
+    
+    // Check if index 0 is present, otherwise find the next valid index
+    INDEX_TYPE first_index;
+    if (self->block_current_exclusive_end > 0 && (*self->blocks[0])[0].present) {
+        first_index = 0;
+    } else {
+        first_index = PRIV(NS(SELF, next_index_value))(self, 0);
+    }
+    
     return (ITER_CONST){
         .arena = self,
-        .next_index = PRIV(NS(SELF, next_index_value))(self, 0),
+        .next_index = first_index,
         .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }

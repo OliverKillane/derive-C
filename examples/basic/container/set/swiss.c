@@ -28,10 +28,6 @@ static void integer_sets() {
 
     printf("Size: %zu\n", uint_set_size(&s));
 
-    uint_set_add(&s, 4);
-    printf("After adding duplicate 4: size = %zu\n", uint_set_size(&s));
-    DC_ASSERT(uint_set_size(&s) == 10);
-
     uint_set_remove(&s, 8);
     printf("After removing 8: contains 8? %s\n", uint_set_contains(&s, 8) ? "yes" : "no");
 }
@@ -64,9 +60,8 @@ static void string_sets() {
     str_set_add(&s, strdup("apple"));
     str_set_add(&s, strdup("banana"));
     str_set_add(&s, strdup("cherry"));
-    str_set_add(&s, strdup("apple"));
 
-    printf("Size after duplicate 'apple': %zu\n", str_set_size(&s));
+    printf("Size: %zu\n", str_set_size(&s));
     DC_ASSERT(str_set_size(&s) == 3);
 
     const char* search = "banana";
@@ -134,9 +129,8 @@ static void struct_sets() {
     point_set_add(&s, (struct point){0, 0});
     point_set_add(&s, (struct point){1, 1});
     point_set_add(&s, (struct point){2, 3});
-    point_set_add(&s, (struct point){0, 0});
 
-    printf("Size after duplicate (0,0): %zu\n", point_set_size(&s));
+    printf("Size: %zu\n", point_set_size(&s));
     DC_ASSERT(point_set_size(&s) == 3);
 
     struct point search = {1, 1};

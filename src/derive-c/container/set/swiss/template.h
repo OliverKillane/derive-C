@@ -91,7 +91,7 @@ DC_PUBLIC static void NS(SELF, extend_capacity_for)(SELF* self, size_t expected_
 }
 
 DC_PUBLIC static bool NS(SELF, try_add)(SELF* self, ITEM item) {
-    return NS(MAP, try_insert(&self->map, item, dc_unit_new())) != NULL;
+    return NS(MAP, try_insert)(&self->map, item, dc_unit_new()) != NULL;
 }
 
 DC_PUBLIC static void NS(SELF, add)(SELF* self, ITEM item) {

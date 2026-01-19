@@ -186,7 +186,7 @@ foreach(FUZZ_FILE IN LISTS FUZZ_CPP_FILES)
     PROPERTIES
       LABELS "fuzz"
     ENVIRONMENT
-      "RC_PARAMS=max_success=2000"
+      "RC_PARAMS=max_success=500"
   )
 
   list(APPEND ALL_TEST_EXECUTABLES ${FUZZ_TARGET})

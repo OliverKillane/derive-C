@@ -99,23 +99,33 @@ TEST(HybridStaticTests, DeallocateLastAllocationReclaimsSpace) {
     hybridstatic_buffer buf;
     DC_SCOPED(hybridstatic) alloc = hybridstatic_new(&buf, stdalloc_get_ref());
 
-    // Allocate 20 bytes
+    // Allocate 20 bytes from static buffer
     void* ptr1 = hybridstatic_allocate_uninit(&alloc, 20);
     ASSERT_NE(ptr1, nullptr);
 
-    // Buffer is now full (20 bytes used out of 30)
-    // Try to allocate another 15 bytes - should fail
-    void* ptr2 = hybridstatic_allocate_uninit(&alloc, 15);
-    EXPECT_EQ(ptr2, nullptr); // Not enough space
+    // Verify ptr1 is from the static buffer
+    void* buffer_start = &buf[0];
+    void* buffer_end = &buf[30];
+    EXPECT_GE(ptr1, buffer_start);
+    EXPECT_LT(ptr1, buffer_end);
 
-    // Deallocate the last allocation
+    // Buffer now has 10 bytes free (20 used out of 30)
+    // Try to allocate another 15 bytes - will succeed using fallback allocator
+    void* ptr2 = hybridstatic_allocate_uninit(&alloc, 15);
+    EXPECT_NE(ptr2, nullptr);
+    // ptr2 should NOT be from the static buffer (fallback to heap)
+    EXPECT_TRUE(ptr2 < buffer_start || ptr2 >= buffer_end);
+
+    // Deallocate the last static allocation
     hybridstatic_deallocate(&alloc, ptr1, 20);
 
-    // Now we should be able to allocate 20 bytes again
+    // Now we should be able to allocate 20 bytes again from the static buffer
     void* ptr3 = hybridstatic_allocate_uninit(&alloc, 20);
     EXPECT_NE(ptr3, nullptr);
-    EXPECT_EQ(ptr3, ptr1); // Should get the same address
+    EXPECT_EQ(ptr3, ptr1); // Should get the same address (space was reclaimed)
 
+    // Clean up
+    hybridstatic_deallocate(&alloc, ptr2, 15);
     hybridstatic_deallocate(&alloc, ptr3, 20);
 }
 
@@ -123,7 +133,10 @@ TEST(HybridStaticTests, DeallocateNonLastAllocationDoesNotReclaimSpace) {
     hybridstatic_buffer buf;
     DC_SCOPED(hybridstatic) alloc = hybridstatic_new(&buf, stdalloc_get_ref());
 
-    // Allocate two blocks
+    void* buffer_start = &buf[0];
+    void* buffer_end = &buf[30];
+
+    // Allocate two blocks from the static buffer
     void* ptr1 = hybridstatic_allocate_uninit(&alloc, 10);
     void* ptr2 = hybridstatic_allocate_uninit(&alloc, 10);
     ASSERT_NE(ptr1, nullptr);
@@ -138,16 +151,23 @@ TEST(HybridStaticTests, DeallocateNonLastAllocationDoesNotReclaimSpace) {
     EXPECT_DEATH(byte_ptr[0] = 99, ""); // Writing should fail
 #endif
 
-    // But we shouldn't be able to reclaim that space yet
-    // Only 10 bytes left (capacity is 30, we used 20, freed 10 but can't reclaim it)
+    // We can't reclaim the first 10 bytes since ptr2 is after it
+    // Only 10 bytes left in static buffer (capacity is 30, we used 20, freed 10 but can't reclaim
+    // it) Try to allocate 15 bytes - will succeed using fallback allocator
     void* ptr3 = hybridstatic_allocate_uninit(&alloc, 15);
-    EXPECT_EQ(ptr3, nullptr); // Not enough space - first 10 bytes are wasted
+    EXPECT_NE(ptr3, nullptr);
+    // ptr3 should NOT be from the static buffer (fallback to heap)
+    EXPECT_TRUE(ptr3 < buffer_start || ptr3 >= buffer_end);
 
-    // Can still allocate 10 bytes
+    // Can still allocate 10 bytes from the static buffer
     void* ptr4 = hybridstatic_allocate_uninit(&alloc, 10);
     EXPECT_NE(ptr4, nullptr);
+    // ptr4 should be from the static buffer (exactly 10 bytes remaining)
+    EXPECT_GE(ptr4, buffer_start);
+    EXPECT_LT(ptr4, buffer_end);
 
     hybridstatic_deallocate(&alloc, ptr2, 10);
+    hybridstatic_deallocate(&alloc, ptr3, 15);
     hybridstatic_deallocate(&alloc, ptr4, 10);
 }
 
