@@ -135,7 +135,6 @@ TEST(SlabTests, Debug) {
         "  slab_size: 128,\n"
         "  blocks_per_slab: 4,\n"
         "  num_slabs: 1,\n"
-        "  free_blocks: 2,\n"
         "  alloc: stdalloc@" DC_PTR_REPLACE " { }\n"
         "}",
         // clang-format on

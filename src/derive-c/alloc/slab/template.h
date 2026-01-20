@@ -78,16 +78,14 @@ DC_INTERNAL static void PRIV(NS(SELF, allocate_new_slab))(SELF* self) {
 
     for (size_t i = 0; i < blocks_per_slab; i++) {
         void* block_ptr = (char*)slab_ptr + (i * BLOCK_SIZE);
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, block_ptr,
-                              sizeof(void*));
-        *(void**)block_ptr = self->free_list_head;
-        self->free_list_head = block_ptr;
+        // Temporarily unpoison to write the freelist pointer
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
                               block_ptr, sizeof(void*));
-        if (BLOCK_SIZE > sizeof(void*)) {
-            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                                  (char*)block_ptr + sizeof(void*), BLOCK_SIZE - sizeof(void*));
-        }
+        *(void**)block_ptr = self->free_list_head;
+        self->free_list_head = block_ptr;
+        // Mark the entire block as inaccessible (NONE) - including the freelist pointer
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, block_ptr,
+                              BLOCK_SIZE);
     }
 }
 
@@ -105,12 +103,19 @@ DC_PUBLIC static void* NS(SELF, allocate_uninit)(SELF* self, size_t size) {
 
     void* block = self->free_list_head;
 
+    // Temporarily mark as READ_WRITE to read the freelist pointer
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, block,
                           sizeof(void*));
-    self->free_list_head = *(void**)block;
+    void* next = *(void**)block;
+    self->free_list_head = next;
 
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, block,
-                          BLOCK_SIZE);
+    // Mark the allocated region as writable but uninitialized (WRITE)
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, block, size);
+    // Mark any remaining space in the block as inaccessible
+    if (size < BLOCK_SIZE) {
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
+                              (char*)block + size, BLOCK_SIZE - size);
+    }
 
     return block;
 }
@@ -135,16 +140,14 @@ DC_PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
         return;
     }
 
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, ptr,
+    // Temporarily unpoison to write the freelist pointer
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, ptr,
                           sizeof(void*));
     *(void**)ptr = self->free_list_head;
     self->free_list_head = ptr;
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, ptr,
-                          sizeof(void*));
-    if (BLOCK_SIZE > sizeof(void*)) {
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                              (char*)ptr + sizeof(void*), BLOCK_SIZE - sizeof(void*));
-    }
+
+    // Mark the entire block as inaccessible (NONE) - including the freelist pointer
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr, BLOCK_SIZE);
 }
 
 DC_PUBLIC static void* NS(SELF, reallocate)(SELF* self, void* ptr, size_t old_size,
@@ -207,14 +210,6 @@ DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* 
     dc_debug_fmt_print(fmt, stream, "slab_size: %zu,\n", (size_t)SLAB_SIZE);
     dc_debug_fmt_print(fmt, stream, "blocks_per_slab: %zu,\n", (size_t)(SLAB_SIZE / BLOCK_SIZE));
     dc_debug_fmt_print(fmt, stream, "num_slabs: %zu,\n", NS(SLAB_VECTOR, size)(&self->slabs));
-
-    size_t free_blocks = 0;
-    void* current = self->free_list_head;
-    while (current != NULL) {
-        free_blocks++;
-        current = *(void**)current;
-    }
-    dc_debug_fmt_print(fmt, stream, "free_blocks: %zu,\n", free_blocks);
 
     dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
