@@ -42,10 +42,11 @@ jobs:
             flags: "-DDOCS=Off"
             coverage: false
             lint: Off
+          # Fails for warnings in abseil when building benchmarks
           - name: gcc_debug_asan_ubsan
             build_type: Debug
             toolchain: gcc.nix
-            flags: "-DUSE_ASAN=On -DUSE_UBSAN=On -DUSE_MSAN=Off"
+            flags: "-DUSE_ASAN=On -DUSE_UBSAN=On -DUSE_MSAN=Off -DBENCH=Off"
             coverage: false
             lint: Off
           - name: gcc_release
@@ -140,6 +141,7 @@ jobs:
       - name: Build
         run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ninja -C build'
 
+      # Checks that they can run without failing, not a performance regression check
       - name: Run Benchmarks
         run: nix-shell toolchain/${{ matrix.toolchain }} --run 'ctest --test-dir build -j -L bench --output-on-failure'
 
