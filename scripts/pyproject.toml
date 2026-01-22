@@ -6,7 +6,13 @@ readme = "README.md"
 dependencies = [
     "pytest>=8.0.0",
     "mypy>=1.19.0",
-    "ruff>=0.14.9"
+    "ruff>=0.14.9",
+    "polars>=1.20.0",
+    "pyarrow>=18.0.0",
+    "plotly[express]>=5.24.0",
+    "jupyter>=1.1.1",
+    "ipykernel>=6.29.5",
+    "nbqa>=1.9.1"
 ]
 classifiers = ["Private :: Do Not Upload"]
 
@@ -21,3 +27,10 @@ module-root = ""
 [project.scripts]
 linting = "src.linting.main:main"
 intellisense = "src.intellisense.main:main"
+bench = "src.benchmarks.cli:main"
+
+[tool.mypy]
+mypy_path = "src"
+namespace_packages = true
+explicit_package_bases = true
+exclude = ["^build/"]

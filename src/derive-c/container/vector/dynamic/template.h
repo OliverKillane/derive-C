@@ -363,43 +363,45 @@ DC_PUBLIC static void NS(SELF, transfer_reverse)(SELF* source, SELF* target, siz
 #define ITER NS(SELF, iter)
 typedef ITEM* NS(ITER, item);
 
-DC_PUBLIC static bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
+DC_PUBLIC static DC_INLINE bool NS(ITER, empty_item)(ITEM* const* item) { return *item == NULL; }
 
 typedef struct {
-    SELF* vec;
+    ITEM* data; // Direct pointer to data buffer
     size_t pos;
+    size_t size; // Cached size for fast bounds checking
     mutation_version version;
 } ITER;
 
-DC_PUBLIC static ITEM* NS(ITER, next)(ITER* iter) {
+DC_PUBLIC static DC_INLINE ITEM* NS(ITER, next)(ITER* DC_RESTRICT iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
 
-    if (iter->pos < iter->vec->size) {
-        ITEM* item = &iter->vec->data[iter->pos];
+    if (iter->pos < iter->size) {
+        ITEM* item = &iter->data[iter->pos];
         iter->pos++;
         return item;
     }
     return NULL;
 }
 
-DC_PUBLIC static size_t NS(ITER, position)(ITER const* iter) {
+DC_PUBLIC static DC_INLINE size_t NS(ITER, position)(ITER const* DC_RESTRICT iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
     return iter->pos;
 }
 
-DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+DC_PUBLIC static DC_INLINE bool NS(ITER, empty)(ITER const* DC_RESTRICT iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->version);
-    return iter->pos >= iter->vec->size;
+    return iter->pos >= iter->size;
 }
 
-DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
+DC_PUBLIC static DC_INLINE ITER NS(SELF, get_iter)(SELF* self) {
     DC_ASSUME(self);
     return (ITER){
-        .vec = self,
+        .data = self->data,
         .pos = 0,
+        .size = self->size,
         .version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
@@ -408,48 +410,52 @@ DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
 #define ITER_CONST NS(SELF, iter_const)
 typedef ITEM const* NS(ITER_CONST, item);
 
-DC_PUBLIC static bool NS(ITER_CONST, empty_item)(ITEM const* const* item) { return *item == NULL; }
+DC_PUBLIC static DC_INLINE bool NS(ITER_CONST, empty_item)(ITEM const* const* item) {
+    return *item == NULL;
+}
 
 typedef struct {
-    SELF const* vec;
+    ITEM const* data; // Direct pointer to data buffer
     size_t pos;
+    size_t size; // Cached size for fast bounds checking
     mutation_version vec_version;
 } ITER_CONST;
 
-DC_PUBLIC static ITEM const* NS(ITER_CONST, next)(ITER_CONST* iter) {
+DC_PUBLIC static DC_INLINE ITEM const* NS(ITER_CONST, next)(ITER_CONST* DC_RESTRICT iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->vec_version);
-    if (iter->pos < iter->vec->size) {
-        ITEM const* item = &iter->vec->data[iter->pos];
+    if (iter->pos < iter->size) {
+        ITEM const* item = &iter->data[iter->pos];
         iter->pos++;
         return item;
     }
     return NULL;
 }
 
-DC_PUBLIC static size_t NS(ITER_CONST, position)(ITER_CONST const* iter) {
+DC_PUBLIC static DC_INLINE size_t NS(ITER_CONST, position)(ITER_CONST const* DC_RESTRICT iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->vec_version);
     return iter->pos;
 }
 
-DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+DC_PUBLIC static DC_INLINE bool NS(ITER_CONST, empty)(ITER_CONST const* DC_RESTRICT iter) {
     DC_ASSUME(iter);
     mutation_version_check(&iter->vec_version);
-    return iter->pos >= iter->vec->size;
+    return iter->pos >= iter->size;
 }
 
-DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
+DC_PUBLIC static DC_INLINE ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     DC_ASSUME(self);
     return (ITER_CONST){
-        .vec = self,
+        .data = self->data,
         .pos = 0,
+        .size = self->size,
         .vec_version = mutation_tracker_get(&self->iterator_invalidation_tracker),
     };
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "size: %lu,\n", self->size);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);

@@ -1,10 +1,7 @@
 /// @brief A hybrid of a bump allocator on a statically allocated buffer, and any other allocator.
 /// - Useful for reducing allocation overhead when the expected number of allocations is known.
 /// - Once the static allocation is exhausted, it uses the fallback allocator.
-
-// TODO(oliverkillane): This allocator stores the size of the allocation.
-//  - This is unecessary, assuming correct old_sizes are provided.
-//  - It is possible to remove this, and we should for a more optimal allocator
+/// - Simplified: no size storage, no buffer zeroing, tracks only head and last allocation
 
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
@@ -21,43 +18,15 @@ TEMPLATE_ERROR("No CAPACITY")
     #define CAPACITY 1024
 #endif
 
-#if CAPACITY == 0
-TEMPLATE_ERROR("CAPACITY must be > 0")
-#elif CAPACITY <= UINT8_MAX
-    #define USED uint8_t
-    #define UNALIGNED_VALID
-#elif CAPACITY <= UINT16_MAX
-    #define USED uint16_t
-#elif CAPACITY <= UINT32_MAX
-    #define USED uint32_t
-#else
-    #define USED uint64_t
-#endif
-
-#if defined UNALIGNED_VALID
-DC_INTERNAL static USED PRIV(NS(SELF, read_used))(const void* ptr) { return *(const USED*)ptr; }
-DC_INTERNAL static void PRIV(NS(SELF, write_used))(void* ptr, USED value) { *((USED*)ptr) = value; }
-    #undef UNALIGNED_VALID
-#else
-// JUSTIFY: Special functions for reading the used count
-//  - These values are misaligned, so would be UB to access directly.
-DC_INTERNAL static USED PRIV(NS(SELF, read_used))(const void* ptr) {
-    USED value;
-    memcpy(&value, ptr, sizeof(USED));
-    return value;
-}
-
-DC_INTERNAL static void PRIV(NS(SELF, write_used))(void* ptr, USED value) {
-    memcpy(ptr, &value, sizeof(USED));
-}
-#endif
+DC_STATIC_ASSERT(CAPACITY > 0, "Capacity must be larger than zero");
 
 typedef char NS(SELF, buffer)[CAPACITY];
 
 typedef struct {
     NS(SELF, buffer) * buffer;
     NS(ALLOC, ref) alloc_ref;
-    USED head_offset;
+    char* head_ptr;       // Points to end of used buffer
+    char* last_alloc_ptr; // Points to last allocation, or NULL if none
     dc_gdb_marker derive_c_hybridstaticalloc;
 } SELF;
 
@@ -71,13 +40,10 @@ DC_PUBLIC static SELF NS(SELF, new)(NS(SELF, buffer) * buffer, NS(ALLOC, ref) al
     SELF self = {
         .buffer = buffer,
         .alloc_ref = alloc_ref,
-        .head_offset = 0,
+        .head_ptr = &(*buffer)[0],
+        .last_alloc_ptr = NULL,
         .derive_c_hybridstaticalloc = {},
     };
-    // JUSTIFY: Zeroed buffer
-    //           - For easier debugging & view in gdb.
-    //           - Additionally allows for calloc to be malloc.
-    memset(*self.buffer, 0, CAPACITY);
 
     // JUSTIFY: no capabilities on init
     //  - Protect access by users outside of malloc/calloc
@@ -91,22 +57,24 @@ DC_PUBLIC static void* PRIV(NS(SELF, static_allocate_zeroed))(SELF* self, size_t
     DC_ASSUME(self);
     DC_ASSERT(size > 0);
 
-    if (self->head_offset + (size + sizeof(USED)) > CAPACITY) {
+    char* buffer_end = &(*self->buffer)[CAPACITY];
+    if (self->head_ptr + size > buffer_end) {
         return NULL;
     }
 
-    char* ptr = &(*self->buffer)[self->head_offset];
-    char* used_ptr = ptr;
+    char* allocation_ptr = self->head_ptr;
 
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, used_ptr,
-                          sizeof(USED));
-    USED size_value = (USED)size;
-    PRIV(NS(SELF, write_used))(used_ptr, size_value);
-    char* allocation_ptr = ptr + sizeof(USED);
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, used_ptr,
-                          sizeof(USED));
+    // Set permissions before zeroing (buffer might be poisoned)
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, allocation_ptr,
+                          size);
 
-    self->head_offset += size + sizeof(USED);
+    // Zero the allocation
+    memset(allocation_ptr, 0, size);
+
+    self->last_alloc_ptr = allocation_ptr;
+    self->head_ptr += size;
+
+    // Now set to read-write
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
                           allocation_ptr, size);
 
@@ -122,12 +90,21 @@ DC_PUBLIC static void* NS(SELF, allocate_zeroed)(SELF* self, size_t size) {
 }
 
 DC_PUBLIC static void* PRIV(NS(SELF, static_allocate_uninit))(SELF* self, size_t size) {
-    void* allocation_ptr = PRIV(NS(SELF, static_allocate_zeroed))(self, size);
+    DC_ASSUME(self);
+    DC_ASSERT(size > 0);
 
-    if (allocation_ptr) {
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
-                              allocation_ptr, size);
+    char* buffer_end = &(*self->buffer)[CAPACITY];
+    if (self->head_ptr + size > buffer_end) {
+        return NULL;
     }
+
+    char* allocation_ptr = self->head_ptr;
+
+    self->last_alloc_ptr = allocation_ptr;
+    self->head_ptr += size;
+
+    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE, allocation_ptr,
+                          size);
 
     return allocation_ptr;
 }
@@ -150,17 +127,16 @@ DC_PUBLIC static void PRIV(NS(SELF, static_deallocate))(SELF* self, void* ptr, s
     DC_ASSUME(ptr);
 
     char* byte_ptr = (char*)ptr;
-    char* used_ptr = byte_ptr - sizeof(USED);
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE, used_ptr,
-                          sizeof(USED));
-    USED old_size_value = PRIV(NS(SELF, read_used))(used_ptr);
-    DC_ASSERT(size == old_size_value, "size must match that originally allocated");
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr,
-                          old_size_value);
-    USED zero = 0;
-    PRIV(NS(SELF, write_used))(used_ptr, zero);
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, used_ptr,
-                          sizeof(USED));
+
+    // If this is the last allocation, we can reclaim the space
+    if (byte_ptr == self->last_alloc_ptr) {
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr, size);
+        self->head_ptr = byte_ptr;
+        self->last_alloc_ptr = NULL;
+    } else {
+        // Not the last allocation, just mark as inaccessible
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, ptr, size);
+    }
 }
 
 DC_PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
@@ -177,64 +153,44 @@ DC_PUBLIC static void NS(SELF, deallocate)(SELF* self, void* ptr, size_t size) {
 DC_PUBLIC static void* PRIV(NS(SELF, static_reallocate))(SELF* self, void* ptr, size_t old_size,
                                                          size_t new_size) {
     char* byte_ptr = (char*)ptr;
-    char* old_size_ptr = byte_ptr - sizeof(USED);
-    dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_READ_WRITE,
-                          old_size_ptr, sizeof(USED));
-    USED old_size_value = PRIV(NS(SELF, read_used))(old_size_ptr);
-    DC_ASSUME(old_size_value == old_size, "Realloc old size does not match original size");
 
-    if (new_size == old_size_value) {
+    if (new_size == old_size) {
         return ptr;
     }
 
-    const bool was_last_alloc = (byte_ptr + old_size_value == &(*self->buffer)[self->head_offset]);
+    // If this is the last allocation, we can grow/shrink in place
+    if (byte_ptr == self->last_alloc_ptr) {
+        char* buffer_end = &(*self->buffer)[CAPACITY];
 
-    if (was_last_alloc) {
-        if (new_size > old_size_value) {
-            size_t increase = new_size - old_size_value;
-            if (self->head_offset + increase <= CAPACITY) {
-                self->head_offset += increase;
+        if (new_size > old_size) {
+            // Growing
+            size_t increase = new_size - old_size;
+            if (self->head_ptr + increase <= buffer_end) {
                 dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_WRITE,
-                                      (char*)ptr + old_size_value, increase);
-                PRIV(NS(SELF, write_used))(old_size_ptr, (USED)new_size);
-                dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                                      old_size_ptr, sizeof(USED));
+                                      self->head_ptr, increase);
+                self->head_ptr += increase;
                 return ptr;
             }
-        } else if (new_size < old_size_value) {
-            size_t decrease = old_size_value - new_size;
-            self->head_offset -= decrease;
-
-            // JUSTIFY: Zeroing the end of the old allocation
-            // - Future calls to calloc may reuse this memory
-            memset((char*)ptr + new_size, 0, decrease);
-
+        } else {
+            // Shrinking
+            size_t decrease = old_size - new_size;
             dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                                  (char*)ptr + new_size, decrease);
-            PRIV(NS(SELF, write_used))(old_size_ptr, (USED)new_size);
-            dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                                  old_size_ptr, sizeof(USED));
+                                  byte_ptr + new_size, decrease);
+            self->head_ptr -= decrease;
             return ptr;
         }
-    } else if (new_size < old_size_value) {
-        // JUSTIFY: Shrinking an allocation
-        //           - Can become a noop - as we cannot re-extend the allocation
-        //             afterwards - no metadata for unused capacity not at end of buffer.
-        PRIV(NS(SELF, write_used))(old_size_ptr, (USED)new_size);
-        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE, old_size_ptr,
-                              sizeof(USED));
+    } else if (new_size < old_size) {
+        // Not the last allocation, but shrinking - just mark extra space as inaccessible
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
-                              (char*)ptr + new_size, old_size_value - new_size);
+                              byte_ptr + new_size, old_size - new_size);
         return ptr;
     }
 
-    // JUSTIFY: Not using `static_` methods for the new buffer.
-    //  - We may be out of room in the static buffer, so we also need to optionally use the backup
-    //  allocator.
+    // Need to allocate new buffer and copy
     void* new_buff = NS(SELF, allocate_uninit)(self, new_size);
-    memcpy(new_buff, ptr, old_size_value);
+    memcpy(new_buff, ptr, old_size < new_size ? old_size : new_size);
 
-    PRIV(NS(SELF, static_deallocate))(self, ptr, old_size_value);
+    PRIV(NS(SELF, static_deallocate))(self, ptr, old_size);
     return new_buff;
 }
 
@@ -259,8 +215,9 @@ DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* 
     fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %zu,\n", (size_t)CAPACITY);
-    dc_debug_fmt_print(fmt, stream, "used: %zu,\n", (size_t)self->head_offset);
+    dc_debug_fmt_print(fmt, stream, "used: %zu,\n", (size_t)(self->head_ptr - &(*self->buffer)[0]));
     dc_debug_fmt_print(fmt, stream, "buffer: %p,\n", (void*)self->buffer);
+    dc_debug_fmt_print(fmt, stream, "last_alloc: %p,\n", (void*)self->last_alloc_ptr);
     dc_debug_fmt_print(fmt, stream, "alloc: ");
     NS(ALLOC, debug)(NS(NS(ALLOC, ref), deref)(self->alloc_ref), fmt, stream);
     fprintf(stream, "\n");
@@ -268,7 +225,19 @@ DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* 
     dc_debug_fmt_print(fmt, stream, "}");
 }
 
-#undef USED
+DC_PUBLIC static void NS(SELF, reset)(SELF* self) {
+    DC_ASSUME(self);
+
+    size_t used = (size_t)(self->head_ptr - &(*self->buffer)[0]);
+    if (used > 0) {
+        dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_ALLOC, DC_MEMORY_TRACKER_CAP_NONE,
+                              &(*self->buffer)[0], used);
+    }
+
+    self->head_ptr = &(*self->buffer)[0];
+    self->last_alloc_ptr = NULL;
+}
+
 #undef CAPACITY
 
 DC_PUBLIC static void NS(SELF, delete)(SELF* self) {

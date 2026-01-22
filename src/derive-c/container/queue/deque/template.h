@@ -113,7 +113,8 @@ DC_PUBLIC static void NS(SELF, rebalance)(SELF* self) {
     size_t const back_size = NS(ITEM_VECTORS, size)(&self->back);
     size_t const total_size = front_size + back_size;
 
-    if (!dc_deque_rebalance_policy(total_size, front_size)) {
+    // Let the rebalance policy decide if we should rebalance
+    if (!_dc_deque_rebalance_policy(total_size, front_size, back_size)) {
         return;
     }
 
@@ -122,20 +123,23 @@ DC_PUBLIC static void NS(SELF, rebalance)(SELF* self) {
     size_t source_size;
     size_t target_size;
 
-    if (front_size > back_size + 1) {
+    if (front_size > back_size) {
         source = &self->front;
         target = &self->back;
         source_size = front_size;
         target_size = back_size;
     } else {
-        DC_ASSUME(back_size > front_size + 1);
         source = &self->back;
         target = &self->front;
         source_size = back_size;
         target_size = front_size;
     }
 
-    size_t const to_move = (source_size - target_size) / 2;
+    size_t to_move = (source_size - target_size) / 2;
+    // If target is empty, we must move at least 1 element (or all if only 1 exists)
+    if (target_size == 0 && source_size > 0) {
+        to_move = (source_size + 1) / 2; // Move at least half, or 1 if only 1 element
+    }
     NS(ITEM_VECTORS, transfer_reverse)(source, target, to_move);
 }
 
@@ -186,9 +190,16 @@ DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
         return result;
     }
 
-    ITEM result = NS(ITEM_VECTORS, pop_front)(&self->back);
-    NS(SELF, rebalance)(self);
-    return result;
+    // Front is empty, need to pop from back
+    // Rebalance first to move elements to front, then pop
+    // No need to rebalance again after pop since we just rebalanced
+    if (NS(ITEM_VECTORS, size)(&self->back) > 0) {
+        NS(SELF, rebalance)(self);
+        return NS(ITEM_VECTORS, pop)(&self->front);
+    }
+
+    // Both sides empty - should not happen if deque is non-empty
+    DC_UNREACHABLE("Cannot pop from empty deque");
 }
 
 DC_PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
@@ -200,9 +211,16 @@ DC_PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
         return result;
     }
 
-    ITEM result = NS(ITEM_VECTORS, pop_front)(&self->front);
-    NS(SELF, rebalance)(self);
-    return result;
+    // Back is empty, need to pop from front
+    // Rebalance first to move elements to back, then pop
+    // No need to rebalance again after pop since we just rebalanced
+    if (NS(ITEM_VECTORS, size)(&self->front) > 0) {
+        NS(SELF, rebalance)(self);
+        return NS(ITEM_VECTORS, pop)(&self->back);
+    }
+
+    // Both sides empty - should not happen if deque is non-empty
+    DC_UNREACHABLE("Cannot pop from empty deque");
 }
 
 #define ITER NS(SELF, iter)

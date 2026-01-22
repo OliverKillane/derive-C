@@ -40,18 +40,23 @@ template <typename SutNS> struct Command : rc::state::Command<SutModel, SutWrapp
         typename SutNS::Sut_iter_const iter_const = SutNS::Sut_get_iter_const(w.getConst());
         typename SutNS::Sut_iter iter = SutNS::Sut_get_iter(wrapperCopy.get());
 
-        typename SutNS::Sut_iter_const_item item_const = SutNS::Sut_iter_const_next(&iter_const);
-        typename SutNS::Sut_iter_item item = SutNS::Sut_iter_next(&iter);
+        while (!SutNS::Sut_iter_const_empty(&iter_const)) {
+            RC_ASSERT(!SutNS::Sut_iter_empty(&iter));
 
-        while (!SutNS::Sut_iter_const_empty_item(&item_const)) {
+            typename SutNS::Sut_iter_const_item item_const =
+                SutNS::Sut_iter_const_next(&iter_const);
+            typename SutNS::Sut_iter_item item = SutNS::Sut_iter_next(&iter);
+
+            RC_ASSERT(!SutNS::Sut_iter_const_empty_item(&item_const));
+            RC_ASSERT(!SutNS::Sut_iter_empty_item(&item));
             RC_ASSERT(m.contains(item_const));
-
-            item_const = SutNS::Sut_iter_const_next(&iter_const);
-            item = SutNS::Sut_iter_next(&iter);
         }
 
-        item = SutNS::Sut_iter_next(&iter);
-        item_const = SutNS::Sut_iter_const_next(&iter_const);
+        RC_ASSERT(SutNS::Sut_iter_empty(&iter));
+        RC_ASSERT(SutNS::Sut_iter_const_empty(&iter_const));
+
+        typename SutNS::Sut_iter_item item = SutNS::Sut_iter_next(&iter);
+        typename SutNS::Sut_iter_const_item item_const = SutNS::Sut_iter_const_next(&iter_const);
         RC_ASSERT(SutNS::Sut_iter_empty_item(&item));
         RC_ASSERT(SutNS::Sut_iter_const_empty_item(&item_const));
     }

@@ -3,7 +3,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-static inline bool dc_deque_rebalance_policy(size_t total_size, size_t front_size) {
-    return total_size > 4 &&
-           (front_size > total_size / 2 + 1 || (total_size - front_size) > total_size / 2 + 1);
+static inline bool _dc_deque_rebalance_policy(size_t total_size, size_t front_size,
+                                              size_t back_size) {
+    (void)total_size;
+    // JUSTIFY: Simple lazy rebalance strategy
+    //  - Simple & correct strategy.
+    // TODO(oliverkillane): Consider how we could parameterize this for different applications
+    return (front_size == 0 && back_size > 0) || (back_size == 0 && front_size > 0);
 }

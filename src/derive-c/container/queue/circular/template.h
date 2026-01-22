@@ -43,6 +43,7 @@ typedef ALLOC NS(SELF, alloc_t);
 typedef struct {
     ITEM* data;
     size_t capacity;
+    size_t size; /* Cached size to avoid recalculation */
     size_t head; /* Index of the first element */
     size_t tail; /* Index of the last element */
     bool empty;  /* Used to differentiate between head == tail when 1 element, or empty */
@@ -61,6 +62,8 @@ typedef struct {
 DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
     return (SELF){
         .data = NULL,
+        .capacity = 0,
+        .size = 0,
         .head = 0,
         .tail = 0,
         .empty = true,
@@ -85,6 +88,7 @@ DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for,
     return (SELF){
         .data = data,
         .capacity = capacity,
+        .size = 0,
         .head = 0,
         .tail = 0,
         .empty = true,
@@ -104,15 +108,7 @@ DC_PUBLIC static bool NS(SELF, empty)(SELF const* self) {
 
 DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
     DC_ASSUME(self);
-    if (self->empty) {
-        DC_ASSUME(self->tail == self->head);
-        return 0;
-    }
-
-    if (self->head <= self->tail) {
-        return (self->tail - self->head) + 1;
-    }
-    return (self->capacity - self->head) + self->tail + 1;
+    return self->size;
 }
 
 static void PRIV(NS(SELF, set_inaccessible_memory_caps))(SELF* self,
@@ -189,7 +185,7 @@ DC_PUBLIC static void NS(SELF, reserve)(SELF* self, size_t new_capacity_for) {
 DC_PUBLIC static void NS(SELF, push_back)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
+    NS(SELF, reserve)(self, self->size + 1);
 
     if (!self->empty) {
         self->tail = dc_math_modulus_power_of_2_capacity(self->tail + 1, self->capacity);
@@ -198,12 +194,13 @@ DC_PUBLIC static void NS(SELF, push_back)(SELF* self, ITEM item) {
                           &self->data[self->tail], sizeof(ITEM));
     self->data[self->tail] = item;
     self->empty = false;
+    self->size++;
 }
 
 DC_PUBLIC static void NS(SELF, push_front)(SELF* self, ITEM item) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    NS(SELF, reserve)(self, NS(SELF, size)(self) + 1);
+    NS(SELF, reserve)(self, self->size + 1);
 
     if (!self->empty) {
         if (self->head == 0) {
@@ -216,6 +213,7 @@ DC_PUBLIC static void NS(SELF, push_front)(SELF* self, ITEM item) {
                           &self->data[self->head], sizeof(ITEM));
     self->data[self->head] = item;
     self->empty = false;
+    self->size++;
 }
 
 DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
@@ -229,6 +227,7 @@ DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     dc_memory_tracker_check(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
                             &self->data[self->head], sizeof(ITEM));
 
+    self->size--;
     if (self->head == self->tail) {
         self->empty = true;
     } else {
@@ -245,6 +244,7 @@ DC_PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
     ITEM value = self->data[self->tail];
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
                           &self->data[self->tail], sizeof(ITEM));
+    self->size--;
     if (self->head == self->tail) {
         self->empty = true;
     } else {
@@ -259,7 +259,7 @@ DC_PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
 
 DC_PUBLIC static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
-    if (index < NS(SELF, size)(self)) {
+    if (index < self->size) {
         size_t const real_index =
             dc_math_modulus_power_of_2_capacity(self->head + index, self->capacity);
         return &self->data[real_index];
@@ -269,7 +269,7 @@ DC_PUBLIC static ITEM const* NS(SELF, try_read_from_front)(SELF const* self, siz
 
 DC_PUBLIC static ITEM const* NS(SELF, try_read_from_back)(SELF const* self, size_t index) {
     INVARIANT_CHECK(self);
-    if (index >= NS(SELF, size)(self)) {
+    if (index >= self->size) {
         return NULL;
     }
     if (index <= self->tail) {
@@ -385,7 +385,7 @@ DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     ITEM* new_data = NULL;
     size_t tail = 0;
     size_t new_capacity = 0;
-    size_t const old_size = NS(SELF, size)(self);
+    size_t const old_size = self->size;
 
     if (old_size > 0) {
         new_capacity = dc_math_next_power_of_2(old_size);
@@ -402,6 +402,7 @@ DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
     SELF new_self = {
         .data = new_data,
         .capacity = new_capacity,
+        .size = old_size,
         .head = 0,
         .tail = tail,
         .empty = self->empty,
@@ -414,10 +415,10 @@ DC_PUBLIC static SELF NS(SELF, clone)(SELF const* self) {
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
     dc_debug_fmt_print(fmt, stream, "capacity: %lu,\n", self->capacity);
-    dc_debug_fmt_print(fmt, stream, "size: %lu,\n", NS(SELF, size)(self));
+    dc_debug_fmt_print(fmt, stream, "size: %lu,\n", self->size);
     dc_debug_fmt_print(fmt, stream, "head: %lu,\n", self->head);
     dc_debug_fmt_print(fmt, stream, "tail: %lu,\n", self->tail);
 

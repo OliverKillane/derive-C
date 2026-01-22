@@ -6,6 +6,7 @@
 #define DC_TRAIT_ITER(SELF)                                                                        \
     DC_REQUIRE_TYPE(SELF, item);                                                                   \
     DC_REQUIRE_METHOD(NS(SELF, item), SELF, next, (SELF*));                                        \
+    DC_REQUIRE_METHOD(bool, SELF, empty, (SELF const*));                                           \
     DC_REQUIRE_METHOD(bool, SELF, empty_item, (NS(SELF, item) const*))
 
 #define DC_TRAIT_CONST_ITERABLE(SELF)                                                              \

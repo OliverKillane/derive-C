@@ -588,6 +588,11 @@ DC_PUBLIC static KV_PAIR_CONST NS(ITER_CONST, next)(ITER_CONST* iter) {
     };
 }
 
+DC_PUBLIC static bool NS(ITER_CONST, empty)(ITER_CONST const* iter) {
+    DC_ASSUME(iter);
+    return NS(NS(SLOT_VECTOR, iter_const), empty)(&iter->iter);
+}
+
 DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
     INVARIANT_CHECK(self);
     return (ITER_CONST){
@@ -596,7 +601,7 @@ DC_PUBLIC static ITER_CONST NS(SELF, get_iter_const)(SELF const* self) {
 }
 
 DC_PUBLIC static void NS(SELF, debug)(SELF const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", self);
+    fprintf(stream, DC_EXPAND_STRING(SELF) "@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "bucket capacity: %lu,\n", self->buckets_capacity);
@@ -644,6 +649,11 @@ DC_PUBLIC static KV_PAIR NS(ITER, next)(ITER* iter) {
         .key = &next_item->key,
         .value = &next_item->value,
     };
+}
+
+DC_PUBLIC static bool NS(ITER, empty)(ITER const* iter) {
+    DC_ASSUME(iter);
+    return NS(NS(SLOT_VECTOR, iter), empty)(&iter->iter);
 }
 
 DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
