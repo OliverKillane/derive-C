@@ -317,11 +317,9 @@ DC_PUBLIC static void NS(SELF, delete)(SELF* self) {
         // JUSTIFY: Return to write level before passing to allocator
         //  - Is uninitialised, but still valid memory
         size_t const size = self->capacity * sizeof(ITEM);
-        // NOLINTBEGIN(clang-analyzer-unix.Malloc)
         dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_WRITE,
                               self->data, size);
         NS(ALLOC, deallocate)(self->alloc_ref, self->data, size);
-        // NOLINTEND(clang-analyzer-unix.Malloc)
     }
 }
 
