@@ -68,7 +68,7 @@ And for debugging:
  - type safety makes containers easier to explore in gdb
 
 
-## [Contributing](./.github/CONTRIBUTING.md)
+## [Contributing](./CONTRIBUTING.md)
 
 ## References
  - [moving-fast-with-software-verification](https://research.facebook.com/publications/moving-fast-with-software-verification/)

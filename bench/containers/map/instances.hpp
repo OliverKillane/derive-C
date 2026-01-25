@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <map>
+#include <type_traits>
 
 #include <derive-cpp/meta/labels.hpp>
 
@@ -12,6 +13,14 @@
 #include <ankerl/unordered_dense.h>
 #include <absl/container/flat_hash_map.h>
 #include <boost/unordered/unordered_flat_map.hpp>
+
+template <typename T>
+concept MapCase = requires {
+    typename T::Self;
+    typename T::Self_key_t;
+    typename T::Self_value_t;
+    { T::impl_name } -> std::convertible_to<const char*>;
+};
 
 template <typename Key, typename Value, size_t(*key_hash)(Key const*)> struct Swiss {
     LABEL_ADD(derive_c_swiss);
@@ -27,6 +36,18 @@ template <typename Key, typename Value, size_t(*key_hash)(Key const*)> struct Sw
 template <typename Key, typename Value, size_t(*key_hash)(Key const*)> struct Ankerl {
     LABEL_ADD(derive_c_ankerl);
     static constexpr const char* impl_name = "derive-c/ankerl";
+#define EXPAND_IN_STRUCT
+#define KEY Key
+#define KEY_HASH key_hash
+#define VALUE Value
+#define NAME Self
+#include <derive-c/container/map/ankerl/template.h>
+};
+
+template <typename Key, typename Value, size_t(*key_hash)(Key const*)> struct AnkerlSmall {
+    LABEL_ADD(derive_c_ankerl_small);
+    static constexpr const char* impl_name = "derive-c/ankerl";
+#define SMALL_BUCKETS
 #define EXPAND_IN_STRUCT
 #define KEY Key
 #define KEY_HASH key_hash

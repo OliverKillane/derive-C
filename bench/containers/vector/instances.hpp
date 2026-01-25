@@ -1,8 +1,16 @@
 #pragma once
 #include <vector>
+#include <type_traits>
 
 #include <derive-cpp/meta/labels.hpp>
 #include <derive-c/container/vector/dynamic/includes.h>
+
+template <typename T>
+concept VectorCase = requires {
+    typename T::Self;
+    typename T::Self_item_t;
+    { T::impl_name } -> std::convertible_to<const char*>;
+};
 
 template <typename Item> struct Dynamic {
     LABEL_ADD(derive_c_dynamic);

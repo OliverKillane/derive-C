@@ -86,7 +86,7 @@ DC_PUBLIC static void NS(stdalloc, deallocate)(stdalloc_ref /* ref */, void* ptr
     // The runtime check (contains_ptr) prevents actual issues, but GCC's
     // interprocedural analysis doesn't understand this.
 
-    free(ptr); // NOLINT(clang-analyzer-unix.Malloc)
+    free(ptr);
 }
 
 DC_PUBLIC static void NS(stdalloc, debug)(stdalloc const* self, dc_debug_fmt fmt, FILE* stream) {

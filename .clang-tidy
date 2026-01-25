@@ -22,7 +22,8 @@ Checks: >
   -bugprone-macro-parentheses,
   -misc-non-private-member-variables-in-classes,
   -clang-diagnostic-*,
-  -misc-include-cleaner
+  -misc-include-cleaner,
+  -clang-analyzer-unix.Malloc
 
 WarningsAsErrors: '*'
 

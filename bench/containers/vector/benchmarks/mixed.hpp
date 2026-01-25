@@ -20,6 +20,7 @@
 #include "../instances.hpp"
 #include "../../../utils/seed.hpp"
 #include "../../../utils/generator.hpp"
+#include "../../../utils/range.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
@@ -27,7 +28,7 @@
 #include <derive-cpp/meta/labels.hpp>
 #include <derive-cpp/meta/unreachable.hpp>
 
-template <typename NS, typename Gen>
+template <VectorCase NS, typename Gen>
 void mixed_case_derive_c_dynamic(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename NS::Self v = NS::Self_new(stdalloc_get_ref());
 
@@ -44,7 +45,7 @@ void mixed_case_derive_c_dynamic(benchmark::State& /* state */, size_t max_n, Ge
     NS::Self_delete(&v);
 }
 
-template <typename NS, typename Gen>
+template <VectorCase NS, typename Gen>
 void mixed_case_derive_c_hybrid(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename NS::HybridAlloc_buffer buffer = {};
     typename NS::HybridAlloc alloc = NS::HybridAlloc_new(&buffer, stdalloc_get_ref());
@@ -77,7 +78,7 @@ void mixed_case_stl(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     }
 }
 
-template <typename Impl> void mixed(benchmark::State& state) {
+template <VectorCase Impl> void mixed(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
 
     BytesConstGen<typename Impl::Self_item_t{}> gen(SEED);
@@ -100,15 +101,7 @@ template <typename Impl> void mixed(benchmark::State& state) {
 }
 
 #define BENCH(...)                                                                                \
-    BENCHMARK_TEMPLATE(mixed, __VA_ARGS__)                                                    \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(1, 1 << 18)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(3, 1 << 18)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(5, 1 << 18)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(7, 1 << 18)
+    BENCHMARK_TEMPLATE(mixed, __VA_ARGS__)->Apply(range::exponential<65536>)
 
 BENCH(Std<Bytes<1>>);
 BENCH(Dynamic<Bytes<1>>);

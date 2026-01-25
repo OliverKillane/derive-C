@@ -13,35 +13,3 @@
 #define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
 #define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
     _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)
-
-#define DC_FOR(TYPE, INSTANCE, ITER, ITEM) _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter, get_iter)
-#define DC_FOR_CONST(TYPE, INSTANCE, ITER, ITEM)                                                   \
-    _DC_FOR_INNER(TYPE, INSTANCE, ITER, ITEM, iter_const, get_iter_const)

@@ -51,29 +51,23 @@ template <Bytes bytes> struct BytesConstGen {
 
 static_assert(Generator<BytesConstGen<Bytes<1>{.data = {0}}>>);
 
-/// Sequential 32 bit indices
-struct U32SeqGen {
-    using Value = std::uint32_t;
-    explicit U32SeqGen(std::size_t seed) noexcept : mState(static_cast<std::uint32_t>(seed)) {}
+/// Sequential integer generator for any integral type
+template <std::integral T>
+struct SeqGen {
+    using Value = T;
+    explicit SeqGen(std::size_t seed) noexcept : mState(static_cast<T>(seed)) {}
     Value next() noexcept { return mState++; }
 
   private:
-    std::uint32_t mState;
+    T mState;
 };
 
-static_assert(Generator<U32SeqGen>);
+static_assert(Generator<SeqGen<std::uint32_t>>);
+static_assert(Generator<SeqGen<std::uint8_t>>);
 
-/// Sequential 8 bit indices
-struct U8SeqGen {
-    using Value = std::uint8_t;
-    explicit U8SeqGen(std::size_t seed) noexcept : mState(static_cast<std::uint8_t>(seed)) {}
-    Value next() noexcept { return mState++; }
-
-  private:
-    std::uint8_t mState;
-};
-
-static_assert(Generator<U8SeqGen>);
+// Type aliases for convenience
+using U32SeqGen = SeqGen<std::uint32_t>;
+using U8SeqGen = SeqGen<std::uint8_t>;
 
 /// (More random) 32 bit indices
 struct U32XORShiftGen {
