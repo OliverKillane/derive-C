@@ -13,7 +13,6 @@ cd build
 ninja
 ctest -j
 ninja format
-ninja lint
 ninja docs
 ninja coverage
 ```
@@ -60,6 +59,13 @@ nix-shell toolschain/clang_dev
 nix-shell toolschain/clang_msan --run 'cmake -S . -B build_msan -DUSE_ASAN=Off _DUSE_UBSAN=Off -DUSE_MSAN=On -DDOCS=Off && ninja -C build_msan && ctest --test-dir build_msan -j --output-on-failure'
 ```
 
+Finally we have benchmarks covering:
+ - Basic cases so we can check for obvious performance regressions
+ - Worst case scenarios for the library
+
+A normal development cycle should occur in [the clang dev toolchain](./toolchain/clang_dev.nix), with tests run with asan & ubsan.
+ - The rest can be run in ci, and specific toolchains & builds debugged locally.
+
 ## Design Principles
 This library should focus on maintaining _yeetability_.
 
@@ -69,9 +75,7 @@ This library should focus on maintaining _yeetability_.
 2. Odd design decisions should be justified in code with `JUSTIFY:` comments
 3. Derive-c specific idioms should be where possible enforced in CI, using the linting scripts.
 
-## Remaining Work
-In development, remaining tasks:
- - Fix remaining infer-detected casting issues
- - Increase coverage
- - Regression benchmarks
- - compare & optimise hashmap versus: [ankerl](https://github.com/martinus/unordered_dense/blob/main/include/ankerl/unordered_dense.h)
+## TODO
+ - Improved testing coverage (e.g. delete in containers)
+ - Roaring bitset
+ - Improved set

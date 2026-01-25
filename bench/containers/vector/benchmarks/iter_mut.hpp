@@ -25,6 +25,7 @@
 #include "../instances.hpp"
 #include "../../../utils/seed.hpp"
 #include "../../../utils/generator.hpp"
+#include "../../../utils/range.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
@@ -90,7 +91,7 @@ void iter_mut_case_iter_mut_reference(benchmark::State& /* state */, size_t size
     VectorizedReference::Self_delete(&v);
 }
 
-template <typename NS, typename Gen>
+template <VectorCase NS, typename Gen>
 void iter_mut_case_derive_c_dynamic(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename NS::Self v = NS::Self_new(stdalloc_get_ref());
 
@@ -107,7 +108,7 @@ void iter_mut_case_derive_c_dynamic(benchmark::State& /* state */, size_t max_n,
     NS::Self_delete(&v);
 }
 
-template <typename NS, typename Gen>
+template <VectorCase NS, typename Gen>
 void iter_mut_case_derive_c_hybrid(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename NS::HybridAlloc_buffer buffer = {};
     typename NS::HybridAlloc alloc = NS::HybridAlloc_new(&buffer, stdalloc_get_ref());
@@ -127,7 +128,7 @@ void iter_mut_case_derive_c_hybrid(benchmark::State& /* state */, size_t max_n, 
     NS::Self_delete(&v);
 }
 
-template <typename Std, typename Gen>
+template <VectorCase Std, typename Gen>
 void iter_mut_case_stl(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename Std::Self x;
 
@@ -140,7 +141,7 @@ void iter_mut_case_stl(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     }
 }
 
-template <typename Impl> void iter_mut(benchmark::State& state) {
+template <VectorCase Impl> void iter_mut(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
 
     U32XORShiftGen gen(SEED);
@@ -167,15 +168,7 @@ template <typename Impl> void iter_mut(benchmark::State& state) {
 }
 
 #define BENCH(...)                                                                                \
-    BENCHMARK_TEMPLATE(iter_mut, __VA_ARGS__)                                                 \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(1 << 10, 1 << 24)                                                             \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(3 << 10, 1 << 24)                                                             \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(5 << 10, 1 << 24)                                                             \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(7 << 10, 1 << 24)
+    BENCHMARK_TEMPLATE(iter_mut, __VA_ARGS__)->Apply(range::exponential<1024>)
 
 BENCH(Std<uint8_t>);
 BENCH(Dynamic<uint8_t>);

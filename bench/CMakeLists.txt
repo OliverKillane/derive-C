@@ -1,6 +1,11 @@
 include(FetchContent)
 include(CTest)
 
+include("${CMAKE_SOURCE_DIR}/src/derive-cmake/discover_test.cmake")
+
+# Fine-grained benchmark mode (powers of 2 only)
+option(BENCH_FINE_GRAINED "Enable fine-grained benchmarks (powers of 2 only)" OFF)
+
 set(GOOGLE_BENCHMARK_VERSION v1.9.4)
 set(UNORDERED_DENSE_VERSION v4.8.1)
 set(ABSEIL_VERSION 20240722.0)
@@ -66,33 +71,19 @@ foreach(BENCH_FILE ${BENCH_SOURCES})
     Boost::unordered
   )
 
-  # Optional: keep all bench binaries together
+  if(BENCH_FINE_GRAINED)
+    target_compile_definitions(${BENCH_TARGET} PRIVATE BENCH_FINE_GRAINED)
+  endif()
+
   set_target_properties(${BENCH_TARGET} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bench"
   )
 
-  # Register as a ctest test
-  add_test(
-    NAME ${BENCH_TARGET}
-    COMMAND ${BENCH_TARGET}
-            --benchmark_min_time=0.01s
-            --benchmark_repetitions=1
-            --benchmark_report_aggregates_only=true
-            --benchmark_format=console
-  )
-
-  # Labels:
-  # - always "benchmark"
-  # - plus each path component so you can filter with -L containers, -L vector, etc.
-  set(TEST_LABELS "benchmark")
-  if (NOT REL_DIR STREQUAL "")
-    string(REPLACE "/" ";" REL_DIR_PARTS "${REL_DIR}")
-    list(APPEND TEST_LABELS ${REL_DIR_PARTS})
-  endif()
-
-  set_tests_properties(${BENCH_TARGET} PROPERTIES
-    LABELS "${TEST_LABELS}"
-    TIMEOUT 360
+  dc_discover_tests(
+    TARGET ${BENCH_TARGET}
+    LIST_COMMAND "{EXE}" "--benchmark_list_tests"
+    RUN_COMMAND "{EXE}" "--benchmark_filter=^{TEST_REGEX}$" "--benchmark_min_time=0.01s" "--benchmark_repetitions=1" "--benchmark_report_aggregates_only=true" "--benchmark_format=console"
+    LABELS "bench"
   )
 
   # Track all benchmark targets for the 'run-benchmarks' target
@@ -128,3 +119,13 @@ foreach(BENCH_TARGET ${ALL_BENCH_TARGETS})
     VERBATIM
   )
 endforeach()
+
+find_program(UV_EXECUTABLE uv REQUIRED)
+
+add_custom_target(benchmarks
+    COMMAND ${UV_EXECUTABLE} run bench clean --repo-root ${CMAKE_SOURCE_DIR}
+    COMMAND ${UV_EXECUTABLE} run bench run --repo-root ${CMAKE_SOURCE_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
+    COMMENT "Cleaning and running benchmarks"
+    VERBATIM
+)

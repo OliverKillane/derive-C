@@ -22,6 +22,7 @@
 #include "../instances.hpp"
 #include "../../utils/seed.hpp"
 #include "../../utils/generator.hpp"
+#include "../../utils/range.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
@@ -143,11 +144,7 @@ void mixed_sizes(benchmark::State& state) {
 }
 
 #define BENCH(...)                                                                            \
-    BENCHMARK_TEMPLATE(mixed_sizes, __VA_ARGS__)                                              \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(1, 8192)                                                                      \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(3, 8192)
+    BENCHMARK_TEMPLATE(mixed_sizes, __VA_ARGS__)->Apply(range::exponential<8192>)
 
 BENCH(StdAlloc);
 BENCH(HybridStatic<1024>);

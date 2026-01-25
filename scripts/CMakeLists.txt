@@ -2,7 +2,7 @@ if(LINTING)
     find_program(UV_EXECUTABLE uv REQUIRED)
 
     # Target to format Python code and notebooks
-    add_custom_target(py-format
+    add_custom_target(format-python
         COMMAND ${UV_EXECUTABLE} run ruff format .
         COMMAND ${UV_EXECUTABLE} run ruff check --fix .
         COMMAND ${UV_EXECUTABLE} run jupyter nbconvert --clear-output --inplace --to notebook notebooks/benchmark/*.ipynb
@@ -58,7 +58,7 @@ if(LINTING)
     )
     add_test(
         NAME lint/notebooks-cleared
-        COMMAND ${UV_EXECUTABLE} run jupyter nbconvert --clear-output --inplace --to notebook notebooks/benchmark/*.ipynb --stdout
+        COMMAND ${UV_EXECUTABLE} run python -c "import json, glob, sys; sys.exit(0 if all(not any(cell.get('outputs') for cell in json.load(open(f))['cells']) for f in glob.glob('notebooks/benchmark/*.ipynb')) else 1)"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 

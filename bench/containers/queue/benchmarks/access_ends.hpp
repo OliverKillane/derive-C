@@ -23,6 +23,7 @@
 #include "../../../utils/seed.hpp"
 #include "../../../utils/generator.hpp"
 #include "../../../utils/object.hpp"
+#include "../../../utils/range.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
@@ -30,7 +31,7 @@
 #include <derive-cpp/meta/labels.hpp>
 #include <derive-cpp/meta/unreachable.hpp>
 
-template <typename NS>
+template <QueueCase NS>
 void access_ends_case_derive_c_circular(benchmark::State& /* state */, size_t max_n,
                                         size_t accesses) {
     typename NS::Self q = NS::Self_new(stdalloc_get_ref());
@@ -56,7 +57,7 @@ void access_ends_case_derive_c_circular(benchmark::State& /* state */, size_t ma
     NS::Self_delete(&q);
 }
 
-template <typename NS>
+template <QueueCase NS>
 void access_ends_case_derive_c_deque(benchmark::State& /* state */, size_t max_n,
                                      size_t accesses) {
     typename NS::Self q = NS::Self_new(stdalloc_get_ref());
@@ -83,7 +84,7 @@ void access_ends_case_derive_c_deque(benchmark::State& /* state */, size_t max_n
     NS::Self_delete(&q);
 }
 
-template <typename Impl>
+template <QueueCase Impl>
 void access_ends_case_stl_deque(benchmark::State& /* state */, size_t max_n, size_t accesses) {
     typename Impl::Self q;
 
@@ -101,7 +102,7 @@ void access_ends_case_stl_deque(benchmark::State& /* state */, size_t max_n, siz
     }
 }
 
-template <typename Impl>
+template <QueueCase Impl>
 void access_ends_case_stl_queue(benchmark::State& /* state */, size_t max_n, size_t accesses) {
     typename Impl::Self q;
 
@@ -119,7 +120,7 @@ void access_ends_case_stl_queue(benchmark::State& /* state */, size_t max_n, siz
     }
 }
 
-template <typename Impl> void access_ends(benchmark::State& state) {
+template <QueueCase Impl> void access_ends(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
     const std::size_t accesses = 1000;
 
@@ -142,19 +143,7 @@ template <typename Impl> void access_ends(benchmark::State& state) {
 }
 
 #define BENCH(...)                                                                                \
-    BENCHMARK_TEMPLATE(access_ends, __VA_ARGS__)                                              \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(1, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(3, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(5, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(7, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(5, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(7, 1 << 16)
+    BENCHMARK_TEMPLATE(access_ends, __VA_ARGS__)->Apply(range::exponential<65536>)
 
 // uint8_t benchmarks
 BENCH(Circular<std::uint8_t>);

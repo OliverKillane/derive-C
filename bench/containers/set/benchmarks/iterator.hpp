@@ -23,6 +23,7 @@
 #include "../../../utils/seed.hpp"
 #include "../../../utils/generator.hpp"
 #include "../../../utils/label.hpp"
+#include "../../../utils/range.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
@@ -30,11 +31,9 @@
 #include <derive-cpp/meta/labels.hpp>
 #include <derive-cpp/meta/unreachable.hpp>
 
-static size_t uint32_t_hash(uint32_t const* item) {
-    return *item;
-}
+#include <derive-c/algorithm/hash/id.h>
 
-template <typename NS, typename Gen>
+template <SetCase NS, typename Gen>
 void iterator_case_derive_c_swiss(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename NS::Self s = NS::Self_new(stdalloc_get_ref());
 
@@ -51,7 +50,7 @@ void iterator_case_derive_c_swiss(benchmark::State& /* state */, size_t max_n, G
     NS::Self_delete(&s);
 }
 
-template <typename Std, typename Gen>
+template <SetCase Std, typename Gen>
 void iterator_case_stl_unordered_set(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename Std::Self s;
 
@@ -64,7 +63,7 @@ void iterator_case_stl_unordered_set(benchmark::State& /* state */, size_t max_n
     }
 }
 
-template <typename Std, typename Gen>
+template <SetCase Std, typename Gen>
 void iterator_case_stl_set(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename Std::Self s;
 
@@ -77,7 +76,7 @@ void iterator_case_stl_set(benchmark::State& /* state */, size_t max_n, Gen& gen
     }
 }
 
-template <typename Ext, typename Gen>
+template <SetCase Ext, typename Gen>
 void iterator_case_boost_flat(benchmark::State& /* state */, size_t max_n, Gen& gen) {
     typename Ext::Self s;
 
@@ -90,7 +89,7 @@ void iterator_case_boost_flat(benchmark::State& /* state */, size_t max_n, Gen& 
     }
 }
 
-template <typename Impl> void iterator(benchmark::State& state) {
+template <SetCase Impl> void iterator(benchmark::State& state) {
     const std::size_t max_n = static_cast<std::size_t>(state.range(0));
 
     set_impl_label_with_item<Impl>(state);
@@ -115,20 +114,25 @@ template <typename Impl> void iterator(benchmark::State& state) {
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(max_n));
 }
 
-#define BENCH(...)                                                                                \
-    BENCHMARK_TEMPLATE(iterator, __VA_ARGS__)                                                 \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(1, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(3, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(5, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(7, 1 << 16)
+// Small sizes for all implementations
+#define BENCH_SMALL(...)                                                                          \
+    BENCHMARK_TEMPLATE(iterator, __VA_ARGS__)->Apply(range::exponential<1024>)
 
-BENCH(Swiss<std::uint32_t, uint32_t_hash>);
-BENCH(StdUnorderedSet<std::uint32_t, uint32_t_hash>);
-BENCH(StdSet<std::uint32_t>);
-BENCH(BoostFlat<std::uint32_t, uint32_t_hash>);
+// Large sizes for dynamic implementations
+#define BENCH_LARGE(...)                                                                          \
+    BENCHMARK_TEMPLATE(iterator, __VA_ARGS__)->Apply(range::exponential<65536>)
 
-#undef BENCH
+BENCH_SMALL(Swiss<std::uint32_t, uint32_t_hash_id>);
+BENCH_LARGE(Swiss<std::uint32_t, uint32_t_hash_id>);
+
+BENCH_SMALL(StdUnorderedSet<std::uint32_t, uint32_t_hash_id>);
+BENCH_LARGE(StdUnorderedSet<std::uint32_t, uint32_t_hash_id>);
+
+BENCH_SMALL(StdSet<std::uint32_t>);
+BENCH_LARGE(StdSet<std::uint32_t>);
+
+BENCH_SMALL(BoostFlat<std::uint32_t, uint32_t_hash_id>);
+BENCH_LARGE(BoostFlat<std::uint32_t, uint32_t_hash_id>);
+
+#undef BENCH_SMALL
+#undef BENCH_LARGE

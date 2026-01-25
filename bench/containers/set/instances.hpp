@@ -1,12 +1,20 @@
 #pragma once
 #include <unordered_set>
 #include <set>
+#include <type_traits>
 
 #include <derive-cpp/meta/labels.hpp>
 
 #include <derive-c/container/set/swiss/includes.h>
 
 #include <boost/unordered/unordered_flat_set.hpp>
+
+template <typename T>
+concept SetCase = requires {
+    typename T::Self;
+    typename T::Self_item_t;
+    { T::impl_name } -> std::convertible_to<const char*>;
+};
 
 template <typename Item, size_t(*item_hash)(Item const*)> struct Swiss {
     LABEL_ADD(derive_c_swiss);

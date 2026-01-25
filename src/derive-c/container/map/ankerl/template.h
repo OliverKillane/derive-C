@@ -110,11 +110,12 @@ DC_INTERNAL static void PRIV(NS(SLOT, delete))(SLOT* slot) {
 #pragma push_macro("ALLOC")
 
 // ITEM is already defined
-#define ITEM SLOT                        // [DERIVE-C] for template
-#define ITEM_CLONE PRIV(NS(SLOT, clone)) // [DERIVE-C] for template
-#define ITEM_DEBUG PRIV(NS(SLOT, debug)) // [DERIVE-C] for template
-#define ITEM_CLONE PRIV(NS(SLOT, clone)) // [DERIVE-C] for template
-#define INTERNAL_NAME SLOT_VECTOR        // [DERIVE-C] for template
+#define ITEM SLOT                          // [DERIVE-C] for template
+#define ITEM_DELETE PRIV(NS(SLOT, delete)) // [DERIVE-C] for template
+#define ITEM_CLONE PRIV(NS(SLOT, clone))   // [DERIVE-C] for template
+#define ITEM_DEBUG PRIV(NS(SLOT, debug))   // [DERIVE-C] for template
+#define ITEM_CLONE PRIV(NS(SLOT, clone))   // [DERIVE-C] for template
+#define INTERNAL_NAME SLOT_VECTOR          // [DERIVE-C] for template
 #include <derive-c/container/vector/dynamic/template.h>
 
 #pragma pop_macro("ALLOC")

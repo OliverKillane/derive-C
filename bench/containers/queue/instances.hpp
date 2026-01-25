@@ -1,11 +1,19 @@
 #pragma once
 #include <deque>
 #include <queue>
+#include <type_traits>
 
 #include <derive-cpp/meta/labels.hpp>
 
 #include <derive-c/container/queue/circular/includes.h>
 #include <derive-c/container/queue/deque/includes.h>
+
+template <typename T>
+concept QueueCase = requires {
+    typename T::Self;
+    typename T::Self_item_t;
+    { T::impl_name } -> std::convertible_to<const char*>;
+};
 
 // Circular queue wrapper
 template <typename Item> struct Circular {

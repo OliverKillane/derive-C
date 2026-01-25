@@ -31,7 +31,7 @@ static bool name_eq(const name* name_1, const name* name_2) {
 
 static void name_debug(const name* self, dc_debug_fmt fmt, FILE* stream) {
     (void)fmt;
-    fprintf(stream, "name@%p { forename: \"%s\", surname: \"%s\" }", self, self->forename,
+    fprintf(stream, "name@%p { forename: \"%s\", surname: \"%s\" }", (void*)self, self->forename,
             self->surname);
 }
 
@@ -53,7 +53,7 @@ typedef struct {
 } employee;
 
 static void employee_debug(employee const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, "employee@%p {\n", self);
+    fprintf(stream, "employee@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "name: ");
@@ -127,7 +127,7 @@ static employee const* hr_system_newest_of_age(hr_system const* self, age age) {
 }
 
 static void hr_system_debug(hr_system const* self, dc_debug_fmt fmt, FILE* stream) {
-    fprintf(stream, "hr_system@%p {\n", self);
+    fprintf(stream, "hr_system@%p {\n", (void*)self);
     fmt = dc_debug_fmt_scope_begin(fmt);
 
     dc_debug_fmt_print(fmt, stream, "data: ");

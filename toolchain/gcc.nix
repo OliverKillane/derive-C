@@ -2,13 +2,20 @@
 
 # For GCC compatibility check only
 let
+  pkgsUnstable = import (builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz";
+    sha256 = "1zb5ca8jqavb19j7g06a41jg6bvpr20b9lihvham6qywhgaqprz9";
+  }) {};
+
+  uv = pkgsUnstable.uv;
+
   gcc = pkgs.gcc14;
   myStdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv gcc;
 in
 myStdenv.mkDerivation {
   name = "derive-c-gcc14";
 
-  buildInputs = with pkgs; [
+  buildInputs = (with pkgs; [
     cmake
     ninja
     doxygen
@@ -17,6 +24,8 @@ myStdenv.mkDerivation {
     gdb
     pkg-config
     gcc  # optional, keeps gcc tools on PATH in the shell
+  ]) ++ [
+    uv
   ];
 
   shellHook = ''

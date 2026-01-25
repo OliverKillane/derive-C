@@ -24,6 +24,7 @@
 #include "../../../utils/seed.hpp"
 #include "../../../utils/generator.hpp"
 #include "../../../utils/object.hpp"
+#include "../../../utils/range.hpp"
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/prelude.h>
@@ -31,7 +32,7 @@
 #include <derive-cpp/meta/labels.hpp>
 #include <derive-cpp/meta/unreachable.hpp>
 
-template <typename NS>
+template <QueueCase NS>
 void fifo_streaming_case_derive_c_circular(benchmark::State& /* state */, size_t steady_state_size,
                                             size_t total_ops) {
     typename NS::Self q = NS::Self_new(stdalloc_get_ref());
@@ -54,7 +55,7 @@ void fifo_streaming_case_derive_c_circular(benchmark::State& /* state */, size_t
     NS::Self_delete(&q);
 }
 
-template <typename NS>
+template <QueueCase NS>
 void fifo_streaming_case_derive_c_deque(benchmark::State& /* state */, size_t steady_state_size,
                                          size_t total_ops) {
     typename NS::Self q = NS::Self_new(stdalloc_get_ref());
@@ -77,7 +78,7 @@ void fifo_streaming_case_derive_c_deque(benchmark::State& /* state */, size_t st
     NS::Self_delete(&q);
 }
 
-template <typename Impl>
+template <QueueCase Impl>
 void fifo_streaming_case_stl_deque(benchmark::State& /* state */, size_t steady_state_size,
                                     size_t total_ops) {
     typename Impl::Self q;
@@ -99,7 +100,7 @@ void fifo_streaming_case_stl_deque(benchmark::State& /* state */, size_t steady_
     }
 }
 
-template <typename Impl>
+template <QueueCase Impl>
 void fifo_streaming_case_stl_queue(benchmark::State& /* state */, size_t steady_state_size,
                                     size_t total_ops) {
     typename Impl::Self q;
@@ -121,7 +122,7 @@ void fifo_streaming_case_stl_queue(benchmark::State& /* state */, size_t steady_
     }
 }
 
-template <typename Impl> void fifo_streaming(benchmark::State& state) {
+template <QueueCase Impl> void fifo_streaming(benchmark::State& state) {
     const std::size_t steady_state_size = static_cast<std::size_t>(state.range(0));
     const std::size_t total_ops = steady_state_size * 10; // 10x the queue size
 
@@ -144,15 +145,7 @@ template <typename Impl> void fifo_streaming(benchmark::State& state) {
 }
 
 #define BENCH(...)                                                                                \
-    BENCHMARK_TEMPLATE(fifo_streaming, __VA_ARGS__)                                           \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(1, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(3, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(5, 1 << 16)                                                                   \
-        ->RangeMultiplier(2)                                                                  \
-        ->Range(7, 1 << 16)
+    BENCHMARK_TEMPLATE(fifo_streaming, __VA_ARGS__)->Apply(range::exponential<65536>)
 
 // uint8_t benchmarks
 BENCH(Circular<std::uint8_t>);
