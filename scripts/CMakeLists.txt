@@ -70,4 +70,14 @@ if(LINTING)
     set_tests_properties(lint/notebooks-lint PROPERTIES LABELS "linting")
     set_tests_properties(lint/notebooks-mypy PROPERTIES LABELS "linting")
     set_tests_properties(lint/notebooks-cleared PROPERTIES LABELS "linting")
+
+    # JUSTIFY: Under linting
+    #  - This is for assurance for performance, which is part of code quality / linting
+    add_custom_target(benchmarks
+        COMMAND ${UV_EXECUTABLE} run bench clean --repo-root ${CMAKE_SOURCE_DIR}
+        COMMAND ${UV_EXECUTABLE} run bench run --repo-root ${CMAKE_SOURCE_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
+        COMMENT "Cleaning and running benchmarks"
+        VERBATIM
+    )
 endif()

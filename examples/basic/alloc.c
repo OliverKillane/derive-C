@@ -24,6 +24,8 @@ static void example_hybridstatic() {
     hybrid_deallocate(&alloc, ptr, 200);
 }
 
+// We can only unleak in debug builds
+#if !defined(NDEBUG)
 #define NAME test_alloc
 #include <derive-c/alloc/test/template.h>
 
@@ -35,6 +37,9 @@ static void example_test() {
     test_alloc_debug(&alloc, dc_debug_fmt_new(), stdout);
     test_alloc_unleak(&alloc);
 }
+#else
+static void example_test() {}
+#endif
 
 #define NAME dbg
 #include <derive-c/alloc/debug/template.h>

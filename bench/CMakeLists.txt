@@ -119,13 +119,3 @@ foreach(BENCH_TARGET ${ALL_BENCH_TARGETS})
     VERBATIM
   )
 endforeach()
-
-find_program(UV_EXECUTABLE uv REQUIRED)
-
-add_custom_target(benchmarks
-    COMMAND ${UV_EXECUTABLE} run bench clean --repo-root ${CMAKE_SOURCE_DIR}
-    COMMAND ${UV_EXECUTABLE} run bench run --repo-root ${CMAKE_SOURCE_DIR}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
-    COMMENT "Cleaning and running benchmarks"
-    VERBATIM
-)
