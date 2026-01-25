@@ -26,8 +26,8 @@ static void example_hybridstatic() {
 
 // We can only unleak in debug builds
 #if !defined(NDEBUG)
-#define NAME test_alloc
-#include <derive-c/alloc/test/template.h>
+    #define NAME test_alloc
+    #include <derive-c/alloc/test/template.h>
 
 static void example_test() {
     DC_DEBUG_TRACE;
