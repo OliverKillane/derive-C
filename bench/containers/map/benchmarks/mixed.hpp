@@ -506,24 +506,11 @@ template <MapCase Impl> void mixed(benchmark::State& state) {
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(max_n));
 }
 
-// Small sizes for StaticLinear (CAPACITY 1024)
-#define BENCH_SMALL(...)                                                                          \
-    BENCHMARK_TEMPLATE(mixed, __VA_ARGS__)->Apply(range::exponential<1024>)
+#define BENCH_CASE(NAME)                                                                           \
+    BENCHMARK_TEMPLATE(mixed, NAME<std::uint32_t, Bytes<16>, uint32_t_hash_id>)                   \
+        ->Apply(range::exponential<                                                                \
+                NAME<std::uint32_t, Bytes<16>, uint32_t_hash_id>::Self_max_capacity>)
 
-// Large sizes for dynamic implementations
-#define BENCH_LARGE(...)                                                                          \
-    BENCHMARK_TEMPLATE(mixed, __VA_ARGS__)->Apply(range::exponential<65536>)
+APPLY_BENCH(BENCH_CASE);
 
-BENCH_LARGE(Swiss<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-BENCH_LARGE(Ankerl<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-BENCH_LARGE(AnkerlSmall<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-BENCH_LARGE(Decomposed<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-BENCH_SMALL(StaticLinear<std::uint32_t, Bytes<16>>);
-BENCH_LARGE(StdUnorderedMap<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-BENCH_LARGE(StdMap<std::uint32_t, Bytes<16>>);
-BENCH_LARGE(AnkerlUnorderedDense<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-BENCH_LARGE(AbseilSwiss<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-BENCH_LARGE(BoostFlat<std::uint32_t, Bytes<16>, uint32_t_hash_id>);
-
-#undef BENCH_SMALL
-#undef BENCH_LARGE
+#undef BENCH_CASE

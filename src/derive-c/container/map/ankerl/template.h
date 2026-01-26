@@ -120,58 +120,14 @@ DC_INTERNAL static void PRIV(NS(SLOT, delete))(SLOT* slot) {
 
 #pragma pop_macro("ALLOC")
 
-#define BUCKET NS(SELF, bucket)
-
 #if defined SMALL_BUCKETS
-    #define INDEX_KIND dc_ankerl_index_small
-
-typedef struct {
-    dc_ankerl_mdata mdata;
-    uint16_t index;
-} BUCKET;
-
-DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = (size_t)UINT16_MAX;
-
-DC_INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
-    DC_ASSUME(index <= NS(SELF, max_capacity));
-    return (BUCKET){
-        .mdata = mdata,
-        .index = (uint16_t)(index),
-    };
-}
-
-DC_INTERNAL static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) {
-    return (size_t)bucket->index;
-}
-
-DC_STATIC_ASSERT(sizeof(BUCKET) == 4);
     #undef SMALL_BUCKETS // [DERIVE-C] for input arg
+    #define BUCKET _dc_ankerl_small_bucket
 #else
-    #define INDEX_KIND dc_ankerl_index_large
-
-typedef struct {
-    dc_ankerl_mdata mdata;
-    uint16_t index_hi;
-    uint32_t index_lo;
-} BUCKET;
-
-DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = (size_t)UINT32_MAX + ((size_t)UINT16_MAX << 32);
-
-DC_INTERNAL static BUCKET PRIV(NS(BUCKET, new))(dc_ankerl_mdata mdata, size_t index) {
-    DC_ASSUME(index <= NS(SELF, max_capacity));
-    return (BUCKET){
-        .mdata = mdata,
-        .index_hi = (uint16_t)(index >> 32),
-        .index_lo = (uint32_t)index,
-    };
-}
-
-DC_INTERNAL static size_t PRIV(NS(BUCKET, get_index))(BUCKET const* bucket) {
-    return (size_t)bucket->index_lo + ((size_t)bucket->index_hi << 32);
-}
-
-DC_STATIC_ASSERT(sizeof(BUCKET) == 8);
+    #define BUCKET _dc_ankerl_bucket
 #endif
+
+DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = NS(BUCKET, max_index_exclusive);
 
 typedef struct {
     size_t buckets_capacity;
@@ -241,7 +197,7 @@ DC_INTERNAL static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* se
     const size_t desired = hash & mask;
 
     {
-        dc_ankerl_dfd dfd = _dc_ankerl_dfd_new(0);
+        _dc_ankerl_dfd dfd = _dc_ankerl_dfd_new(0);
         for (size_t pos = desired;; pos = (pos + 1) & mask) {
             BUCKET const* b = &self->buckets[pos];
 
@@ -259,7 +215,7 @@ DC_INTERNAL static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* se
             }
 
             if (b->mdata.fingerprint == fp) {
-                const size_t di = PRIV(NS(BUCKET, get_index))(b);
+                const size_t di = NS(BUCKET, get_index)(b);
                 SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
                 if (KEY_EQ(&slot->key, &key)) {
                     return NULL;
@@ -271,12 +227,13 @@ DC_INTERNAL static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* se
     }
 
     const size_t dense_index = NS(SLOT_VECTOR, size)(&self->slots);
-    NS(SLOT_VECTOR, push)(&self->slots, (SLOT){
-                                            .key = key,
-                                            .value = value,
-                                        });
-    BUCKET cur = PRIV(NS(BUCKET, new))(
-        (dc_ankerl_mdata){
+    NS(SLOT_VECTOR, push)
+    (&self->slots, (SLOT){
+                       .key = key,
+                       .value = value,
+                   });
+    BUCKET cur = NS(BUCKET, new)(
+        (_dc_ankerl_mdata){
             .fingerprint = fp,
             .dfd = _dc_ankerl_dfd_new(0),
         },
@@ -317,8 +274,8 @@ DC_INTERNAL static void PRIV(NS(SELF, rehash))(SELF* self, size_t new_capacity) 
         const uint8_t fp = _dc_ankerl_fingerprint_from_hash(hash);
         const size_t desired = hash & new_mask;
 
-        BUCKET cur = PRIV(NS(BUCKET, new))(
-            (dc_ankerl_mdata){
+        BUCKET cur = NS(BUCKET, new)(
+            (_dc_ankerl_mdata){
                 .fingerprint = fp,
                 .dfd = _dc_ankerl_dfd_new(0),
             },
@@ -392,7 +349,7 @@ DC_INTERNAL static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* ke
     const uint8_t fp = _dc_ankerl_fingerprint_from_hash(hash);
     const size_t desired = hash & mask;
 
-    dc_ankerl_dfd dfd = _dc_ankerl_dfd_new(0);
+    _dc_ankerl_dfd dfd = _dc_ankerl_dfd_new(0);
     for (size_t pos = desired;; pos = (pos + 1) & mask) {
         BUCKET const* b = &self->buckets[pos];
 
@@ -406,7 +363,7 @@ DC_INTERNAL static bool PRIV(NS(SELF, try_find))(SELF const* self, KEY const* ke
         }
 
         if (b->mdata.fingerprint == fp) {
-            const size_t di = PRIV(NS(BUCKET, get_index))(b);
+            const size_t di = NS(BUCKET, get_index)(b);
             SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
             if (KEY_EQ(&slot->key, key)) {
                 *out_bucket_pos = pos;
@@ -507,7 +464,7 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destinati
             const uint8_t moved_fp = _dc_ankerl_fingerprint_from_hash(moved_hash);
             const size_t desired = moved_hash & mask;
 
-            dc_ankerl_dfd dfd = _dc_ankerl_dfd_new(0);
+            _dc_ankerl_dfd dfd = _dc_ankerl_dfd_new(0);
             for (size_t pos = desired;; pos = (pos + 1) & mask) {
                 BUCKET* b = &self->buckets[pos];
 
@@ -518,10 +475,10 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destinati
                 }
 
                 if (b->mdata.fingerprint == moved_fp) {
-                    const size_t di = PRIV(NS(BUCKET, get_index))(b);
+                    const size_t di = NS(BUCKET, get_index)(b);
                     SLOT const* slot = NS(SLOT_VECTOR, read)(&self->slots, di);
                     if (KEY_EQ(&slot->key, &dst->key)) {
-                        *b = PRIV(NS(BUCKET, new))(b->mdata, removed_dense_index);
+                        *b = NS(BUCKET, new)(b->mdata, removed_dense_index);
                         break;
                     }
                 }
@@ -668,7 +625,6 @@ DC_PUBLIC static ITER NS(SELF, get_iter)(SELF* self) {
 #undef ITER
 
 #undef INVARIANT_CHECK
-#undef INDEX_KIND
 #undef BUCKET
 #undef SLOT_VECTOR
 #undef SLOT
