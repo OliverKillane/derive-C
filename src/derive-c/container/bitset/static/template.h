@@ -72,14 +72,18 @@ DC_PUBLIC static bool NS(SELF, try_set)(SELF* self, INDEX_TYPE index, bool value
 
 DC_PUBLIC static void NS(SELF, set)(SELF* self, INDEX_TYPE index, bool value) {
     INVARIANT_CHECK(self);
-    DC_ASSERT(NS(SELF, try_set)(self, index, value));
+    DC_ASSERT(NS(SELF, try_set)(self, index, value),
+              "Failed to set index {index=%lu, value=%d, exclusive_end_index=%d}", (size_t)index,
+              value, EXCLUSIVE_END_INDEX);
 }
 
 DC_PUBLIC static bool NS(SELF, get)(SELF const* self, INDEX_TYPE index) {
     INVARIANT_CHECK(self);
 
 #if EXCLUSIVE_END_INDEX <= MAX_INDEX
-    DC_ASSERT(index < EXCLUSIVE_END_INDEX);
+    DC_ASSERT(index < EXCLUSIVE_END_INDEX,
+              "Index out of bounds {index=%lu, exclusive_end_index=%d}", (size_t)index,
+              EXCLUSIVE_END_INDEX);
 #endif
 
     INDEX_TYPE byte = DC_BITSET_STATIC_INDEX_TO_BYTES(index);

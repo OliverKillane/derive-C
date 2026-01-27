@@ -93,9 +93,10 @@ typedef struct {
 DC_STATIC_CONSTANT size_t NS(SELF, max_capacity) = SIZE_MAX;
 
 DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t capacity, NS(ALLOC, ref) alloc_ref) {
-    DC_ASSERT(capacity > 0);
+    DC_ASSERT(capacity > 0, "Cannot create map with capacity for 0 items {capacity=%lu}", capacity);
     size_t const real_capacity = dc_apply_capacity_policy(capacity);
-    DC_ASSERT(real_capacity > 0);
+    DC_ASSUME(real_capacity > 0);
+
     // JUSTIFY: calloc of keys
     //  - A cheap way to get all precense flags as zeroed (os & allocater supported get zeroed page)
     //  - for the values, we do not need this (no precense checks are done on values)
@@ -262,7 +263,8 @@ DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
 
 DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
-    DC_ASSERT(value_ptr);
+    DC_ASSERT(value_ptr, "Failed to insert item {key=%s, value=%s}", DC_DEBUG(KEY_DEBUG, &key),
+              DC_DEBUG(VALUE_DEBUG, &value));
     return value_ptr;
 }
 
@@ -286,7 +288,7 @@ DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
 
 DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot write item {key=%s}", DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 
@@ -310,7 +312,7 @@ DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
 DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot read item {key=%s}", DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 
@@ -376,7 +378,8 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destinati
 
 DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
-    DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, key, &value), "Failed to remove item {key=%s}",
+              DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 

@@ -5,7 +5,7 @@
 
 #include <derive-c/alloc/std.h>
 #include <derive-c/core/debug/memory_tracker.h>
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 #define NAME int_arena
 #define VALUE size_t

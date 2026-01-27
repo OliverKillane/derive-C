@@ -4,7 +4,7 @@ include(CTest)
 include("${CMAKE_SOURCE_DIR}/src/derive-cmake/discover_test.cmake")
 
 # Fine-grained benchmark mode (powers of 2 only)
-option(BENCH_FINE_GRAINED "Enable fine-grained benchmarks (powers of 2 only)" OFF)
+option(BENCH_FINE_GRAINED_ENABLED "Enable fine-grained benchmarks (powers of 2 only)" OFF)
 
 set(GOOGLE_BENCHMARK_VERSION v1.9.4)
 set(UNORDERED_DENSE_VERSION v4.8.1)
@@ -62,6 +62,11 @@ foreach(BENCH_FILE ${BENCH_SOURCES})
   string(REPLACE "\\" "_" BENCH_TARGET "${BENCH_TARGET}") # Windows safety
 
   add_executable(${BENCH_TARGET} "${BENCH_FILE}")
+
+  target_compile_definitions(${BENCH_TARGET} PRIVATE
+    DC_PANIC_HEADER=<derive-cpp/test/runtime_panic.hpp>
+  )
+
   target_link_libraries(${BENCH_TARGET} PRIVATE 
     benchmark::benchmark 
     derivec 
@@ -71,7 +76,9 @@ foreach(BENCH_FILE ${BENCH_SOURCES})
     Boost::unordered
   )
 
-  if(BENCH_FINE_GRAINED)
+
+
+  if(BENCH_FINE_GRAINED_ENABLED)
     target_compile_definitions(${BENCH_TARGET} PRIVATE BENCH_FINE_GRAINED)
   endif()
 

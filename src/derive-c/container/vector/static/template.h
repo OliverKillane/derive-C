@@ -106,7 +106,8 @@ DC_PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, INDEX_TYPE ind
 
 DC_PUBLIC static ITEM const* NS(SELF, read)(SELF const* self, INDEX_TYPE index) {
     ITEM const* value = NS(SELF, try_read)(self, index);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot read, index out of bounds {index=%lu, size=%lu}", (size_t)index,
+              (size_t)self->size);
     return value;
 }
 
@@ -120,7 +121,8 @@ DC_PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, INDEX_TYPE index) {
 
 DC_PUBLIC static ITEM* NS(SELF, write)(SELF* self, INDEX_TYPE index) {
     ITEM* value = NS(SELF, try_write)(self, index);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot write, index out of bounds {index=%lu, size=%lu}", (size_t)index,
+              (size_t)self->size);
     return value;
 }
 
@@ -140,7 +142,8 @@ DC_PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM c
                                                INDEX_TYPE count) {
     INVARIANT_CHECK(self);
     DC_ASSUME(items);
-    DC_ASSERT(at <= self->size);
+    DC_ASSERT(at <= self->size, "Cannot insert at, index out of bounds {at=%lu, size=%lu}",
+              (size_t)at, (size_t)self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (self->size + count > CAPACITY) {
@@ -159,7 +162,9 @@ DC_PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, INDEX_TYPE at, ITEM c
 
 DC_PUBLIC static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE count) {
     INVARIANT_CHECK(self);
-    DC_ASSERT(at + count <= self->size);
+    DC_ASSERT(at + count <= self->size,
+              "Cannot remove at, index out of bounds {at=%lu, count=%lu, size=%lu}", (size_t)at,
+              (size_t)count, (size_t)self->size);
 
     if (count == 0) {
         return;
@@ -175,7 +180,8 @@ DC_PUBLIC static void NS(SELF, remove_at)(SELF* self, INDEX_TYPE at, INDEX_TYPE 
 
 DC_PUBLIC static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     ITEM* slot = NS(SELF, try_push)(self, item);
-    DC_ASSERT(slot);
+    DC_ASSERT(slot, "Cannot push, already at max capacity {capacity=%d, item=%s}", CAPACITY,
+              DC_DEBUG(ITEM_DEBUG, &item));
     return slot;
 }
 
@@ -192,7 +198,8 @@ DC_PUBLIC static bool NS(SELF, try_pop)(SELF* self, ITEM* destination) {
 
 DC_PUBLIC static ITEM NS(SELF, pop)(SELF* self) {
     ITEM entry;
-    DC_ASSERT(NS(SELF, try_pop)(self, &entry));
+    DC_ASSERT(NS(SELF, try_pop)(self, &entry), "Cannot pop, already empty {size=%lu}",
+              (size_t)self->size);
     return entry;
 }
 

@@ -4,6 +4,7 @@
 
 #include <derive-cpp/meta/labels.hpp>
 #include <derive-c/container/vector/dynamic/includes.h>
+#include <derive-c/container/vector/static/includes.h>
 
 template <typename T>
 concept VectorCase = requires {

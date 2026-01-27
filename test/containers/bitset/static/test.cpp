@@ -5,7 +5,7 @@
 
 #include <derive-c/container/bitset/static/utils.h>
 #include <derive-c/utils/for.h>
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 TEST(BitsetStaticUtils, OffsetToMask) {
     EXPECT_EQ(0x01, DC_BITSET_STATIC_OFFSET_TO_MASK((uint8_t)0));

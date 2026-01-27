@@ -1,6 +1,7 @@
 #pragma once
 
 #include <benchmark/benchmark.h>
+#include <algorithm>
 
 namespace range {
 
@@ -10,8 +11,10 @@ static constexpr bool fine_grained = true;
 static constexpr bool fine_grained = false;
 #endif
 
-template <int64_t Max>
+template <size_t Capacity>
 inline void exponential(benchmark::internal::Benchmark* benchmark) {
+    size_t Max = std::min<size_t>(Capacity, 65536);
+
     // Benchmark for single item case
     benchmark = benchmark->Arg(1);
 

@@ -39,12 +39,8 @@ void iterate_case_derive_c(benchmark::State& /* state */, size_t max_n, Gen& gen
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename NS::Self_key_t, typename NS::Self_value_t>) {
-            NS::Self_insert(&m, key, key);
-        } else {
-            typename NS::Self_value_t value{};
-            NS::Self_insert(&m, key, value);
-        }
+        typename NS::Self_value_t value{};
+        NS::Self_try_insert(&m, key, value);
     }
 
     typename NS::Self_iter_const iter = NS::Self_get_iter_const(&m);
@@ -62,12 +58,8 @@ void iterate_case_derive_c_staticlinear(benchmark::State& /* state */, size_t ma
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename NS::Self_key_t, typename NS::Self_value_t>) {
-            NS::Self_insert(&m, key, key);
-        } else {
-            typename NS::Self_value_t value{};
-            NS::Self_insert(&m, key, value);
-        }
+        typename NS::Self_value_t value{};
+        NS::Self_try_insert(&m, key, value);
     }
 
     typename NS::Self_iter_const iter = NS::Self_get_iter_const(&m);
@@ -85,12 +77,8 @@ void iterate_case_stl_unordered_map(benchmark::State& /* state */, size_t max_n,
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Std::Self_key_t, typename Std::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Std::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Std::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -104,12 +92,8 @@ void iterate_case_stl_map(benchmark::State& /* state */, size_t max_n, Gen& gen)
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Std::Self_key_t, typename Std::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Std::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Std::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -123,12 +107,8 @@ void iterate_case_ankerl_unordered_dense(benchmark::State& /* state */, size_t m
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Ext::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Ext::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -142,12 +122,8 @@ void iterate_case_abseil_swiss(benchmark::State& /* state */, size_t max_n, Gen&
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Ext::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Ext::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -161,12 +137,8 @@ void iterate_case_boost_flat(benchmark::State& /* state */, size_t max_n, Gen& g
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Ext::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Ext::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -182,7 +154,7 @@ template <MapCase Impl> void iterate(benchmark::State& state) {
     // Select the appropriate generator based on the key type
     if constexpr (std::is_same_v<typename Impl::Self_key_t, std::uint32_t>) {
         for (auto _ : state) {
-            SeqGen<std::uint32_t> gen(SEED);  // Create fresh generator for each iteration
+            SeqGen<std::uint32_t> gen(SEED); // Create fresh generator for each iteration
             if constexpr (LABEL_CHECK(Impl, derive_c_swiss) || LABEL_CHECK(Impl, derive_c_ankerl) ||
                           LABEL_CHECK(Impl, derive_c_ankerl_small) ||
                           LABEL_CHECK(Impl, derive_c_decomposed)) {
@@ -205,7 +177,7 @@ template <MapCase Impl> void iterate(benchmark::State& state) {
         }
     } else if constexpr (std::is_same_v<typename Impl::Self_key_t, std::uint8_t>) {
         for (auto _ : state) {
-            SeqGen<std::uint8_t> gen(SEED);  // Create fresh generator for each iteration
+            SeqGen<std::uint8_t> gen(SEED); // Create fresh generator for each iteration
             if constexpr (LABEL_CHECK(Impl, derive_c_swiss) || LABEL_CHECK(Impl, derive_c_ankerl) ||
                           LABEL_CHECK(Impl, derive_c_ankerl_small) ||
                           LABEL_CHECK(Impl, derive_c_decomposed)) {
@@ -229,56 +201,21 @@ template <MapCase Impl> void iterate(benchmark::State& state) {
     } else {
         static_assert_unreachable<typename Impl::Self_key_t>();
     }
-    
-    // Report items iterated
+
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(max_n));
 }
 
-// Small sizes for StaticLinear (CAPACITY 1024)
-#define BENCH_SMALL(...)                                                                          \
-    BENCHMARK_TEMPLATE(iterate, __VA_ARGS__)->Apply(range::exponential<1024>)
+#define BENCH_CASE(NAME)                                                                           \
+    BENCHMARK_TEMPLATE(iterate, NAME<std::uint32_t, std::uint32_t, uint32_t_hash_id>)              \
+        ->Apply(range::exponential<                                                                \
+                NAME<std::uint32_t, std::uint32_t, uint32_t_hash_id>::Self_max_capacity>);         \
+    BENCHMARK_TEMPLATE(iterate, NAME<std::uint8_t, std::uint8_t, uint8_t_hash_id>)                 \
+        ->Apply(range::exponential<                                                                \
+                NAME<std::uint8_t, std::uint8_t, uint8_t_hash_id>::Self_max_capacity>);            \
+    BENCHMARK_TEMPLATE(iterate, NAME<std::uint32_t, Bytes<32>, uint32_t_hash_id>)                  \
+        ->Apply(range::exponential<                                                                \
+                NAME<std::uint32_t, Bytes<32>, uint32_t_hash_id>::Self_max_capacity>)
 
-// Large sizes for dynamic implementations
-#define BENCH_LARGE(...)                                                                          \
-    BENCHMARK_TEMPLATE(iterate, __VA_ARGS__)->Apply(range::exponential<65536>)
+APPLY_BENCH(BENCH_CASE);
 
-// Small sizes for uint8_t (max 256 unique keys)
-#define BENCH_U8(...)                                                                             \
-    BENCHMARK_TEMPLATE(iterate, __VA_ARGS__)->Apply(range::exponential<256>)
-
-BENCH_LARGE(Swiss<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-BENCH_LARGE(Ankerl<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-BENCH_LARGE(AnkerlSmall<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-BENCH_LARGE(Decomposed<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-BENCH_SMALL(StaticLinear<std::uint32_t, std::uint32_t>);
-BENCH_LARGE(StdUnorderedMap<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-BENCH_LARGE(StdMap<std::uint32_t, std::uint32_t>);
-BENCH_LARGE(AnkerlUnorderedDense<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-BENCH_LARGE(AbseilSwiss<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-BENCH_LARGE(BoostFlat<std::uint32_t, std::uint32_t, uint32_t_hash_id>);
-
-BENCH_U8(Swiss<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-BENCH_U8(Ankerl<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-BENCH_U8(AnkerlSmall<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-BENCH_U8(Decomposed<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-BENCH_U8(StaticLinear<std::uint8_t, std::uint8_t>);
-BENCH_U8(StdUnorderedMap<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-BENCH_U8(StdMap<std::uint8_t, std::uint8_t>);
-BENCH_U8(AnkerlUnorderedDense<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-BENCH_U8(AbseilSwiss<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-BENCH_U8(BoostFlat<std::uint8_t, std::uint8_t, uint8_t_hash_id>);
-
-BENCH_LARGE(Swiss<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-BENCH_LARGE(Ankerl<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-BENCH_LARGE(AnkerlSmall<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-BENCH_LARGE(Decomposed<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-BENCH_SMALL(StaticLinear<std::uint32_t, Bytes<32>>);
-BENCH_LARGE(StdUnorderedMap<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-BENCH_LARGE(StdMap<std::uint32_t, Bytes<32>>);
-BENCH_LARGE(AnkerlUnorderedDense<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-BENCH_LARGE(AbseilSwiss<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-BENCH_LARGE(BoostFlat<std::uint32_t, Bytes<32>, uint32_t_hash_id>);
-
-#undef BENCH_SMALL
-#undef BENCH_LARGE
-#undef BENCH_U8
+#undef BENCH_CASE

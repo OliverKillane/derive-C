@@ -55,6 +55,12 @@ target_compile_options(dc_warnings_c INTERFACE
   #  - See `zerosized.h`
   $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-zero-length-array>
 
+  # JUSTIFY: Allowing GNU statement expressions from macro expansion
+  #  - `DC_DEBUG` uses GNU statement expressions (required for type-safe debug formatting)
+  #  - It's used within `DC_ASSERT` macros, which triggers this warning
+  #  - See `utils/debug/dump.h` and `container/vector/static/template.h:178`
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-gnu-statement-expression-from-macro-expansion>
+
   # JUSTIFY: Allow constexpr
   #  For non-clang builds `_Generic` is not supported in C++, hence we use 
   #  constexpr and type traits instead.

@@ -94,9 +94,12 @@ typedef struct {
     DC_ASSUME((self)->count <= MAX_INDEX);
 
 DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, NS(ALLOC, ref) alloc_ref) {
-    DC_ASSERT(items > 0);
+    DC_ASSERT(items > 0, "Cannot create arena with capacity for 0 items {items=%lu}",
+              (size_t)items);
     size_t capacity = dc_math_next_power_of_2(items);
-    DC_ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER);
+    DC_ASSERT(capacity <= CAPACITY_EXCLUSIVE_UPPER,
+              "Index capacity too large {capacity=%lu, max_capacity=%lu}", (size_t)capacity,
+              (size_t)CAPACITY_EXCLUSIVE_UPPER);
     SLOT* slots = (SLOT*)NS(ALLOC, allocate_zeroed)(alloc_ref, capacity * sizeof(SLOT));
 
     for (INDEX_TYPE index = 0; index < capacity; index++) {
@@ -117,7 +120,9 @@ DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(INDEX_TYPE items, NS(ALLOC
 
 DC_PUBLIC static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     INVARIANT_CHECK(self);
-    DC_ASSERT(self->count < MAX_INDEX);
+    DC_ASSERT(self->count < MAX_INDEX,
+              "Arena is full, cannot insert {count=%lu, max_index=%lu, value=%s}",
+              (size_t)self->count, (size_t)MAX_INDEX, DC_DEBUG(VALUE_DEBUG, &value));
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
     if (self->free_list != INDEX_NONE) {
@@ -133,7 +138,10 @@ DC_PUBLIC static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     }
 
     if (self->exclusive_end == self->capacity) {
-        DC_ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR));
+        DC_ASSERT(self->capacity <= (CAPACITY_EXCLUSIVE_UPPER / RESIZE_FACTOR),
+                  "Cannot increase capacity for new item {capacity=%lu, max_capacity=%lu, item=%s}",
+                  (size_t)self->capacity, (size_t)CAPACITY_EXCLUSIVE_UPPER,
+                  DC_DEBUG(VALUE_DEBUG, &value));
         size_t old_size = self->capacity * sizeof(SLOT);
         self->capacity *= RESIZE_FACTOR;
         SLOT* new_alloc = (SLOT*)NS(ALLOC, reallocate)(self->alloc_ref, self->slots, old_size,
@@ -168,7 +176,7 @@ DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
 
 DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
     VALUE* value = NS(SELF, try_write)(self, index);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot write item, index not found {index=%lu}", (size_t)index.index);
     return value;
 }
 
@@ -186,7 +194,7 @@ DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) 
 
 DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
     VALUE const* value = NS(SELF, try_read)(self, index);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot read item, index not found {index=%lu}", (size_t)index.index);
     return value;
 }
 
@@ -253,7 +261,8 @@ DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
-    DC_ASSERT(NS(SELF, try_remove)(self, index, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, index, &value),
+              "Failed to remove item, index not found {index=%lu}", (size_t)index.index);
     return value;
 }
 

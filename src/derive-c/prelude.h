@@ -7,5 +7,7 @@
 #include <derive-c/alloc/std.h> // IWYU pragma: export
 
 // Utilities
-#include <derive-c/utils/for.h>   // IWYU pragma: export
-#include <derive-c/utils/debug.h> // IWYU pragma: export
+#include <derive-c/utils/for.h>          // IWYU pragma: export
+#include <derive-c/utils/debug/trace.h>  // IWYU pragma: export
+#include <derive-c/utils/debug/string.h> // IWYU pragma: export
+#include <derive-c/utils/debug/dump.h>   // IWYU pragma: export

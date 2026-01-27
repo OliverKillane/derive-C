@@ -93,7 +93,6 @@ typedef ALLOC NS(SELF, alloc_t);
 #define SLOT_INDEX_TYPE INDEX_TYPE     // [DERIVE-C] for template
 #define SLOT_VALUE VALUE               // [DERIVE-C] for template
 #define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
-#define SLOT_VALUE_CLONE VALUE_CLONE   // [DERIVE-C] for template
 #define SLOT_VALUE_DELETE VALUE_DELETE // [DERIVE-C] for template
 #define INTERNAL_NAME SLOT             // [DERIVE-C] for template
 #include <derive-c/utils/slot/template.h>
@@ -147,7 +146,9 @@ DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
 
 DC_PUBLIC static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     INVARIANT_CHECK(self);
-    DC_ASSERT(self->count < MAX_INDEX);
+    DC_ASSERT(self->count < MAX_INDEX,
+              "Arena is full, cannot insert {count=%lu, max_index=%lu, value=%s}",
+              (size_t)self->count, (size_t)MAX_INDEX, DC_DEBUG(VALUE_DEBUG, &value));
 
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
@@ -217,7 +218,7 @@ DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) 
 
 DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
     VALUE const* value = NS(SELF, try_read)(self, index);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot read item, index not found {index=%lu}", (size_t)index.index);
     return value;
 }
 
@@ -226,7 +227,9 @@ DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
 }
 
 DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
-    return (VALUE*)NS(SELF, read)(self, index);
+    VALUE* value = NS(SELF, try_write)(self, index);
+    DC_ASSERT(value, "Cannot write item, index not found {index=%lu}", (size_t)index.index);
+    return value;
 }
 
 DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) {
@@ -299,7 +302,8 @@ DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
-    DC_ASSERT(NS(SELF, try_remove)(self, index, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, index, &value),
+              "Failed to remove item, index not found {index=%lu}", (size_t)index.index);
     return value;
 }
 

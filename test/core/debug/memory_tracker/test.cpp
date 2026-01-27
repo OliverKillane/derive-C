@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <initializer_list>
 
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 // JUSTIFY: No customd defines for the checker implementation or global level.
 //  - Set and check should be usable regardless msan or asan usage

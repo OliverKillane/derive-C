@@ -106,7 +106,7 @@ DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
 DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot read item {key=%s}", DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 
@@ -116,7 +116,7 @@ DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
 
 DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot write item {key=%s}", DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 
@@ -141,7 +141,8 @@ DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
 
 DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* placed = NS(SELF, try_insert)(self, key, value);
-    DC_ASSERT(placed);
+    DC_ASSERT(placed, "Failed to insert item {key=%s, value=%s}", DC_DEBUG(KEY_DEBUG, &key),
+              DC_DEBUG(VALUE_DEBUG, &value));
     return placed;
 }
 
@@ -166,7 +167,8 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* dest) {
 
 DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE dest;
-    DC_ASSERT(NS(SELF, try_remove)(self, key, &dest));
+    DC_ASSERT(NS(SELF, try_remove)(self, key, &dest), "Failed to remove item {key=%s}",
+              DC_DEBUG(KEY_DEBUG, &key));
     return dest;
 }
 

@@ -1,7 +1,7 @@
 
 #include <gtest/gtest.h>
 
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 #include <derive-cpp/fmt/remove_ptrs.hpp>
 
