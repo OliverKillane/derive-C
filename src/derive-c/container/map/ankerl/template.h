@@ -469,7 +469,7 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destinati
             for (size_t pos = desired;; pos = (pos + 1) & mask) {
                 BUCKET* b = &self->buckets[pos];
 
-                DC_ASSUME(_dc_ankerl_mdata_present(&b->mdata));
+                DC_DEBUG_ASSERT(_dc_ankerl_mdata_present(&b->mdata));
 
                 if (dfd != _dc_ankerl_dfd_max && b->mdata.dfd < dfd) {
                     DC_UNREACHABLE();

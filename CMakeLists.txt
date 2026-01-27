@@ -274,14 +274,6 @@ if (LINTING)
       )
     endif()
 
-    # Get sanitizer include path from environment
-    set(SANITIZER_INCLUDE "$ENV{C_INCLUDE_PATH}")
-    if (SANITIZER_INCLUDE)
-      set(SANITIZER_INCLUDE_ARG "--extra-arg=-isystem${SANITIZER_INCLUDE}")
-    else()
-      set(SANITIZER_INCLUDE_ARG "")
-    endif()
-
     add_custom_target(lint-c-hdrs
       COMMAND ${CLANG_TIDY}
         -p ${CMAKE_BINARY_DIR}
@@ -290,7 +282,6 @@ if (LINTING)
         --extra-arg=-D_GNU_SOURCE # For cookie_io from stdio.h
         --extra-arg=-resource-dir=${CLANG_RESOURCE_DIR}
         --extra-arg=-I${CMAKE_SOURCE_DIR}/src
-        ${SANITIZER_INCLUDE_ARG}
         --header-filter="^${CMAKE_SOURCE_DIR}/src/"
         ${TIDY_C_HDRS}
         --
