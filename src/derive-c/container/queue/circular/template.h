@@ -79,7 +79,7 @@ DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t capacity_for,
         return NS(SELF, new)(alloc_ref);
     }
     size_t const capacity = dc_math_next_power_of_2(capacity_for);
-    DC_ASSERT(DC_MATH_IS_POWER_OF_2(capacity));
+    DC_ASSUME(DC_MATH_IS_POWER_OF_2(capacity));
     ITEM* data = (ITEM*)NS(ALLOC, allocate_uninit)(alloc_ref, capacity * sizeof(ITEM));
 
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE, data,
@@ -219,7 +219,8 @@ DC_PUBLIC static void NS(SELF, push_front)(SELF* self, ITEM item) {
 DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    DC_ASSERT(!NS(SELF, empty)(self));
+    DC_ASSERT(!NS(SELF, empty)(self), "Cannot pop front, already empty {size=%lu}",
+              (size_t)self->size);
 
     ITEM value = self->data[self->head];
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,
@@ -239,7 +240,8 @@ DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
 DC_PUBLIC static ITEM NS(SELF, pop_back)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    DC_ASSERT(!NS(SELF, empty)(self));
+    DC_ASSERT(!NS(SELF, empty)(self), "Cannot pop back, already empty {size=%lu}",
+              (size_t)self->size);
 
     ITEM value = self->data[self->tail];
     dc_memory_tracker_set(DC_MEMORY_TRACKER_LVL_CONTAINER, DC_MEMORY_TRACKER_CAP_NONE,

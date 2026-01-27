@@ -3,7 +3,7 @@
 
 #include <derive-cpp/fmt/remove_ptrs.hpp>
 
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 #define ITEM int
 #define NAME Sut

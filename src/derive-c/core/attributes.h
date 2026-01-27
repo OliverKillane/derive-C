@@ -22,3 +22,11 @@
 #else
     #define DC_STATIC_CONSTANT static const
 #endif
+
+// JUSTIFY: Changing thread local
+//  - _Thread_local not part of C++ standard, though is supported by clang & GCC
+#if defined __cplusplus
+    #define DC_THREAD_LOCAL thread_local
+#else
+    #define DC_THREAD_LOCAL _Thread_local
+#endif

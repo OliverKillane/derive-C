@@ -62,6 +62,11 @@ foreach(BENCH_FILE ${BENCH_SOURCES})
   string(REPLACE "\\" "_" BENCH_TARGET "${BENCH_TARGET}") # Windows safety
 
   add_executable(${BENCH_TARGET} "${BENCH_FILE}")
+
+  target_compile_definitions(${BENCH_TARGET} PRIVATE
+    DC_PANIC_HEADER=<derive-cpp/test/runtime_panic.hpp>
+  )
+
   target_link_libraries(${BENCH_TARGET} PRIVATE 
     benchmark::benchmark 
     derivec 
@@ -70,6 +75,8 @@ foreach(BENCH_FILE ${BENCH_SOURCES})
     absl::flat_hash_map
     Boost::unordered
   )
+
+
 
   if(BENCH_FINE_GRAINED_ENABLED)
     target_compile_definitions(${BENCH_TARGET} PRIVATE BENCH_FINE_GRAINED)

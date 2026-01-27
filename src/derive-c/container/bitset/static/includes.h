@@ -9,6 +9,7 @@
 #include <derive-c/core/debug/gdb_marker.h>       // IWYU pragma: export
 #include <derive-c/core/debug/mutation_tracker.h> // IWYU pragma: export
 #include <derive-c/core/prelude.h>                // IWYU pragma: export
+#include <derive-c/utils/debug/dump.h>            // IWYU pragma: export
 
 // [DERIVE-C] container includes
 #include "utils.h" // IWYU pragma: export

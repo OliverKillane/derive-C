@@ -167,7 +167,8 @@ DC_PUBLIC static ITEM const* NS(SELF, try_read)(SELF const* self, size_t index) 
 
 DC_PUBLIC static ITEM const* NS(SELF, read)(SELF const* self, size_t index) {
     ITEM const* item = NS(SELF, try_read)(self, index);
-    DC_ASSERT(item);
+    DC_ASSERT(item, "Cannot read, index out of bounds {index=%lu, size=%lu}", (size_t)index,
+              (size_t)self->size);
     return item;
 }
 
@@ -181,7 +182,8 @@ DC_PUBLIC static ITEM* NS(SELF, try_write)(SELF* self, size_t index) {
 
 DC_PUBLIC static ITEM* NS(SELF, write)(SELF* self, size_t index) {
     ITEM* item = NS(SELF, try_write)(self, index);
-    DC_ASSERT(item);
+    DC_ASSERT(item, "Cannot write, index out of bounds {index=%lu, size=%lu}", (size_t)index,
+              (size_t)self->size);
     return item;
 }
 
@@ -189,7 +191,8 @@ DC_PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const
                                                size_t count) {
     INVARIANT_CHECK(self);
     DC_ASSUME(items);
-    DC_ASSERT(at <= self->size);
+    DC_ASSERT(at <= self->size, "Cannot insert at, index out of bounds {at=%lu, size=%lu}",
+              (size_t)at, (size_t)self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (count == 0) {
@@ -207,7 +210,9 @@ DC_PUBLIC static ITEM* NS(SELF, try_insert_at)(SELF* self, size_t at, ITEM const
 
 DC_PUBLIC static void NS(SELF, remove_at)(SELF* self, size_t at, size_t count) {
     INVARIANT_CHECK(self);
-    DC_ASSERT(at + count <= self->size);
+    DC_ASSERT(at + count <= self->size,
+              "Cannot remove at, index out of bounds {at=%lu, count=%lu, size=%lu}", (size_t)at,
+              (size_t)count, (size_t)self->size);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     if (count == 0) {
@@ -257,7 +262,8 @@ DC_PUBLIC static ITEM* NS(SELF, try_push)(SELF* self, ITEM item) {
 
 DC_PUBLIC static ITEM* NS(SELF, push)(SELF* self, ITEM item) {
     ITEM* entry = NS(SELF, try_push)(self, item);
-    DC_ASSERT(entry != NULL);
+    DC_ASSERT(entry != NULL, "Cannot push, already at max capacity {capacity=%lu, item=%s}",
+              (size_t)self->capacity, DC_DEBUG(ITEM_DEBUG, &item));
     return entry;
 }
 
@@ -282,14 +288,15 @@ DC_PUBLIC static ITEM* NS(SELF, data)(SELF* self) {
 
 DC_PUBLIC static ITEM NS(SELF, pop)(SELF* self) {
     ITEM entry;
-    DC_ASSERT(NS(SELF, try_pop)(self, &entry));
+    DC_ASSERT(NS(SELF, try_pop)(self, &entry), "Cannot pop, already empty {size=%lu}",
+              (size_t)self->size);
     return entry;
 }
 
 DC_PUBLIC static ITEM NS(SELF, pop_front)(SELF* self) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    DC_ASSERT(self->size > 0);
+    DC_ASSERT(self->size > 0, "Cannot pop front, already empty {size=%lu}", (size_t)self->size);
     ITEM entry = self->data[0];
     memmove(&self->data[0], &self->data[1], (self->size - 1) * sizeof(ITEM));
     self->size--;

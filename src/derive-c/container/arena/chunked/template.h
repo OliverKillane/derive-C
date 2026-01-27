@@ -126,7 +126,9 @@ DC_PUBLIC static SELF NS(SELF, new)(NS(ALLOC, ref) alloc_ref) {
 DC_PUBLIC static INDEX NS(SELF, insert)(SELF* self, VALUE value) {
     INVARIANT_CHECK(self);
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
-    DC_ASSERT(self->count < MAX_INDEX);
+    DC_ASSERT(self->count < MAX_INDEX,
+              "Arena is full, cannot insert {count=%lu, max_index=%lu, value=%s}",
+              (size_t)self->count, (size_t)MAX_INDEX, DC_DEBUG(VALUE_DEBUG, &value));
 
     if (self->free_list != INDEX_NONE) {
         INDEX_TYPE free_index = self->free_list;
@@ -196,7 +198,7 @@ DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, INDEX index) 
 
 DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, INDEX index) {
     VALUE const* value = NS(SELF, try_read)(self, index);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot read item {index=%lu}", (size_t)index.index);
     return value;
 }
 
@@ -206,7 +208,7 @@ DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, INDEX index) {
 
 DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, INDEX index) {
     VALUE* value = NS(SELF, try_write)(self, index);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot write item {index=%lu}", (size_t)index.index);
     return value;
 }
 
@@ -292,7 +294,8 @@ DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, INDEX index) {
     mutation_tracker_mutate(&self->iterator_invalidation_tracker);
 
     VALUE value;
-    DC_ASSERT(NS(SELF, try_remove)(self, index, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, index, &value),
+              "Failed to remove item, index not found {index=%lu}", (size_t)index.index);
     return value;
 }
 

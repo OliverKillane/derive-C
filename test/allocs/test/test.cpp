@@ -7,7 +7,7 @@
     #include <derive-cpp/fmt/remove_ptrs.hpp>
 
     #include <derive-c/alloc/std.h>
-    #include <derive-c/utils/debug.h>
+    #include <derive-c/utils/debug/string.h>
 
     #define ALLOC stdalloc
     #define NAME testalloc

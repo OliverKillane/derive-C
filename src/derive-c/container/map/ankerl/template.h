@@ -1,6 +1,7 @@
 /// @brief A simple swiss table implementation.
 /// See the abseil docs for swss table [here](https://abseil.io/about/design/swisstables)
 
+#include "derive-c/core/panic.h"
 #include <derive-c/core/includes/def.h>
 #if !defined(SKIP_INCLUDES)
     #include "includes.h"
@@ -114,7 +115,6 @@ DC_INTERNAL static void PRIV(NS(SLOT, delete))(SLOT* slot) {
 #define ITEM_DELETE PRIV(NS(SLOT, delete)) // [DERIVE-C] for template
 #define ITEM_CLONE PRIV(NS(SLOT, clone))   // [DERIVE-C] for template
 #define ITEM_DEBUG PRIV(NS(SLOT, debug))   // [DERIVE-C] for template
-#define ITEM_CLONE PRIV(NS(SLOT, clone))   // [DERIVE-C] for template
 #define INTERNAL_NAME SLOT_VECTOR          // [DERIVE-C] for template
 #include <derive-c/container/vector/dynamic/template.h>
 
@@ -161,7 +161,8 @@ DC_INTERNAL static SELF PRIV(NS(SELF, new_with_exact_capacity))(size_t capacity,
 }
 
 DC_PUBLIC static SELF NS(SELF, new_with_capacity_for)(size_t for_items, NS(ALLOC, ref) alloc_ref) {
-    DC_ASSERT(for_items > 0);
+    DC_ASSERT(for_items > 0, "Cannot create map with capacity for 0 items {for_items=%lu}",
+              for_items);
     return PRIV(NS(SELF, new_with_exact_capacity))(_dc_ankerl_buckets_capacity(for_items),
                                                    alloc_ref);
 }
@@ -331,7 +332,8 @@ DC_PUBLIC static VALUE* NS(SELF, try_insert)(SELF* self, KEY key, VALUE value) {
 
 DC_PUBLIC static VALUE* NS(SELF, insert)(SELF* self, KEY key, VALUE value) {
     VALUE* value_ptr = NS(SELF, try_insert)(self, key, value);
-    DC_ASSERT(value_ptr);
+    DC_ASSERT(value_ptr, "Failed to insert item {key=%s, value=%s}", DC_DEBUG(KEY_DEBUG, &key),
+              DC_DEBUG(VALUE_DEBUG, &value));
     return value_ptr;
 }
 
@@ -388,7 +390,7 @@ DC_PUBLIC static VALUE const* NS(SELF, try_read)(SELF const* self, KEY key) {
 
 DC_PUBLIC static VALUE const* NS(SELF, read)(SELF const* self, KEY key) {
     VALUE const* value = NS(SELF, try_read)(self, key);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot read item {key=%s}", DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 
@@ -399,7 +401,7 @@ DC_PUBLIC static VALUE* NS(SELF, try_write)(SELF* self, KEY key) {
 
 DC_PUBLIC static VALUE* NS(SELF, write)(SELF* self, KEY key) {
     VALUE* value = NS(SELF, try_write)(self, key);
-    DC_ASSERT(value);
+    DC_ASSERT(value, "Cannot write item {key=%s}", DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 
@@ -467,10 +469,10 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destinati
             for (size_t pos = desired;; pos = (pos + 1) & mask) {
                 BUCKET* b = &self->buckets[pos];
 
-                DC_ASSERT(_dc_ankerl_mdata_present(&b->mdata));
+                DC_ASSUME(_dc_ankerl_mdata_present(&b->mdata));
 
                 if (dfd != _dc_ankerl_dfd_max && b->mdata.dfd < dfd) {
-                    DC_ASSERT(false);
+                    DC_UNREACHABLE();
                 }
 
                 if (b->mdata.fingerprint == moved_fp) {
@@ -494,7 +496,8 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, KEY key, VALUE* destinati
 
 DC_PUBLIC static VALUE NS(SELF, remove)(SELF* self, KEY key) {
     VALUE value;
-    DC_ASSERT(NS(SELF, try_remove)(self, key, &value));
+    DC_ASSERT(NS(SELF, try_remove)(self, key, &value), "Failed to remove entry {key=%s}",
+              DC_DEBUG(KEY_DEBUG, &key));
     return value;
 }
 

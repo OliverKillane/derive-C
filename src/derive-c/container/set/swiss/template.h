@@ -110,7 +110,7 @@ DC_PUBLIC static bool NS(SELF, try_remove)(SELF* self, ITEM item) {
 
 DC_PUBLIC static void NS(SELF, remove)(SELF* self, ITEM item) {
     bool const removed = NS(SELF, try_remove)(self, item);
-    DC_ASSERT(removed, "Failed to remove");
+    DC_ASSERT(removed, "Failed to remove item {item=%s}", DC_DEBUG(ITEM_DEBUG, &item));
 }
 
 DC_PUBLIC static size_t NS(SELF, size)(SELF const* self) { return NS(MAP, size)(&self->map); }

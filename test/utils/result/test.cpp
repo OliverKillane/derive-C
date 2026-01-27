@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <stdexcept>
 
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 #include <derive-cpp/test/trampoline.hpp>
 #include <derive-cpp/test/gtest_mock.hpp>

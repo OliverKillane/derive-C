@@ -3,7 +3,7 @@
 
 #include <derive-c/core/debug/memory_tracker.h>
 #include <derive-c/alloc/std.h>
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 #include <derive-cpp/test/trampoline.hpp>
 #include <derive-cpp/test/gtest_mock.hpp>

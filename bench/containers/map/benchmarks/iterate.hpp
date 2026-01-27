@@ -39,12 +39,8 @@ void iterate_case_derive_c(benchmark::State& /* state */, size_t max_n, Gen& gen
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename NS::Self_key_t, typename NS::Self_value_t>) {
-            NS::Self_insert(&m, key, key);
-        } else {
-            typename NS::Self_value_t value{};
-            NS::Self_insert(&m, key, value);
-        }
+        typename NS::Self_value_t value{};
+        NS::Self_try_insert(&m, key, value);
     }
 
     typename NS::Self_iter_const iter = NS::Self_get_iter_const(&m);
@@ -62,12 +58,8 @@ void iterate_case_derive_c_staticlinear(benchmark::State& /* state */, size_t ma
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename NS::Self_key_t, typename NS::Self_value_t>) {
-            NS::Self_insert(&m, key, key);
-        } else {
-            typename NS::Self_value_t value{};
-            NS::Self_insert(&m, key, value);
-        }
+        typename NS::Self_value_t value{};
+        NS::Self_try_insert(&m, key, value);
     }
 
     typename NS::Self_iter_const iter = NS::Self_get_iter_const(&m);
@@ -85,12 +77,8 @@ void iterate_case_stl_unordered_map(benchmark::State& /* state */, size_t max_n,
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Std::Self_key_t, typename Std::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Std::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Std::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -104,12 +92,8 @@ void iterate_case_stl_map(benchmark::State& /* state */, size_t max_n, Gen& gen)
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Std::Self_key_t, typename Std::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Std::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Std::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -123,12 +107,8 @@ void iterate_case_ankerl_unordered_dense(benchmark::State& /* state */, size_t m
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Ext::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Ext::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -142,12 +122,8 @@ void iterate_case_abseil_swiss(benchmark::State& /* state */, size_t max_n, Gen&
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Ext::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Ext::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {
@@ -161,12 +137,8 @@ void iterate_case_boost_flat(benchmark::State& /* state */, size_t max_n, Gen& g
 
     for (size_t i = 0; i < max_n; i++) {
         auto key = gen.next();
-        if constexpr (std::is_same_v<typename Ext::Self_key_t, typename Ext::Self_value_t>) {
-            m.insert({key, key});
-        } else {
-            typename Ext::Self_value_t value{};
-            m.insert({key, value});
-        }
+        typename Ext::Self_value_t value{};
+        m.insert({key, value});
     }
 
     for (const auto& entry : m) {

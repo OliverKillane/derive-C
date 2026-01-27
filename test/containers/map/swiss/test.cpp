@@ -3,7 +3,7 @@
 #include <derive-cpp/fmt/remove_ptrs.hpp>
 
 #include <derive-c/algorithm/hash/default.h>
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 #define KEY int32_t
 #define KEY_HASH DC_DEFAULT_HASH

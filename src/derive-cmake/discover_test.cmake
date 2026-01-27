@@ -1,4 +1,5 @@
 #[[
+# Inspired by: https://github.com/Kitware/CMake/blob/master/Modules/GoogleTest.cmake
 # Discovers tests dynamically from a test executable and registers them with CTest.
 #
 # This function runs a LIST_COMMAND to discover available tests from the target executable,

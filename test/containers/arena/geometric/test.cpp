@@ -4,7 +4,7 @@
 #include <derive-cpp/fmt/remove_ptrs.hpp>
 
 #include <derive-c/container/arena/geometric/utils.h>
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 TEST(ArenaGeometricUtils, MostSignificantBit) {
     EXPECT_EQ(0, DC_MATH_MSB_INDEX((uint8_t)0));

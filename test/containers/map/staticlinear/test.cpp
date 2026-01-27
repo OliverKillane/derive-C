@@ -4,7 +4,7 @@
 #include <derive-cpp/fmt/remove_ptrs.hpp>
 
 #include <derive-c/utils/for.h>
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 #define CAPACITY 256
 #define KEY size_t

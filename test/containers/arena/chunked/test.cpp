@@ -3,7 +3,7 @@
 #include <derive-cpp/fmt/remove_ptrs.hpp>
 
 #include <derive-c/container/arena/chunked/utils.h>
-#include <derive-c/utils/debug.h>
+#include <derive-c/utils/debug/string.h>
 
 TEST(ArenaChunkedUtils, IndexToBlock) {
     EXPECT_EQ(DC_ARENA_CHUNKED_INDEX_TO_BLOCK(0, 1), 0);
