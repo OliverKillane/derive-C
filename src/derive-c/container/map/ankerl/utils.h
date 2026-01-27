@@ -60,8 +60,8 @@ DC_STATIC_ASSERT(sizeof(_dc_ankerl_small_bucket) == 4);
 
 DC_STATIC_CONSTANT size_t NS(_dc_ankerl_small_bucket, max_index_exclusive) = (size_t)UINT16_MAX;
 
-DC_INTERNAL static _dc_ankerl_small_bucket NS(_dc_ankerl_small_bucket,
-                                                   new)(_dc_ankerl_mdata mdata, size_t index) {
+DC_INTERNAL static _dc_ankerl_small_bucket NS(_dc_ankerl_small_bucket, new)(_dc_ankerl_mdata mdata,
+                                                                            size_t index) {
     DC_ASSUME(index <= NS(_dc_ankerl_small_bucket, max_index_exclusive));
     return (_dc_ankerl_small_bucket){
         .mdata = mdata,
@@ -84,7 +84,7 @@ typedef struct {
 DC_STATIC_ASSERT(sizeof(_dc_ankerl_bucket) == 8);
 
 DC_STATIC_CONSTANT size_t NS(_dc_ankerl_bucket, max_index_exclusive) = (size_t)UINT32_MAX +
-                                                                ((size_t)UINT16_MAX << 32);
+                                                                       ((size_t)UINT16_MAX << 32);
 
 DC_INTERNAL static _dc_ankerl_bucket NS(_dc_ankerl_bucket, new)(_dc_ankerl_mdata mdata,
                                                                 size_t index) {

@@ -227,11 +227,10 @@ DC_INTERNAL static VALUE* PRIV(NS(SELF, try_insert_no_extend_capacity))(SELF* se
     }
 
     const size_t dense_index = NS(SLOT_VECTOR, size)(&self->slots);
-    NS(SLOT_VECTOR, push)
-    (&self->slots, (SLOT){
-                       .key = key,
-                       .value = value,
-                   });
+    NS(SLOT_VECTOR, push)(&self->slots, (SLOT){
+                                            .key = key,
+                                            .value = value,
+                                        });
     BUCKET cur = NS(BUCKET, new)(
         (_dc_ankerl_mdata){
             .fingerprint = fp,
