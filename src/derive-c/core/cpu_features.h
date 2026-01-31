@@ -40,7 +40,7 @@ static dc_cpu_features dc_cpu_features_get() {
 #define FEATURE_DETECT(feature_name, runtime_name)                                                 \
     .feature_name = {.name = runtime_name,                                                         \
                      .compiled_with = DC_IS_DEFINED(__##feature_name##__),                         \
-                     .runtime_supported = __builtin_cpu_supports(runtime_name)},
+                     .runtime_supported = (bool)__builtin_cpu_supports(runtime_name)},
         CPU_FEATURES(FEATURE_DETECT)
 #undef FEATURE_DETECT
     };
