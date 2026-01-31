@@ -6,7 +6,7 @@
 #include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/traits/debug.h>
 
-#define CPU_FEATURES(F)                                                                            \
+#define _DC_CPU_FEATURES(F)                                                                            \
     F(SSE, "sse")                                                                                  \
     F(SSE2, "sse2")                                                                                \
     F(SSE3, "sse3")                                                                                \
@@ -30,19 +30,19 @@ typedef struct {
 } dc_cpu_feature;
 
 typedef struct {
-#define FEATURE_DECLARE(name, _) dc_cpu_feature name;
-    CPU_FEATURES(FEATURE_DECLARE)
-#undef FEATURE_DECLARE
+#define _DC_FEATURE_DECLARE(name, _) dc_cpu_feature name;
+    _DC_CPU_FEATURES(_DC_FEATURE_DECLARE)
+#undef _DC_FEATURE_DECLARE
 } dc_cpu_features;
 
 static dc_cpu_features dc_cpu_features_get() {
     return (dc_cpu_features){
-#define FEATURE_DETECT(feature_name, runtime_name)                                                 \
+#define _DC_FEATURE_DETECT(feature_name, runtime_name)                                                 \
     .feature_name = {.name = runtime_name,                                                         \
                      .compiled_with = DC_IS_DEFINED(__##feature_name##__),                         \
                      .runtime_supported = (bool)__builtin_cpu_supports(runtime_name)},
-        CPU_FEATURES(FEATURE_DETECT)
-#undef FEATURE_DETECT
+        _DC_CPU_FEATURES(_DC_FEATURE_DETECT)
+#undef _DC_FEATURE_DETECT
     };
 }
 
@@ -51,12 +51,12 @@ DC_PUBLIC static void dc_cpu_features_debug(dc_cpu_features const* self, dc_debu
     (void)fmt;
     fprintf(stream, "| %-12s | %-8s | %-8s |\n", "feature", "compiler", "runtime");
     fprintf(stream, "| %-12s | %-8s | %-8s |\n", "------------", "--------", "--------");
-#define FEATURE_ROW(feature, _)                                                                    \
+#define _DC_FEATURE_ROW(feature, _)                                                                    \
     fprintf(stream, "| %-12s | %-8s | %-8s |\n", self->feature.name,                               \
             self->feature.compiled_with ? "yes" : "no",                                            \
             self->feature.runtime_supported ? "yes" : "no");
-    CPU_FEATURES(FEATURE_ROW)
-#undef FEATURE_ROW
+    _DC_CPU_FEATURES(_DC_FEATURE_ROW)
+#undef _DC_FEATURE_ROW
     fprintf(stream, "\n");
 }
 
