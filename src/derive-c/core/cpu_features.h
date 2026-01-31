@@ -6,7 +6,7 @@
 #include <derive-c/core/debug/fmt.h>
 #include <derive-c/core/traits/debug.h>
 
-#define _DC_CPU_FEATURES(F)                                                                            \
+#define _DC_CPU_FEATURES(F)                                                                        \
     F(SSE, "sse")                                                                                  \
     F(SSE2, "sse2")                                                                                \
     F(SSE3, "sse3")                                                                                \
@@ -37,7 +37,7 @@ typedef struct {
 
 static dc_cpu_features dc_cpu_features_get() {
     return (dc_cpu_features){
-#define _DC_FEATURE_DETECT(feature_name, runtime_name)                                                 \
+#define _DC_FEATURE_DETECT(feature_name, runtime_name)                                             \
     .feature_name = {.name = runtime_name,                                                         \
                      .compiled_with = DC_IS_DEFINED(__##feature_name##__),                         \
                      .runtime_supported = (bool)__builtin_cpu_supports(runtime_name)},
@@ -51,7 +51,7 @@ DC_PUBLIC static void dc_cpu_features_debug(dc_cpu_features const* self, dc_debu
     (void)fmt;
     fprintf(stream, "| %-12s | %-8s | %-8s |\n", "feature", "compiler", "runtime");
     fprintf(stream, "| %-12s | %-8s | %-8s |\n", "------------", "--------", "--------");
-#define _DC_FEATURE_ROW(feature, _)                                                                    \
+#define _DC_FEATURE_ROW(feature, _)                                                                \
     fprintf(stream, "| %-12s | %-8s | %-8s |\n", self->feature.name,                               \
             self->feature.compiled_with ? "yes" : "no",                                            \
             self->feature.runtime_supported ? "yes" : "no");
