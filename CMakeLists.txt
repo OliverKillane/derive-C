@@ -80,6 +80,12 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "")
   set(_dbg_default ON)
 endif()
 
+if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+  add_compile_options(
+    $<$<C_COMPILER_ID:GNU,Clang>:-march=native>
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-march=native>)
+endif()
+
 option(USE_ASAN  "Enable AddressSanitizer (ASan)"            ${_dbg_default})
 option(USE_UBSAN "Enable UndefinedBehaviorSanitizer (UBSan)" ${_dbg_default})
 option(USE_MSAN  "Enable MemorySanitizer (MSan)"             OFF)

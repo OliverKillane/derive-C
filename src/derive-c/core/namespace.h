@@ -5,6 +5,8 @@
 #define DC_STRINGIFY(MACRO) #MACRO
 #define DC_EXPAND_STRING(NAME) DC_STRINGIFY(NAME)
 
+#define DC_IS_DEFINED(MACRO) (sizeof(DC_STRINGIFY(MACRO)) != sizeof(#MACRO))
+
 // JUSTIFY: Not namespaced under `DC`
 //  - `NS` is everywhere - ugly if expanded to DC_NS, and not a name likely to
 //    conflict with others
