@@ -1,4 +1,5 @@
 #pragma once
+
 // JUSTIFY: Allowing _Generic with clang
 //  - Tests are in C++, we ideally want all the code to be compiled as C
 //  - In the matrix build, GCC will validate the templated versions, clang the _Generic

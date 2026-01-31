@@ -79,6 +79,9 @@ static void compute(sieve_vec* sieve) {
 }
 
 int main() {
+    // Check cpu features we have enabled
+    dc_cpu_features_dump(stdout);
+
     size_t up_to = 28;
     DC_ASSERT(up_to < MAX_UP_TO);
     printf("Listing primes up to: %zu\n", up_to);
