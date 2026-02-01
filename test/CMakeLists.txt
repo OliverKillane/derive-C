@@ -32,7 +32,7 @@ add_compile_options(-Wno-deprecated-declarations)
 # Externals
 # ------------------------------------------------------------------------------
 
-set(GOOGLE_TEST_VERSION v1.14.0)
+set(GOOGLE_TEST_VERSION v1.17.0)
 set(RAPID_CHECK_VERSION ff6af6fc683159deb51c543b065eba14dfcf329b)
 
 FetchContent_Declare(
