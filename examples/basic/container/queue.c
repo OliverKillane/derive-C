@@ -12,32 +12,34 @@
 #define NAME int_queue
 #include <derive-c/container/queue/circular/template.h>
 
-static void example_queue() {
-    DC_DEBUG_TRACE;
+static void example_queue(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(int_queue) queue = int_queue_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "pushing 1-5 to queue");
     for (int i = 1; i <= 5; i++) {
         int_queue_push_back(&queue, i);
     }
 
-    int_queue_debug(&queue, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "queue: %s", DC_DEBUG(int_queue_debug, &queue));
 
     while (int_queue_size(&queue) > 0) {
         int value = int_queue_pop_front(&queue);
-        printf("Popped: %d\n", value);
+        DC_LOG(log, DC_INFO, "popped: %d", value);
     }
 
-    int_queue_debug(&queue, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "queue after pops: %s", DC_DEBUG(int_queue_debug, &queue));
 }
 
 #define ITEM int
 #define NAME int_deque
 #include <derive-c/container/queue/deque/template.h>
 
-static void example_deque() {
-    DC_DEBUG_TRACE;
+static void example_deque(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(int_deque) deque = int_deque_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "push_back 10, push_back 20, pop_front");
     int_deque_push_back(&deque, 10);
     int_deque_push_back(&deque, 20);
     int_deque_pop_front(&deque);
@@ -69,10 +71,11 @@ static void message_debug(struct message const* self, dc_debug_fmt fmt, FILE* st
 #define NAME message_queue
 #include <derive-c/container/queue/circular/template.h>
 
-static void example_custom() {
-    DC_DEBUG_TRACE;
+static void example_custom(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(message_queue) queue = message_queue_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "pushing two messages");
     char* data1 = (char*)malloc(5);
     memcpy(data1, "hello", 5); // NOLINT(bugprone-not-null-terminated-result)
     struct message msg1 = {.data = data1, .length = 5};
@@ -83,12 +86,17 @@ static void example_custom() {
     struct message msg2 = {.data = data2, .length = 5};
     message_queue_push_back(&queue, msg2);
 
-    message_queue_debug(&queue, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "queue: %s", DC_DEBUG(message_queue_debug, &queue));
 }
 
 int main() {
-    example_queue();
-    example_deque();
-    example_custom();
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER,
+              new_global)((NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true},
+                          (dc_log_id){"queue"});
+
+    example_queue(&root);
+    example_deque(&root);
+    example_custom(&root);
     return 0;
 }

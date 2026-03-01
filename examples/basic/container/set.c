@@ -16,18 +16,18 @@
 #define NAME int_set
 #include <derive-c/container/set/swiss/template.h>
 
-static void example_integer_set() {
-    DC_DEBUG_TRACE;
+static void example_integer_set(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(int_set) set = int_set_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "adding integers 0-9");
     for (int i = 0; i < 10; i++) {
         int_set_add(&set, i);
     }
 
-    DC_FOR_CONST(int_set, &set, iter, item) { printf("%d ", *item); }
-    printf("\n");
+    DC_FOR_CONST(int_set, &set, iter, item) { DC_LOG(log, DC_INFO, "item: %d", *item); }
 
-    int_set_debug(&set, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "set: %s", DC_DEBUG(int_set_debug, &set));
 }
 
 struct complex_data {
@@ -69,10 +69,11 @@ static void complex_data_debug(struct complex_data const* self, dc_debug_fmt fmt
 #define NAME complex_set
 #include <derive-c/container/set/swiss/template.h>
 
-static void example_complex_set() {
-    DC_DEBUG_TRACE;
+static void example_complex_set(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(complex_set) set = complex_set_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "adding two complex items");
     struct complex_data item1 = {.flag = true, .name = strdup("first"), .value = 42};
     struct complex_data item2 = {.flag = false, .name = strdup("second"), .value = 100};
 
@@ -80,14 +81,19 @@ static void example_complex_set() {
     complex_set_add(&set, item2);
 
     struct complex_data lookup = {.flag = true, .name = strdup("first"), .value = 42};
+    DC_LOG(log, DC_INFO, "checking if lookup item exists");
     DC_ASSERT(complex_set_contains(&set, lookup));
     free(lookup.name);
 
-    complex_set_debug(&set, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "set: %s", DC_DEBUG(complex_set_debug, &set));
 }
 
 int main() {
-    example_integer_set();
-    example_complex_set();
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER, new_global)(
+        (NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true}, (dc_log_id){"set"});
+
+    example_integer_set(&root);
+    example_complex_set(&root);
     return 0;
 }

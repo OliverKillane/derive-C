@@ -5,19 +5,18 @@
 #include <derive-c/alloc/std.h>
 #include <derive-c/algorithm/hash/default.h>
 #include <derive-c/prelude.h>
-#include <stdio.h>
 
 #define ALLOC stdalloc
 #define NAME string_builder
 #include <derive-c/utils/string_builder/template.h>
 
-static void example_basic() {
-    DC_DEBUG_TRACE;
+static void example_basic(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(string_builder) sb = string_builder_new(stdalloc_get_ref());
 
     fprintf(string_builder_stream(&sb), "Hello, world!");
 
-    printf("%s\n", string_builder_string(&sb));
+    DC_LOG(log, DC_INFO, "built string: %s", string_builder_string(&sb));
 }
 
 #define KEY uint32_t
@@ -26,10 +25,11 @@ static void example_basic() {
 #define NAME id_map
 #include <derive-c/container/map/decomposed/template.h>
 
-static void example_data_structure() {
-    DC_DEBUG_TRACE;
+static void example_data_structure(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(id_map) map = id_map_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "inserting identities");
     id_map_insert(&map, 1, "Alice");
     id_map_insert(&map, 2, "Bob");
     id_map_insert(&map, 3, "Charlie");
@@ -39,7 +39,7 @@ static void example_data_structure() {
     fprintf(string_builder_stream(&sb), "the identities are: ");
     id_map_debug(&map, dc_debug_fmt_new(), string_builder_stream(&sb));
 
-    printf("%s\n", string_builder_string(&sb));
+    DC_LOG(log, DC_INFO, "%s", string_builder_string(&sb));
 }
 
 #define NAME dbg
@@ -54,8 +54,8 @@ static void example_data_structure() {
 #define NAME string_builder_hybrid
 #include <derive-c/utils/string_builder/template.h>
 
-static void example_hybrid() {
-    DC_DEBUG_TRACE;
+static void example_hybrid(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(dbg) debug_alloc = dbg_new("hybrid_example", stdout, stdalloc_get_ref());
     hybrid_buffer buf;
     DC_SCOPED(hybrid) hybrid_alloc = hybrid_new(&buf, &debug_alloc);
@@ -63,12 +63,17 @@ static void example_hybrid() {
 
     fprintf(string_builder_hybrid_stream(&sb), "This is a small sentence.");
 
-    printf("%s\n", string_builder_hybrid_string(&sb));
+    DC_LOG(log, DC_INFO, "hybrid built string: %s", string_builder_hybrid_string(&sb));
 }
 
 int main() {
-    example_basic();
-    example_data_structure();
-    example_hybrid();
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER,
+              new_global)((NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true},
+                          (dc_log_id){"string_builder"});
+
+    example_basic(&root);
+    example_data_structure(&root);
+    example_hybrid(&root);
     return 0;
 }

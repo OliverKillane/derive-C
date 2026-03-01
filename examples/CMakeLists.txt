@@ -31,6 +31,7 @@ function(add_example file)
   add_executable(${example_target_safe} ${file})
 
   target_link_libraries(${example_target_safe} PRIVATE derivec dc_warnings_c)
+  target_compile_definitions(${example_target_safe} PRIVATE DC_LOG_HEADER=<derive-c/utils/log/loggers/file.h>)
 
   if(OPT_REPORTS)
     enable_clang_opt_reports(${example_target_safe})

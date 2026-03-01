@@ -102,8 +102,8 @@ static hr_system hr_system_new() {
     };
 }
 
-static void hr_system_new_employee(hr_system* self, employee emp) {
-    printf("Adding employee %s %s\n", emp.name.forename, emp.name.surname);
+static void hr_system_new_employee(hr_system* self, employee emp, DC_LOGGER* log) {
+    DC_LOG(*log, DC_INFO, "adding employee %s %s", emp.name.forename, emp.name.surname);
     employees_index_t idx = employees_insert(&self->data, emp);
     same_age_employees* idxes = employees_by_age_try_write(&self->by_age, emp.age);
     if (!idxes) {
@@ -150,7 +150,9 @@ static void hr_system_delete(hr_system* self) {
     employees_by_age_delete(&self->by_age);
 }
 
-int main() {
+static void example_hr_system(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
+
     hr_system hr = hr_system_new();
 
     employee frank = {
@@ -162,7 +164,7 @@ int main() {
                 .surname = "Lee",
             },
     };
-    hr_system_new_employee(&hr, frank);
+    hr_system_new_employee(&hr, frank, &log);
 
     name bob_name = {
         .forename = "Bob",
@@ -173,13 +175,23 @@ int main() {
         .email = "bib@cool.org",
         .name = bob_name,
     };
-    hr_system_new_employee(&hr, bob);
+    hr_system_new_employee(&hr, bob, &log);
 
     employee const* newest_22 = hr_system_newest_of_age(&hr, (age){.value = 22});
     DC_ASSERT(newest_22);
     DC_ASSERT(name_eq(&newest_22->name, &bob_name));
 
-    hr_system_debug(&hr, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "hr_system: %s", DC_DEBUG(hr_system_debug, &hr));
 
     hr_system_delete(&hr);
+}
+
+int main() {
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER,
+              new_global)((NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true},
+                          (dc_log_id){"employees"});
+
+    example_hr_system(&root);
+    return 0;
 }

@@ -32,10 +32,11 @@ static void example_data_debug(struct example_data const* self, dc_debug_fmt fmt
 #define NAME unstable_arena
 #include <derive-c/container/arena/contiguous/template.h>
 
-static void example_unstable_arena() {
-    DC_DEBUG_TRACE;
+static void example_unstable_arena(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(unstable_arena) arena = unstable_arena_new_with_capacity_for(3, stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "inserting three items");
     unstable_arena_insert(&arena,
                           (struct example_data){.description = strdup("First"), .value = 1});
     unstable_arena_index_t idx2 = unstable_arena_insert(
@@ -44,12 +45,13 @@ static void example_unstable_arena() {
                           (struct example_data){.description = strdup("Third"), .value = 3});
 
     DC_FOR(unstable_arena, &arena, iter, entry) {
-        printf("Entry at index %u: %s = %d\n", entry.index.index, entry.value->description,
-               entry.value->value);
+        DC_LOG(log, DC_INFO, "entry at index %u: %s = %d", entry.index.index,
+               entry.value->description, entry.value->value);
     }
 
-    unstable_arena_debug(&arena, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "arena: %s", DC_DEBUG(unstable_arena_debug, &arena));
 
+    DC_LOG(log, DC_INFO, "removing second item");
     struct example_data removed = unstable_arena_remove(&arena, idx2);
     example_data_delete(&removed);
 }
@@ -70,13 +72,14 @@ static void example_unstable_arena() {
 #define NAME custom_arena
 #include <derive-c/container/arena/contiguous/template.h>
 
-static void example_custom_allocator_arena() {
-    DC_DEBUG_TRACE;
+static void example_custom_allocator_arena(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(dbg) debug_alloc = dbg_new("custom_arena", stdout, stdalloc_get_ref());
     hybrid_buffer buf;
     DC_SCOPED(hybrid) hybrid_alloc = hybrid_new(&buf, &debug_alloc);
     DC_SCOPED(custom_arena) arena = custom_arena_new_with_capacity_for(3, &hybrid_alloc);
 
+    DC_LOG(log, DC_INFO, "inserting items A, B, C");
     custom_arena_insert(&arena, (struct example_data){.description = strdup("A"), .value = 1});
     custom_arena_insert(&arena, (struct example_data){.description = strdup("B"), .value = 2});
     custom_arena_insert(&arena, (struct example_data){.description = strdup("C"), .value = 3});
@@ -105,10 +108,11 @@ static bool geometric_arena_index_eq(geometric_arena_index_t const* a,
 #define NAME index_to_data_map
 #include <derive-c/container/map/swiss/template.h>
 
-static void example_geometric_arena() {
-    DC_DEBUG_TRACE;
+static void example_geometric_arena(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(geometric_arena) arena = geometric_arena_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "inserting Alpha, Beta, Gamma");
     geometric_arena_index_t idx1 = geometric_arena_insert(
         &arena, (struct example_data){.description = strdup("Alpha"), .value = 10});
     geometric_arena_index_t idx2 = geometric_arena_insert(
@@ -121,7 +125,7 @@ static void example_geometric_arena() {
     index_to_data_map_insert(&map, idx2, geometric_arena_read(&arena, idx2));
     index_to_data_map_insert(&map, idx3, geometric_arena_read(&arena, idx3));
 
-    geometric_arena_debug(&arena, dc_debug_fmt_new(), stdout);
+    DC_LOG(log, DC_INFO, "arena: %s", DC_DEBUG(geometric_arena_debug, &arena));
 }
 
 #define INDEX_BITS 8
@@ -132,20 +136,26 @@ static void example_geometric_arena() {
 #define NAME chunked_arena
 #include <derive-c/container/arena/chunked/template.h>
 
-static void example_chunked_arena() {
-    DC_DEBUG_TRACE;
+static void example_chunked_arena(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_STATIC_ASSERT(sizeof(chunked_arena_index_t) == sizeof(uint8_t), "Index size must be 8 bits");
 
     DC_SCOPED(chunked_arena) arena = chunked_arena_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "inserting X and Y");
     chunked_arena_insert(&arena, (struct example_data){.description = strdup("X"), .value = 100});
     chunked_arena_insert(&arena, (struct example_data){.description = strdup("Y"), .value = 200});
 }
 
 int main() {
-    example_unstable_arena();
-    example_custom_allocator_arena();
-    example_geometric_arena();
-    example_chunked_arena();
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER,
+              new_global)((NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true},
+                          (dc_log_id){"arena"});
+
+    example_unstable_arena(&root);
+    example_custom_allocator_arena(&root);
+    example_geometric_arena(&root);
+    example_chunked_arena(&root);
     return 0;
 }
