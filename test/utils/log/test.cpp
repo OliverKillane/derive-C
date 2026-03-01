@@ -154,9 +154,9 @@ TEST_F(FileLoggerTests, LocationIncludedForDebugNotInfo) {
 
     // Debug messages should include location
     EXPECT_THAT(output, HasSubstr("debug message ["));
-    EXPECT_THAT(output, ContainsRegex(R"(debug message \[.*:\d+\])"));
+    EXPECT_THAT(output, ContainsRegex(R"(debug message \[.*:[0-9]+\])"));
 
     // Info messages should not include location
     EXPECT_THAT(output, HasSubstr("info message"));
-    EXPECT_THAT(output, Not(ContainsRegex(R"(info message \[.*:\d+\])")));
+    EXPECT_THAT(output, Not(ContainsRegex(R"(info message \[.*:[0-9]+\])")));
 }

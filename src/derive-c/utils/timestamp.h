@@ -26,7 +26,7 @@ typedef struct {
 DC_MOCKABLE(dc_timestamp, dc_timestamp_now, (void)) {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    return (dc_timestamp){.ns = (uint64_t)ts.tv_sec * DC_NS_PER_SEC + (uint64_t)ts.tv_nsec};
+    return (dc_timestamp){.ns = ((uint64_t)ts.tv_sec * DC_NS_PER_SEC) + (uint64_t)ts.tv_nsec};
 }
 
 DC_PUBLIC static dc_datetime dc_datetime_from_timestamp(dc_timestamp ts, dc_timezone tz) {
@@ -60,7 +60,7 @@ DC_PUBLIC static dc_timestamp dc_datetime_to_timestamp(dc_datetime const* dt) {
         break;
     }
 
-    return (dc_timestamp){.ns = (uint64_t)secs * DC_NS_PER_SEC + (uint64_t)dt->nanos};
+    return (dc_timestamp){.ns = ((uint64_t)secs * DC_NS_PER_SEC) + (uint64_t)dt->nanos};
 }
 
 DC_PUBLIC static void dc_datetime_format(dc_datetime const* dt, FILE* stream) {

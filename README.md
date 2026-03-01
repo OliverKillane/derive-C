@@ -21,7 +21,10 @@ target_compile_definitions(${my_target} PRIVATE
 
     # To override the default behaviour for `DC_PANIC`, `DC_ASSERT`, etc.
     # For example convert to std::runtime_error in google tests
-    DC_PANIC_HEADER=<my-special-library/foo/derive_c_panic_overrides.h> 
+    DC_PANIC_HEADER=<my-special-library/foo/derive_c_panic_overrides.h>
+
+    # To override the logger used for `DC_LOG`
+    DC_LOG_HEADER=<my-special-library/foo/derive_c_log_integration.h>
 )
 ```
 3. Use the library
