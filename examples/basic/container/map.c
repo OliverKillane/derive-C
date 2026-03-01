@@ -61,8 +61,8 @@ static void userdata_debug(struct userdata const* self, dc_debug_fmt fmt, FILE* 
 #define NAME user_map
 #include <derive-c/container/map/decomposed/template.h>
 
-static void example_basic() {
-    DC_DEBUG_TRACE;
+static void example_basic(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(user_map) map = user_map_new(stdalloc_get_ref());
 
     struct user_id user1 = {.username = "alice", .uuid = 1001};
@@ -71,6 +71,7 @@ static void example_basic() {
     struct userdata data1 = {.score = 1500, .hashed_password = "hash1234567890"};
     struct userdata data2 = {.score = 2000, .hashed_password = "hash0987654321"};
 
+    DC_LOG(log, DC_INFO, "inserting alice and bob");
     user_map_insert(&map, user1, data1);
     user_map_insert(&map, user2, data2);
 
@@ -86,9 +87,9 @@ static void example_basic() {
     struct user_id invalid_user = {.username = "charlie", .uuid = 9999};
     struct userdata const* not_found = user_map_try_read(&map, invalid_user);
     DC_ASSERT(not_found == NULL);
+    DC_LOG(log, DC_INFO, "charlie not found as expected");
 
-    user_map_debug(&map, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
+    DC_LOG(log, DC_INFO, "map: %s", DC_DEBUG(user_map_debug, &map));
 }
 
 struct largedata {
@@ -109,16 +110,16 @@ static void largedata_debug(struct largedata const* self, dc_debug_fmt fmt, FILE
 #define NAME uuid_to_index_map
 #include <derive-c/container/map/decomposed/template.h>
 
-static void example_small() {
-    DC_DEBUG_TRACE;
+static void example_small(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(uuid_to_index_map) map = uuid_to_index_map_new(stdalloc_get_ref());
 
+    DC_LOG(log, DC_INFO, "inserting uuid->index mappings");
     uuid_to_index_map_insert(&map, 1001, 0);
     uuid_to_index_map_insert(&map, 1002, 1);
     uuid_to_index_map_insert(&map, 1003, 2);
 
-    uuid_to_index_map_debug(&map, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
+    DC_LOG(log, DC_INFO, "map: %s", DC_DEBUG(uuid_to_index_map_debug, &map));
 
     struct largedata large_data_array[3] = {
         {.data = "First large data"}, {.data = "Second large data"}, {.data = "Third large data"}};
@@ -126,8 +127,7 @@ static void example_small() {
     DC_FOR_CONST(uuid_to_index_map, &map, iter, entry) {
         uint16_t index = *entry.value;
         DC_ASSERT(index < 3);
-        largedata_debug(&large_data_array[index], dc_debug_fmt_new(), stdout);
-        fprintf(stdout, "\n");
+        DC_LOG(log, DC_INFO, "entry: %s", DC_DEBUG(largedata_debug, &large_data_array[index]));
     }
 }
 
@@ -138,34 +138,37 @@ static void example_small() {
 #define NAME ankerl_largedata_map
 #include <derive-c/container/map/ankerl/template.h>
 
-static void example_iteration() {
-    DC_DEBUG_TRACE;
+static void example_iteration(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
     DC_SCOPED(ankerl_largedata_map) map = ankerl_largedata_map_new(stdalloc_get_ref());
 
     struct largedata data1 = {.data = "Ankerl map entry number one"};
     struct largedata data2 = {.data = "Ankerl map entry number two"};
     struct largedata data3 = {.data = "Ankerl map entry number three"};
 
+    DC_LOG(log, DC_INFO, "inserting three entries");
     ankerl_largedata_map_insert(&map, 2001, data1);
     ankerl_largedata_map_insert(&map, 2002, data2);
     ankerl_largedata_map_insert(&map, 2003, data3);
 
     size_t count = 0;
     DC_FOR_CONST(ankerl_largedata_map, &map, iter, entry) {
-        printf("Entry %zu: uuid=%" PRIu64 " data=", count, *entry.key);
-        largedata_debug(entry.value, dc_debug_fmt_new(), stdout);
-        fprintf(stdout, "\n");
+        DC_LOG(log, DC_INFO, "entry %zu: uuid=%" PRIu64 " data=%s", count, *entry.key,
+               DC_DEBUG(largedata_debug, entry.value));
         count++;
     }
     DC_ASSERT(count == 3);
 
-    ankerl_largedata_map_debug(&map, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
+    DC_LOG(log, DC_INFO, "map: %s", DC_DEBUG(ankerl_largedata_map_debug, &map));
 }
 
 int main() {
-    example_basic();
-    example_small();
-    example_iteration();
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER, new_global)(
+        (NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true}, (dc_log_id){"map"});
+
+    example_basic(&root);
+    example_small(&root);
+    example_iteration(&root);
     return 0;
 }

@@ -53,28 +53,26 @@ static void example_data_debug(struct example_data const* self, dc_debug_fmt fmt
 #define NAME example_result
 #include <derive-c/utils/result/template.h>
 
-static void example_result_example() {
-    DC_DEBUG_TRACE;
+static void example_result_example(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
 
+    DC_LOG(log, DC_INFO, "creating success result");
     DC_SCOPED(example_result)
     success_result = example_result_from_ok((struct example_data){
         .value = 42,
         .description = strdup("A successful result"),
     });
 
+    DC_LOG(log, DC_INFO, "creating error results");
     DC_SCOPED(example_result) error_result = example_result_from_error(ERROR_KIND_NOT_FOUND);
     DC_SCOPED(example_result) invalid_result = example_result_from_error(ERROR_KIND_INVALID);
     DC_SCOPED(example_result)
     permission_result = example_result_from_error(ERROR_KIND_PERMISSION_DENIED);
 
-    example_result_debug(&success_result, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
-    example_result_debug(&error_result, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
-    example_result_debug(&invalid_result, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
-    example_result_debug(&permission_result, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
+    DC_LOG(log, DC_INFO, "success: %s", DC_DEBUG(example_result_debug, &success_result));
+    DC_LOG(log, DC_INFO, "error: %s", DC_DEBUG(example_result_debug, &error_result));
+    DC_LOG(log, DC_INFO, "invalid: %s", DC_DEBUG(example_result_debug, &invalid_result));
+    DC_LOG(log, DC_INFO, "permission: %s", DC_DEBUG(example_result_debug, &permission_result));
 
     DC_ASSERT(!example_result_is_error(&success_result));
     DC_ASSERT(example_result_is_error(&error_result));
@@ -100,9 +98,16 @@ static void example_result_example() {
 
     DC_ASSERT(example_result_get_okay(&error_result) == NULL);
     DC_ASSERT(example_result_get_error(&success_result) == NULL);
+
+    DC_LOG(log, DC_INFO, "all assertions passed");
 }
 
 int main() {
-    example_result_example();
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER,
+              new_global)((NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true},
+                          (dc_log_id){"result"});
+
+    example_result_example(&root);
     return 0;
 }

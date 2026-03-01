@@ -50,7 +50,7 @@ static size_t sqrt_size_t(size_t n) {
     return result;
 }
 
-static void display(sieve_vec const* sieve) {
+static void display(sieve_vec const* sieve, DC_LOGGER* log) {
     sieve_vec_iter_const iter = sieve_vec_get_iter_const(sieve);
 
     sieve_vec_iter_const_next(&iter); // skip 0
@@ -60,35 +60,50 @@ static void display(sieve_vec const* sieve) {
     bool const* is_not_prime;
     while ((is_not_prime = sieve_vec_iter_const_next(&iter))) {
         if (!*is_not_prime) {
-            printf("%zu is prime\n", index);
+            DC_LOG(*log, DC_INFO, "%zu is prime", index);
         }
         index++;
     }
 }
 
-static void compute(sieve_vec* sieve) {
+static void compute(sieve_vec* sieve, DC_LOGGER* log) {
     size_t size = sieve_vec_size(sieve);
     size_t sqrt = sqrt_size_t(size);
-    printf("Sieve size: %zu, sqrt: %zu\n", size, sqrt);
+    DC_LOG(*log, DC_INFO, "sieve size: %zu, sqrt: %zu", size, sqrt);
     for (size_t factor = 2; factor <= sqrt; factor++) {
         for (size_t index = factor * 2; index < size; index += factor) {
-            printf("Marking %zu as not prime (factor: %zu)\n", index, factor);
+            DC_LOG(*log, DC_DEBUG, "marking %zu as not prime (factor: %zu)", index, factor);
             *sieve_vec_write(sieve, index) = true;
         }
     }
 }
 
-int main() {
-    // Check cpu features we have enabled
-    dc_cpu_features_dump(stdout);
+static void example_prime_sieve(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
+
+    dc_cpu_features features = dc_cpu_features_get();
+    DC_LOG(log, DC_INFO, "cpu features: %s", DC_DEBUG(dc_cpu_features_debug, &features));
 
     size_t up_to = 28;
     DC_ASSERT(up_to < MAX_UP_TO);
-    printf("Listing primes up to: %zu\n", up_to);
+    DC_LOG(log, DC_INFO, "listing primes up to: %zu", up_to);
+
     bump_alloc_buffer buf;
     bump_alloc alloc = bump_alloc_new(&buf, stdalloc_get_ref());
     sieve_vec values = sieve_vec_new_with_defaults(up_to, false, &alloc);
-    compute(&values);
-    display(&values);
+
+    compute(&values, &log);
+    display(&values, &log);
+
     sieve_vec_delete(&values);
+}
+
+int main() {
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER,
+              new_global)((NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true},
+                          (dc_log_id){"prime_sieve"});
+
+    example_prime_sieve(&root);
+    return 0;
 }

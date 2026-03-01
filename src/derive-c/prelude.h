@@ -11,3 +11,4 @@
 #include <derive-c/utils/debug/trace.h>  // IWYU pragma: export
 #include <derive-c/utils/debug/string.h> // IWYU pragma: export
 #include <derive-c/utils/debug/dump.h>   // IWYU pragma: export
+#include <derive-c/utils/log/prelude.h>  // IWYU pragma: export

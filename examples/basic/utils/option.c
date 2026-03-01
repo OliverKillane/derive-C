@@ -37,19 +37,19 @@ static void example_data_debug(struct example_data const* self, dc_debug_fmt fmt
 #define NAME example_option
 #include <derive-c/utils/option/template.h>
 
-static void example_option_example() {
-    DC_DEBUG_TRACE;
+static void example_option_example(DC_LOGGER* parent) {
+    DC_SCOPED(DC_LOGGER) log = DC_LOGGER_NEW(parent, "%s", __func__);
 
+    DC_LOG(log, DC_INFO, "creating present option");
     DC_SCOPED(example_option)
     present_option = example_option_from(
         (struct example_data){.value = 42, .description = strdup("A present option")});
 
+    DC_LOG(log, DC_INFO, "creating empty option");
     DC_SCOPED(example_option) empty_option = example_option_empty();
 
-    example_option_debug(&present_option, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
-    example_option_debug(&empty_option, dc_debug_fmt_new(), stdout);
-    fprintf(stdout, "\n");
+    DC_LOG(log, DC_INFO, "present: %s", DC_DEBUG(example_option_debug, &present_option));
+    DC_LOG(log, DC_INFO, "empty: %s", DC_DEBUG(example_option_debug, &empty_option));
 
     DC_ASSERT(example_option_is_present(&present_option));
     DC_ASSERT(!example_option_is_present(&empty_option));
@@ -62,6 +62,7 @@ static void example_option_example() {
     struct example_data const* empty_data = example_option_get_const(&empty_option);
     DC_ASSERT(empty_data == NULL);
 
+    DC_LOG(log, DC_INFO, "replacing empty option");
     bool was_present = example_option_replace(
         &empty_option,
         (struct example_data){.value = 100, .description = strdup("Replaced value")});
@@ -72,9 +73,16 @@ static void example_option_example() {
     DC_ASSERT(replaced_data != NULL);
     DC_ASSERT(replaced_data->value == 100);
     DC_ASSERT(strcmp(replaced_data->description, "Replaced value") == 0);
+
+    DC_LOG(log, DC_INFO, "all assertions passed");
 }
 
 int main() {
-    example_option_example();
+    DC_SCOPED(DC_LOGGER)
+    root = NS(DC_LOGGER,
+              new_global)((NS(DC_LOGGER, global_config)){.stream = stdout, .ansi_colours = true},
+                          (dc_log_id){"option"});
+
+    example_option_example(&root);
     return 0;
 }
