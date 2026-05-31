@@ -6,8 +6,8 @@ readme = "README.md"
 dependencies = [
     "pytest>=9.0.3",
     "mypy>=2.1.0",
-    "ruff>=0.15.13",
-    "polars>=1.40.1",
+    "ruff>=0.15.15",
+    "polars>=1.41.2",
     "pyarrow>=24.0.0",
     "plotly[express]>=6.7.0",
     "jupyter>=1.1.1",
@@ -17,7 +17,7 @@ dependencies = [
 classifiers = ["Private :: Do Not Upload"]
 
 [build-system]
-requires = ["uv_build>=0.11.14,<0.12.0"]
+requires = ["uv_build>=0.11.17,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
